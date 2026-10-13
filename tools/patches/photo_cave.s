@@ -34,71 +34,71 @@ base:
 @   4:2:0 ('"'): Y first (2/3 of the buffer), then U/V (last 1/3), planar or
 @                interleaved -- either way set the last third to 0x80.
     .org    0xbab6c
+@ hook(status r0, buffer r1) -- interrupt context.
+@ Strip buffer is row-interleaved: each row = [W luma][W/2 chroma], W/2 chroma
+@ = U,V interleaved; strip = 32 rows; STRIP_BYTES = stride*32 = W*1.5*32.
+@ Derive stride from STRIP_BYTES (robust: no reliance on a width field, since
+@ PHOTO+4 holds the 1440 crop width, not the 320 strip width). B&W = set each
+@ row's chroma third to 0x80. Only strip A / strip B buffers are touched.
 hook:
-    push    {r0-r8, lr}
+    push    {r0-r10, lr}
 
-    sub     r3, r0, #0x200000           @ accept only frame-ready status
+    sub     r3, r0, #0x200000           @ frame-ready status only
     cmp     r3, #0xe00000
     bhs     done
 
     ldr     r4, =PHOTO
-    ldr     r8, [r4, #4]                @ W = photo width (e.g. 320)
-    cmp     r8, #16                     @ sanity: 16..2047
-    bls     done
-    cmp     r8, #2048
-    bhs     done
-
-    ldr     r5, [r4, #0x14]             @ buffer must be the full frame ...
-    cmp     r1, r5
-    beq     2f
-    ldr     r5, [r4, #0x18]             @ ... or scaler strip A / B
     ldr     r6, =STRIP_BYTES
-    ldr     r6, [r6]
+    ldr     r6, [r6]                    @ r6 = STRIP_BYTES
+    cmp     r6, #96                     @ sanity: a few rows at least
+    bls     done
+
+    ldr     r5, [r4, #0x18]             @ strip A?
     cmp     r1, r5
-    addne   r5, r5, r6
-    cmpne   r1, r5
+    beq     1f
+    add     r5, r5, r6                  @ strip B = A + STRIP_BYTES
+    cmp     r1, r5
     bne     done
 
-2:  mov     r5, r1                      @ r5 = buffer start
-    ldr     r6, =STRIP_BYTES            @ r6 = total bytes in this buffer
-    ldr     r6, [r6]
-    ldr     r3, [r4, #0x14]             @ full frame is width*height*3/2
-    cmp     r1, r3
-    bne     3f
-    ldr     r3, [r4, #8]
-    mul     r2, r8, r3
-    add     r6, r2, r2, lsr #1          @ W*H*3/2
-3:  add     r6, r5, r6                  @ r6 = buffer end
+1:  ldr     r5, [r4, #0x18]             @ base = buffer A
+    mov     r7, r6, lsr #5              @ stride = STRIP_BYTES / 32 (=480)
+    ldr     r2, =0xAAAAAAAB
+    umull   r0, r3, r7, r2
+    mov     r8, r3, lsr #1             @ r8 = third = stride/3 (=160 = chroma block)
+    add     r6, r5, r6, lsl #1          @ end = A + 2*STRIP_BYTES (whole alloc)
 
-    mov     r0, r5                      @ flush cache for the whole buffer
-    mov     r1, r6
-    sub     r1, r1, r5
+    mov     r0, r5                      @ invalidate cache over whole buffer
+    sub     r1, r6, r5
     mov     lr, pc
     b       CACHE_INV
 
-    add     r1, r8, r8, lsr #1          @ row stride = W + W/2
+    @ Parity layout (stride=480, third=160):
+    @   even rows: luma [0,320),  left-half chroma  [320,480)
+    @   odd  rows: right-half chroma [0,160), luma [160,480)
+    @ Zero only each row's chroma third -> full B&W, luma untouched.
+    mov     r9, r5                      @ r9 = row base
+    mov     r10, #0                     @ r10 = parity (0 even, 1 odd)
     mov     r3, #0x80
-    mov     r7, r5                      @ r7 = row base
 rowloop:
-    add     r12, r7, r8                 @ chroma = row + W
-    add     r2, r7, r1                  @ row end
+    tst     r10, #1
+    addeq   r12, r9, r8, lsl #1         @ even: chroma at row + 2*third
+    movne   r12, r9                     @ odd:  chroma at row + 0
+    add     r2, r12, r8                 @ end = start + third
 chromaloop:
     strb    r3, [r12], #1
     cmp     r12, r2
     blo     chromaloop
-    add     r7, r7, r1
-    cmp     r7, r6                      @ stop before a partial row
-    add     r0, r7, r1
-    cmpls   r0, r6
+    eor     r10, r10, #1                @ flip parity
+    add     r9, r9, r7                  @ next row
+    add     r0, r9, r7
+    cmp     r0, r6
     bls     rowloop
-
-    mov     r0, r5                      @ write cache back to RAM
+    mov     r0, r5                      @ clean cache back to RAM
     sub     r1, r6, r5
     mov     lr, pc
     b       CACHE_CLEAN
-
 done:
-    pop     {r0-r8, lr}
+    pop     {r0-r10, lr}
     str     lr, [sp, #-4]!              @ replaced instruction from 0x15448
     b       RESUME
     .ltorg
