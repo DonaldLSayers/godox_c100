@@ -102,11 +102,11 @@ pixloop:
     movlt   r0, #0
     cmp     r0, #255
     movgt   r0, #255                    @ r0 = Yp
-    @ ---- chroma U,V of this block ----
-    cmp     r9, #80
-    addlo   r6, r11, #320
+    @ ---- chroma U,V of this block (split at third/2, even chroma at +2*third) ----
+    cmp     r9, r8, lsr #1
+    addlo   r6, r11, r8, lsl #1
     addlo   r6, r6, r9, lsl #1
-    subhs   r1, r9, #80
+    subhs   r1, r9, r8, lsr #1
     addhs   r6, r11, r7
     addhs   r6, r6, r1, lsl #1
     ldrb    r1, [r6]                    @ U
@@ -218,16 +218,16 @@ pixloop:
     add     r6, r6, r9, lsl #1
     strb    r0, [r6]
     strb    r0, [r6, #1]
-    cmp     r9, #80                     @ chroma pair
-    addlo   r6, r11, #320
+    cmp     r9, r8, lsr #1              @ chroma pair
+    addlo   r6, r11, r8, lsl #1
     addlo   r6, r6, r9, lsl #1
-    subhs   r3, r9, #80
+    subhs   r3, r9, r8, lsr #1
     addhs   r6, r11, r7
     addhs   r6, r6, r3, lsl #1
     strb    r1, [r6]                    @ pU
     strb    r2, [r6, #1]                @ pV
     add     r9, r9, #1
-    cmp     r9, #160
+    cmp     r9, r8                      @ third chroma pairs (= width/2) per band
     blo     pixloop
     add     r11, r11, r7, lsl #1        @ even_base += 2*stride
     add     r10, r10, #1
@@ -259,9 +259,9 @@ SEEDED:
     .byte   0, 0, 0, 0                   @ 0 until the per-boot seed has run
 
     .org    0xbb080
-photo43:
-    mov     r6, #320
-    mov     r7, #240
+photo43:                                @ 4:3  crop 1440x1080 -> 640x480
+    mov     r6, #640
+    mov     r7, #480
     strh    r6, [r4, #14]
     strh    r7, [r4, #16]
     mov     r0, #1
@@ -289,9 +289,9 @@ PALETTES:                               @ NPAL x 6 colours, JPEG/JFIF (Y,U,V)
 @ and first-scaler size (so the sensor is scaled, not cropped) and sets a small
 @ 320-wide final size at that aspect. r4 = size struct, r9 = 1080 at entry.
     .org    0xbb140
-stub169:                                @ 16:9  crop 1920x1080 -> 320x180
-    mov     r6, #320
-    mov     r7, #180
+stub169:                                @ 16:9  crop 1920x1080 -> 640x360
+    mov     r6, #640
+    mov     r7, #360
     strh    r6, [r4, #14]
     strh    r7, [r4, #16]
     mov     r0, #1
@@ -304,9 +304,9 @@ stub169:                                @ 16:9  crop 1920x1080 -> 320x180
     b       PHOTO_PATH
 
     .org    0xbb180
-stub32:                                 @ 3:2  crop 1616x1080 -> 320x214
-    mov     r6, #320
-    mov     r7, #214
+stub32:                                 @ 3:2  crop 1616x1080 -> 640x428
+    mov     r6, #640
+    mov     r7, #428
     strh    r6, [r4, #14]
     strh    r7, [r4, #16]
     mov     r0, #1
@@ -319,9 +319,9 @@ stub32:                                 @ 3:2  crop 1616x1080 -> 320x214
     b       PHOTO_PATH
 
     .org    0xbb1c0
-stub11:                                 @ 1:1  crop 1024x1024 -> 320x320
-    mov     r6, #320
-    mov     r7, #320
+stub11:                                 @ 1:1  crop 1024x1024 -> 640x640
+    mov     r6, #640
+    mov     r7, #640
     strh    r6, [r4, #14]
     strh    r7, [r4, #16]
     mov     r0, #1

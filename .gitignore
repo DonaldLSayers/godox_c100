@@ -4,5 +4,6 @@
 /build/obj
 /build/*.bin
 /build/*.elf
+/build/res
 
 .DS_Store

@@ -23,6 +23,11 @@ else
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/coin_11k.wav "$OUT"
 fi
 
+# BEEP.wav (the UI/focus beep) is always silenced, in both sound profiles.
+python3 tools/gp_res.py "$ORIG" build/res >/dev/null
+python3 -I tools/mk_silence.py build/res/BEEP.wav build/beep_silent.wav
+python3 tools/patch_res.py "$OUT" BEEP.wav build/beep_silent.wav "$OUT"
+
 # --- assemble a patch: prints ADDR:OLDHEX:NEWHEX for patch_code.py ---
 asm() {  # asm NAME START END
     $LLVM/llvm-mc -triple=armv5te-none-eabi -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
