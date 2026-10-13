@@ -90,7 +90,16 @@ pixloop:
     add     r0, r0, r1
     add     r0, r0, r2                  @ sum of 4 luma
     mov     r0, r0, lsr #2             @ repY
-    @ ---- Bayer dither: repY += (BAYER[b&3][c&3] - 8) * 4 ----
+    @ ---- contrast / brightness pre-map (assemble-time constants) ----
+    @ Y' = (Y-128)*CONTRAST/128 + 128 + (BRIGHT_FIX-128).  CONTRAST_FIX = pct*128/100.
+    sub     r0, r0, #128
+    mov     r1, #CONTRAST_FIX
+    mul     r0, r1, r0
+    mov     r0, r0, asr #7
+    add     r0, r0, #128
+    add     r0, r0, #BRIGHT_FIX        @ BRIGHT_FIX = BRIGHT + 128 ...
+    sub     r0, r0, #128               @ ... so this nets +BRIGHT with no negative imm
+    @ ---- Bayer dither: repY += (BAYER[b&3][c&3] - 8) * 4 (clamps 0..255 below) ----
     ldr     lr, =BAYER_ADDR
     and     r6, r10, #3
     add     lr, lr, r6, lsl #2

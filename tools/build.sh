@@ -28,9 +28,22 @@ python3 tools/gp_res.py "$ORIG" build/res >/dev/null
 python3 -I tools/mk_silence.py build/res/BEEP.wav build/beep_silent.wav
 python3 tools/patch_res.py "$OUT" BEEP.wav build/beep_silent.wav "$OUT"
 
+# --- look knobs (applied to each block's brightness before palette matching) ---
+# CONTRAST: percent, 100 = neutral. Higher = more dramatic (spreads midtones to
+#   the palette's dark/bright ends, good for flat/dim scenes); lower = softer.
+#   Useful range ~70..160 (e.g. CONTRAST=130 punchy, CONTRAST=85 gentle).
+# BRIGHT: luma offset, 0 = neutral. Positive lifts (lighter), negative darkens.
+#   Useful range ~ -60..60 (full -128..127).
+#   e.g.  CONTRAST=130 BRIGHT=10 sh tools/build.sh
+CONTRAST=${CONTRAST:-100}
+BRIGHT=${BRIGHT:-0}
+CFIX=$(( CONTRAST * 128 / 100 ))   # contrast in /128 fixed point (128 = neutral)
+BFIX=$(( BRIGHT + 128 ))           # bias so the assembler never sees a negative
+
 # --- assemble a patch: prints ADDR:OLDHEX:NEWHEX for patch_code.py ---
 asm() {  # asm NAME START END
-    $LLVM/llvm-mc -triple=armv5te-none-eabi -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
+    $LLVM/llvm-mc -triple=armv5te-none-eabi --defsym=CONTRAST_FIX=$CFIX --defsym=BRIGHT_FIX=$BFIX \
+        -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
     if $LLVM/llvm-readobj -r "build/obj/$1.o" | grep -q R_ARM; then
         echo "$1: unresolved relocation (use 'mov lr, pc; b X' instead of 'bl X')" >&2; exit 1
     fi
