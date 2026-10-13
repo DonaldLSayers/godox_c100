@@ -1,0 +1,1607 @@
+address	string	used_by
+0x00042758	 NES3DES DES	FUN_000419c0
+0x000713b0	raw fl32fl64.mp3in24ima4MAC6QclpdvcaNONEms	FUN_00070bf8
+0x00071cf4	NONEms	FUN_00071400
+0x00071d00	.mp3ima4raw twosms	FUN_00071400
+0x000ce888	video_decode_jpeg_process	FUN_00001624
+0x000ce8a4	video_decode_jpeg	FUN_00001948
+0x000ce8b8	video_decode_jpeg_read_file	FUN_0000207c
+0x000ce8d4	video_decode_ps_isr_scale	
+0x000ce8f0	%s:%d OSQPost err\r\n	
+0x000ce904	Pscaler A callback queue send error\r\n	
+0x000ce92c	Pscaler B callback queue send error\r\n	
+0x000ce954	AudioFrame = 0x%x\r\n	FUN_00000ce0
+0x000ce968	VidFormat = C_XVID_FORMAT\r\n	FUN_00000f18
+0x000ce984	VidFormat = C_M4S2_FORMAT\r\n	FUN_00000f18
+0x000ce9a0	VidFormat = C_H263_FORMAT\r\n	FUN_00000f18
+0x000ce9bc	VidFormat = C_MJPG_FORMAT\r\n	FUN_00000f18
+0x000ce9d8	VidFormat = C_H264_FORMAT\r\n	FUN_00000f18
+0x000ce9f4	NotSupportVidFormat = 0x%x\r\n	FUN_00000f18
+0x000cea14	auo channel = -1\r\n	FUN_00001290
+0x000cea28	OutputFormatNoSupport!!!\r\n	FUN_0000138c
+0x000cea44	%s:%d OSQPend \r\n	FUN_00001624
+0x000cea58	video_decode_jpeg_read_partial_process read jpeg file fail.\r\n	FUN_00001624
+0x000cea98	Failed to call jpeg_decode_output_restart()\r\n	FUN_00001624, FUN_000272b8
+0x000ceac8	JPEG is not started!\r\n	FUN_00001624, FUN_000272b8
+0x000ceae0	JPEG execution timeout!\r\n	FUN_00001624, FUN_000272b8
+0x000ceafc	JPEG init error!\r\n	FUN_00001624, FUN_000272b8
+0x000ceb10	JPEG Restart marker number is incorrect!\r\n	FUN_00001624, FUN_000272b8
+0x000ceb3c	JPEG Restart marker sequence error!\r\n	FUN_00001624, FUN_000272b8
+0x000ceb68	thumbnail_exist = %d\r\n	FUN_00001948
+0x000ceb80	Thumbnail Parse header failed. Skip this file\r\n	FUN_00001948
+0x000cebb0	%s allocate fail\r\n	FUN_00001948
+0x000cebc4	jpeg_output_image_width = %d\r\n	FUN_00001948
+0x000cebe4	jpeg_output_image_x_offset = %d\r\n	FUN_00001948
+0x000cec08	GP420\r\n	FUN_00001948, FUN_000077ec, FUN_00026850
+0x000cec10	GP565\r\n	FUN_00001948, FUN_000077ec
+0x000cec18	YUYV\r\n	FUN_00001948, FUN_000077ec
+0x000cec20	disable/enable jpeg clk\r\n	FUN_00001948
+0x000cec3c	Not Find JPEG header(0xFFD8)\r\n	FUN_00001948
+0x000cec5c	%s allocate fial\r\n	FUN_0000207c
+0x000cec70	%s read jpeg file fail.\r\n	FUN_0000207c
+0x000cec8c	PARSER FAIL=0x%x,end=0x%x\r\n	FUN_0000259c
+0x000ceca8	p+0=0x%x\r\n	FUN_0000259c
+0x000cecb4	p+1=0x%x\r\n	FUN_0000259c
+0x000cecc0	p+2=0x%x\r\n	FUN_0000259c
+0x000ceccc	p+3=0x%x\r\n	FUN_0000259c
+0x000cecd8	p+4=0x%x\r\n	FUN_0000259c
+0x000cece4	p+5=0x%x\r\n	FUN_0000259c
+0x000cecf0	p+6=0x%x\r\n	FUN_0000259c
+0x000cecfc	p+7=0x%x\r\n	FUN_0000259c
+0x000ced08	Parsed H.264 stream for width and height: WxH = %dx%d\r\n	FUN_0000259c
+0x000ced40	DEBUG(pic_width_in_mbs_minus1=%d)\r\n	FUN_0000259c
+0x000ced64	DEBUG(frame_crop_left_offset=%d)\r\n	FUN_0000259c
+0x000ced88	DEBUG(frame_crop_right_offset=%d)\r\n	FUN_0000259c
+0x000cedac	DEBUG(frame_mbs_only_flag=%d)\r\n	FUN_0000259c
+0x000cedcc	DEBUG(pic_height_in_map_units_minus1=%d)\r\n	FUN_0000259c
+0x000cedf8	DEBUG(frame_crop_top_offset=%d)\r\n	FUN_0000259c
+0x000cee1c	DEBUG(frame_crop_bottom_offset=%d)\r\n	FUN_0000259c
+0x000cee44	Reg 0x%x : 0x%x\r\n	FUN_00002a70
+0x000cee58	max_width:%d, x_width:%d, out_width:%d, max_height:%d, y_width:%d, out_height:%d\r\n	FUN_00002f60
+0x000ceeac	x_start:%d, y_start:%d, x_mid:%d, y_mid:%d\r\n	FUN_00002f60
+0x000ceedc	wIntegration:%d, widtheightFactor:0x%x, hIntegration:%d, heightFactor:0x%x\r\n	FUN_00002f60
+0x000cef2c	Pscaler process queue create error\r\n	FUN_00002f60
+0x000cef54	Pscaler process call back error:%d\r\n	FUN_00002f60
+0x000cef7c	video_decode_jpg_isr_decode	
+0x000cefac	ParserErrID =0x%x\r\n	FUN_00003420
+0x000cefc0	Force p_vid_dec_wifi_buf free\r\n	FUN_000036b8
+0x000cefe0	Force p_vid_dec_disp_buf free\r\n	FUN_000036b8
+0x000cf000	Force p_vid_buffer free\r\n	FUN_000036b8
+0x000cf01c	OSQPost Fail!!!:0x%x 0x%x\r\n	FUN_000036b8, FUN_000038f8, FUN_000039f0, FUN_00003af0, FUN_00003bd8, FUN_00003cdc, FUN_00003da8, FUN_00003ea0, FUN_00003fd0, FUN_000040d0, FUN_000041d8, FUN_00004404, FUN_00005c3c, FUN_00005d4c, FUN_00008dd8, FUN_00008ea4, FUN_00008f70, FUN_00009038, FUN_0000e624, FUN_0000e7fc, FUN_0000e8dc, FUN_0000e9bc, FUN_0000eb38, FUN_0000ebfc, FUN_0001cdf4, FUN_0001cebc, FUN_0003eb1c, FUN_0003ec00
+0x000cf038	OSMbox ack Fail!!!:0x%x 0x%x\r\n	FUN_000036b8, FUN_000038f8, FUN_000039f0, FUN_00003af0, FUN_00003bd8, FUN_00003cdc, FUN_00003da8, FUN_00003ea0, FUN_00003fd0, FUN_000040d0, FUN_000041d8, FUN_00004404, FUN_00005c3c, FUN_00005d4c, FUN_00008dd8, FUN_00008ea4, FUN_00008f70, FUN_00009038, FUN_0000e624, FUN_0000e7fc, FUN_0000e8dc, FUN_0000e9bc, FUN_0000eb38, FUN_0000ebfc, FUN_0001cdf4, FUN_0001cebc, FUN_0003eb1c, FUN_0003ec00
+0x000cf058	video_decode_error_callback\r\n	FUN_00004608
+0x000cf078	ParserErrID = 0x%x\r\n	FUN_00004648
+0x000cf090	p_vid_dec_para->VidTickRate = %d\r\n	FUN_00004648
+0x000cf0b4	p_vid_dec_para->video_total_sample = %d\r\n	FUN_00004648
+0x000cf0e0	p_vid_dec_para->video_total_time = %d\r\n	FUN_00004648
+0x000cf108	AudFormat = 0x%X\r\n	FUN_00004648
+0x000cf11c	NotSupportAudFormat!!!\r\n	FUN_00004648
+0x000cf138	video_decode_task_stop fail\r\n	FUN_00004648
+0x000cf158	Speed=0x%x\r\n	FUN_00004648
+0x000cf168	NoVidData.\r\n	FUN_00004648
+0x000cf178	Speed reserve\r\n	FUN_00004648
+0x000cf198	collision\r\n	FUN_000051fc
+0x000cf1a4	video_decode_state_task_entry	FUN_000042dc
+0x000cf1c4	video_decode_state_task_entry	FUN_00004648
+0x000cf1f8	audio_decode_task_create	FUN_00005e68
+0x000cf214	audio_decode_task_entry	FUN_000052c4
+0x000cf22c	@@@DMA DONE decode ERR!!!\r\n	FUN_000052c4
+0x000cf248	AudDecEnd.\r\n	FUN_000052c4
+0x000cf258	AudDecGetDataFail\r\n	FUN_000052c4
+0x000cf26c	GetAudBsFailStop!!!\r\n	FUN_000052c4
+0x000cf284	wait auo dma done!!!\r\n	FUN_000052c4
+0x000cf29c	audio free\r\n	FUN_000052c4
+0x000cf2ac	[%s, %d]:Wrong wave format\r\n	FUN_000052c4
+0x000cf2cc	AudioDecodeStart...\r\n	FUN_000052c4
+0x000cf2e4	AudioDecodeStartFail\r\n	FUN_000052c4
+0x000cf2fc	NO WIFI JPG buffer\r\n	FUN_000052c4, FUN_000077ec
+0x000cf314	audio_decode_task_entry	FUN_00005e68
+0x000cf32c	D..\r\n	FUN_00005fb8
+0x000cf334	audio_dac_task_entry	FUN_00005fb8
+0x000cf34c	reverse seek- %d\r\n	FUN_00006328
+0x000cf360	reverse seek+ %d\r\n	FUN_00006328
+0x000cf374	[ERROR] hAudioDacTaskQ post fail, Q=0x%X\r\n	FUN_000064b0, FUN_000069e8, FUN_00007038
+0x000cf3ac	audio_play_file_set find not support audio.\r\n	FUN_00006e68
+0x000cf3dc	audio memory = %d\r\n	FUN_00007038
+0x000cf3f0	decode memory -- 0x%x\r\n	FUN_00007038
+0x000cf408	audio play init failed\r\n	FUN_00007038
+0x000cf424	 audio stop \r\n	FUN_00007038
+0x000cf434	audio_task_init	FUN_00006fc8
+0x000cf444	audio_task_entry	FUN_00007038
+0x000cf46c	VidDecEnd.\r\n	FUN_000077ec
+0x000cf47c	VidDec ERR.\r\n	FUN_000077ec
+0x000cf48c	STOP C_VIDEO_DECODE_PLAYING\r\n	FUN_000077ec
+0x000cf4ac	JpegDecFail = %d\r\n	FUN_000077ec
+0x000cf4c0	NO buffer\r\n	FUN_000077ec
+0x000cf4cc	p_vid_dec_para->tv= %d,p_vid_dec_para->Tv=%d , delta_Tv = %d\r\n	FUN_000077ec
+0x000cf50c	[MSG_VID_DEC_ONE_FRAME] h264 decoder handle invalid!\r\n	FUN_000077ec
+0x000cf544	NO WIFI YUV buffer\r\n	FUN_000077ec
+0x000cf55c	no display display_buf: drop 2\r\n	FUN_000077ec
+0x000cf580	STOP C_VIDEO_DECODE_PLAYING 2\r\n	FUN_000077ec
+0x000cf5a0	Force VidDecEnd.\r\n	FUN_000077ec
+0x000cf5b4	[MSG_VID_DEC_RESTART] h264 decoder initial fail\r\n	FUN_000077ec
+0x000cf5e8	[ERROR] unknown format @%s:%d\r\n	FUN_000077ec
+0x000cf608	no display display_buf: drop 3\r\n	FUN_000077ec
+0x000cf62c	video_decode_task_entry	FUN_00009104
+0x000cf644	video_decode_task_entry	FUN_000077ec
+0x000cf65c	video_decode_task_create	FUN_00009104
+0x000cf678	[DEBUG]PS[%d]:other=0x%X\r\n	
+0x000cf694	[TRACE]PS[%d]:overflow\r\n	FUN_00013820
+0x000cf6b0	osSemaphoreCreate fail\r\n	FUN_000099a4
+0x000cf6cc	ps timeout\r\n	FUN_00009a8c
+0x000cf6dc	ahb timeout 0, %d\r\n	FUN_00009a8c
+0x000cf6f0	GP420 input only support %d input width, current width : %u\r\n	FUN_00009a8c
+0x000cf730	Not support exceed %d input width and output width, in : %u, out : %u\r\n	FUN_00009a8c
+0x000cf778	Get zoom buf fail\r\n	FUN_00009a8c
+0x000cf78c	ahb timeout1, %d\r\n	FUN_00009a8c
+0x000cf7b4	digital_zoom_task_entry	FUN_0000a31c
+0x000cf7cc	==Run:%s==\r\n	FUN_0000a31c
+0x000cf7dc	Error id parameter\r\n	FUN_0000a31c
+0x000cf7f4	Ack fail\r\n	FUN_0000a31c
+0x000cf800	==Exit:%s==\r\n	FUN_0000a31c
+0x000cf810	buf free err\n	FUN_0000a5f0
+0x000cf820	digital_zoom_task_entry	FUN_0000a658
+0x000cf840	display_ready_queue full\r\n	
+0x000cf85c	display_free_queue full\r\n	
+0x000cf878	Rotator wait fail\r\n	FUN_0000d4a0, FUN_0000d620
+0x000cf890	display_frame(cnt=%d) addr = 0x%x\r\n	FUN_0000dd8c
+0x000cf8b4	display_frame_pool[%d] addr = 0x%x\r\n	FUN_0000dd8c
+0x000cf8dc	Display buf malloc fail\r\n	FUN_0000dd8c
+0x000cf8f8	task_display_init	FUN_0000e06c
+0x000cf90c	task_display_entry	FUN_0000e0cc
+0x000cf920	vid_enc_preview_buf_to_display	FUN_0000ebfc
+0x000cf940	[ERR] MOV Open return NULL!!\r\n	FUN_0000e384
+0x000cf960	M1_INSERT_FLAGS=%d\r\n	FUN_0000e624
+0x000cf978	enc audio start\r\n	FUN_0000e624
+0x000cf98c	encode start\r\n	FUN_0000e624
+0x000cf99c	wwj: start sensor fail...\r\n	FUN_0000e7fc
+0x000cf9b8	a.audio stop\r\n	FUN_0000e9bc
+0x000cf9c8	b.encode stop\r\n	FUN_0000e9bc
+0x000cf9d8	[ERROR] invalid preview mode=%d\r\n, @%s:%d\r\n	FUN_0000ebfc, FUN_0001104c
+0x000cfa04	close Packer handle\r\n	FUN_0000ecf4
+0x000cfa1c	close file handle\r\n	FUN_0000ecf4
+0x000cfa30	c.AviPackerClose[0x%x] = 0x%x\r\n	FUN_0000ed90
+0x000cfa50	p_avi_aud_stream_header allocate fail\r\n	
+0x000cfa78	p_avi_vid_stream_header allocate fail\r\n	
+0x000cfaa0	p_avi_bitmap_info allocate fail\r\n	
+0x000cfac4	p_avi_wave_info allocate fail\r\n	
+0x000cfaec	<<STATE_PHOTO_CAPTURE\r\n	FUN_0000f004
+0x000cfb04	<<capture resolution = %d\r\n	FUN_0000f004
+0x000cfb20	<<STATE_VIDEO_RECORD\r\n	FUN_0000f004
+0x000cfb38	<<video resolution = %d\r\n	FUN_0000f004
+0x000cfb54	[ERROR]wrong APMode=%d\r\n	FUN_0000f004
+0x000cfb70	sensor_raw_width=(%d %d),arg->Target=(%d %d) \r\n	FUN_0000f004
+0x000cfba0	Target over size[tw:%u, th:%u, sw:%u, sh:%u]\r\n	FUN_0000f004
+0x000cfbd0	Record over size[tw:%u, th:%u, sw:%u, sh:%u]\r\n	FUN_0000f004
+0x000cfc00	Target size not support[tw:%u, th:%u, sw:%u, sh:%u]\r\n	FUN_0000f004
+0x000cfc38	\r\n[Fmode]%d,[Rmode]%d)\r\n	FUN_0000f004
+0x000cfc54	\r\n[R]Tw:%d,Th:%d, Sw:%d,Sh:%d, Cw:%d,Ch%d\r\n	FUN_0000f004
+0x000cfc80	\r\n[T]Dw:%d,Dh:%d, Pw:%d,Ph:%d\r\n	FUN_0000f004
+0x000cfca0	=>video_encode_entrance!!!\r\n	FUN_0000f8d8
+0x000cfcc0	avi_encode_state_task_create fail !!!	FUN_0000f8d8
+0x000cfce8	==fail to digital_zoom_task_create\r\n	FUN_0000f8d8
+0x000cfd10	avi_adc_record_task_create fail !!!	FUN_0000f8d8
+0x000cfd34	\r\n=>video_encode_sensor_on!!!\r\n	FUN_0000f98c
+0x000cfd54	=>video_encode_preview_on\r\n	FUN_0000fae4
+0x000cfd70	=>video_encode_record_start!!!\r\n	FUN_0000fb28
+0x000cfd94	[ERROR] Packer0 Stop Fail\r\n, @%s:%d\r\n	FUN_0000fc3c
+0x000cfdbc	[ERROR] Packer1 Stop Fail\r\n, @%s:%d\r\n	FUN_0000fc3c
+0x000cfde4	[ERROR] Encode Stop Fail\r\n, @%s:%d\r\n	FUN_0000fc3c
+0x000cfe0c	=>video_encode_record_restart!!!\r\n	FUN_0000fd2c
+0x000cfe30	M1_INSERT_FLAG=%d\r\n	FUN_0000fd2c
+0x000cfe44	=>video_encode_capture_picture!!!\r\n	FUN_0000fe9c
+0x000cfe68	video_encode_record_stop	FUN_0000fc3c
+0x000cfe84	preview_buf_free	
+0x000cfe98	preview_buf_show	FUN_0000ff04
+0x000cfeac	video_preview_mode_set	FUN_0001104c
+0x000cfec4	[WARN] sensor_preview_queue empty0\r\n	FUN_0000ff04
+0x000cfeec	[TRACE] %s get 0x%X != 0x%X\r\n	FUN_0000ff04
+0x000cff0c	[WARN] sensor_preview_queue empty1\r\n	
+0x000cff34	[ERROR]display_free_queue full\r\n	
+0x000cff58	--------------------current_ae.get_lum  =%d,avg_lum=%d,ae_meter=%d \r\n	
+0x000cffa0	H264 encode size error\r\n	FUN_00010090
+0x000cffbc	PHOTO[%d,%d]\r\n	FUN_00010e90
+0x000cffcc	\r\n[V]x:%d,y:%d, Cw:%d,Ch:%d, Sw:%d,Sh%d,crop:%d,scaler:%d\r\n	FUN_0001109c
+0x000d0008	=>[Err]ispClip & ispScaler FAIL!! \r\n	FUN_0001109c
+0x000d0030	=>ispClip & ispScaler Done \r\n	FUN_0001109c
+0x000d0050	sensor_preview_init(%d) fail\r\n	FUN_0001109c
+0x000d0070	Display format error\r\n	FUN_0001109c
+0x000d00c6	'.5<=6/7>?sensor_preview_mode_set	
+0x000d00e8	encode_q_put_idle	FUN_000123f0
+0x000d00fc	encode_q_put_ready	FUN_00012670
+0x000d0110	encode_q_put_preview	FUN_00012ab0
+0x000d0128	uvc_q_put_idle	FUN_0001226c
+0x000d01c8	encode_q_idle_check	FUN_000124a8
+0x000d01dc	encode_q_put_encode	FUN_00012ba8
+0x000d01f0	preview_src_to_ps	FUN_000120f8
+0x000d0204	preview_ps_to_src	FUN_000121b4
+0x000d0218	bug2\r\n	
+0x000d0220	[WARN] preview got a unknown buffer %x\r\n	
+0x000d024c	[ERROR] preview_q empry\r\n	
+0x000d0270	[ERROR] unknown preview source @%s:%d\r\n	FUN_000120f8
+0x000d0298	[ERROR] unknown preview scaler @%s:%d\r\n	FUN_000121b4
+0x000d02c0	[ERROR] uvc_idle_q is full @%s:%d\r\n	FUN_0001226c
+0x000d02e4	[ERROR] uvc_ready_q is full @%s:%d\r\n	
+0x000d030c	[ERROR] memory leak occurred @%s:%d\r\n	
+0x000d0334	[ERROR] memory malloc fail @%s:%d\r\n	
+0x000d0358	[TRACE]uvc_q_buf[%d]=0x%x\r\n	
+0x000d0374	[ERROR] encode_idle_q is full @%s:%d\r\n	FUN_000123f0
+0x000d039c	[ERROR] encode_ready_q is empty @%s:%d\r\n	FUN_000124a8, FUN_00012ab0, FUN_00012ba8
+0x000d03c8	[ERROR] encode_ready_q is full @%s:%d\r\n	FUN_00012670
+0x000d03f0	[ERROR] jpeg decode done, rear_jpeg_in_addr=0x%X	FUN_0001272c
+0x000d0424	[ERROR] jpeg decode done, rear_jpeg_out_addr=0x%X	FUN_0001272c
+0x000d0458	>[ERR]JDF:0x%X\r\n	FUN_0001272c
+0x000d046c	[ERROR] black_jpg =(0x%X) decode fail\r\n	FUN_0001272c
+0x000d0494	[WARN] uvc_keep_buf =(0x%X,%d) decode fail \r\n	FUN_0001272c
+0x000d04c4	[ERROR] jpeg decode fail, rear_jpeg_in_addr=0x%X\r\n	FUN_0001272c
+0x000d04f8	[ERROR] jpeg decode fail, rear_jpeg_out_addr=0x%X\r\n	FUN_0001272c
+0x000d052c	[ERROR] encode_ready_q get a unknown buf = %x @%s:%d\r\n	FUN_00012ab0, FUN_00012ba8
+0x000d0564	[ERROR] encode_q_init malloc fail @%s:%d\r\n	
+0x000d0590	[TRACE]encode_q_buf[%d]=0x%x\r\n	
+0x000d05b0	Zoom percent reach limit\r\n	FUN_00012cf8
+0x000d05cc	PS[%d]:0x%X\r\n	FUN_00013820
+0x000d05dc	DIGITAL_ZOOM_CONFIG fail\r\n	FUN_00013820
+0x000d05f8	%s fail\r\nTo:%d, PS[A]:%d, PS[B]:%d, PS[Y]:%d\r\n	FUN_000140d0
+0x000d0628	REAR STOP\r\n	FUN_00014874
+0x000d0634	>[USB HOST] Some case occur \r\n	FUN_00014874
+0x000d0654	Digital zoom record line set fail\r\n	
+0x000d0678	DIGITAL_ZOOM_MEM_MALLOC fail\r\n	
+0x000d06b0	avi_front_encode_set	FUN_0001739c
+0x000d06c8	jpeg_snapshot_status_notify	FUN_00014e28
+0x000d06e4	H264_compress_fifo_start	FUN_00018d14
+0x000d0700	[ERR] Rear Status: %d\r\n	FUN_00014d00
+0x000d0718	RFULL[%x:%x]	FUN_00014d00
+0x000d0728	[ERROR] Post Fail @%s:%d %d\r\n	FUN_00014e28, FUN_00014f10, FUN_00015058, FUN_00015448, FUN_00015914, FUN_00016838, FUN_00016fbc, FUN_00019568
+0x000d0748	stop_encode_wifi_path\r\n	
+0x000d0760	[ERROR] Post Fail @%s:%d\r\n	FUN_000152ac, FUN_00015778, FUN_0003e6a0
+0x000d077c	FIBN\r\n	FUN_00015ef4
+0x000d0784	FIBN[%d]\r\n	FUN_00015ef4
+0x000d0794	Z0[%d]\r\n	FUN_00015ef4
+0x000d07ac	[FRONT-1] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016838
+0x000d07d4	[FRONT] %x %x %x %x\r\n	FUN_00016838
+0x000d07ec	[FRONT-2] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016838
+0x000d0814	[Capture Front] jpeg_output_addrs is NULL !\r\n	FUN_00016838
+0x000d0844	[FRONT-1] Vlc Max Size < 0 \r\n	FUN_00016838
+0x000d0864	[FRONT-2] Vlc Max Size<0=> %d %d \r\n	FUN_00016838
+0x000d0888	[REAR-1] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016838
+0x000d08b0	[REAR] %x %x %x %x %d\r\n	FUN_00016838
+0x000d08c8	[REAR-2] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016838
+0x000d08f0	[Capture REAR] jpeg_output_addrs is NULL !\r\n	FUN_00016838
+0x000d0920	[REAR-1] Vlc Max Size < 0 \r\n	FUN_00016838
+0x000d0940	[REAR-2] Vlc Max Size < 0 \r\n	FUN_00016838
+0x000d0960	[SNAPSHOT-1] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016fbc
+0x000d098c	[SNAPSHOT] %x %x %x %x\r\n	FUN_00016fbc
+0x000d09a8	[SNAPSHOT-2] FFD9 > JPEG OUTPUT Address\r\n	FUN_00016fbc
+0x000d09d4	[SNAPSHOT-2] Vlc Max Size<0=> %d %d \r\n	FUN_00016fbc
+0x000d09fc	[ERROR]fifo buffer init fail\r\n	FUN_0001739c, FUN_000179ac
+0x000d0a1c	[Warning] fifo_compress_address is NULL! \r\n	FUN_0001739c, FUN_000179ac
+0x000d0a48	[ERROR] H264 Initial Fail @%s:%d\r\n	FUN_0001739c, FUN_000179ac
+0x000d0a6c	[ERR][Front] AVIPACKER_FRAME_INFO is NULL! \r\n	FUN_0001739c, FUN_000179ac
+0x000d0a9c	[ERR][Front] pEnc_output_addrs is NULL! \r\n	FUN_0001739c, FUN_000179ac
+0x000d0ac8	[Warning] JPEG output buffer struct is NULL! \r\n	FUN_0001739c, FUN_000179ac, FUN_0001808c, FUN_0001846c
+0x000d0af8	[Warning][Front] JPEG output buffer is NULL! \r\n	FUN_0001739c, FUN_000179ac
+0x000d0b28	[ERR][Front] gEncCompressArgs.front_enc_info.time_stamp_buffer is NULL! \r\n	FUN_0001739c
+0x000d0b74	[ERR][Rear] time_stamp_buffer_b is NULL! \r\n	FUN_000179ac
+0x000d0ba0	[Warning] Front Source Frame Buffer is NULL! \r\n	FUN_0001808c
+0x000d0bd0	[Warning] Front Scaler A/B Buffer is NULL! \r\n	FUN_0001808c, FUN_0001846c
+0x000d0c00	photo_write_buf = 0x%x\r\n	FUN_0001808c
+0x000d0c1c	F[JPEG output buffer size %d\r\n	FUN_0001808c
+0x000d0c3c	[Warning] JPEG output buffer is NULL! \r\n	FUN_0001808c, FUN_0001846c
+0x000d0c68	[Warning] Rear Source Frame Buffer is NULL! \r\n	FUN_0001846c
+0x000d0c98	>scaler memcpy timeout\r\n	FUN_0001882c
+0x000d0cb8	>[RJQF]	FUN_00018a20
+0x000d0cc0	[ERR] Front Status: %d\r\n	FUN_00018b28
+0x000d0cdc	FFULL[%x:%x]	FUN_00018b28
+0x000d0cec	[Front] h264_skip_output_addrs null \r\n	FUN_00018d14
+0x000d0d14	[FRONT]%s:%d H264 Insert Skip Fail!\r\n	FUN_00018d14
+0x000d0d3c	[FRONT]%s:%d H264 Encode Start Fail!\r\n	FUN_00018d14
+0x000d0d64	[Rear] h264_skip_output_addrs null \r\n	FUN_00018d14
+0x000d0d8c	[REAR]%s:%d H264 Insert Skip Fail!\r\n	FUN_00018d14
+0x000d0db4	[REAR]%s:%d H264 Encode Start Fail!\r\n	FUN_00018d14
+0x000d0ddc	avi_snapshot_start\r\n	FUN_00019458
+0x000d0df4	[Warning] snapshot_enc_info JPEG output buffer is NULL! \r\n	FUN_00019458
+0x000d0e30	[ERROR] preview stop fail  @%s:%d\r\n	FUN_00019568
+0x000d0e54	J[ERROR]\r\n	FUN_00019568
+0x000d0e60	F[Out full]	FUN_00019568
+0x000d0e6c	[Capture] jpeg_output_addrs is NULL !\r\n	FUN_00019568
+0x000d0e94	>[PHOTO] MSG_JPG_ISR_OUTPUT_FULL_SW \r\n	FUN_00019568
+0x000d0ebc	XXX ERR3\r\n	FUN_00019568
+0x000d0ec8	[ERR] Front H264 Output Full @%d \r\n	FUN_00019568
+0x000d0eec	[FRONT] HW Full!\r\n	FUN_00019568
+0x000d0f00	[SNAP] OUT Full!\r\n	FUN_00019568
+0x000d0f14	[SNAP] HW Full!\r\n	FUN_00019568
+0x000d0f28	encode_size:%d\r\n	FUN_00019568
+0x000d0f3c	send done\r\n	FUN_00019568
+0x000d0f48	thumbnail org size = %d\r\n	FUN_00019568
+0x000d0f64	thumbnail new size = %d\r\n	FUN_00019568
+0x000d0f80	XXX ERR2 \r\n	FUN_00019568
+0x000d0f8c	SNAP [0x%x,%d]\r\n	FUN_00019568
+0x000d0fc0	R[SK]	FUN_00019568
+0x000d0fc8	%04u/%02u/%02u %02u:%02u:%02u	FUN_00019568
+0x000d0fe8	Get time string fail\r\n	FUN_00019568
+0x000d1010	[ERROR] black_jpg =(0x%x,%d) decode fail\r\n	FUN_00019568
+0x000d103c	[WARN] uvc_keep_buf =(0x%x,%d) decode fail\r\n	FUN_00019568
+0x000d106c	AviPacker-ErrID = 0x%x!!!\r\n	
+0x000d1088	task_video_encode_entry	FUN_0001cbfc
+0x000d10a0	task_video_encode_entry	FUN_00019568
+0x000d10b8	img_rear_scaler_capture_notify_callback	FUN_00015914
+0x000d10e0	avi_rear_encode_set	FUN_000179ac
+0x000d10f4	fifo_rear_ready_notify_encode_callback	FUN_00015778
+0x000d1128	jpeg_status_notify	FUN_00014f10
+0x000d113c	jpeg_compress_fifo_next_addrs_set	FUN_00016838
+0x000d1160	img_front_scaler_capture_notify_callback	FUN_00015448
+0x000d118c	jpeg_status_notify_rear	FUN_00015058
+0x000d11a4	jpeg_compress_snapshot_next_addrs_set	FUN_00016fbc
+0x000d11cc	avi_encode_state_task_create	FUN_0001cbfc
+0x000d11ec	fifo_ready_notify_encode_callback	FUN_000152ac
+0x000d1224	AVI_AUDIO_DMA_DONE Error !!\r\n	FUN_0001cffc
+0x000d1244	bStop = 1\r\n	FUN_0001cffc
+0x000d1254	avi encode storage full!!!\r\n	FUN_0001cffc
+0x000d1274	wwj: error\r\n	FUN_0001cffc
+0x000d1284	sound_step_flag:%d\r\n	FUN_0001cffc
+0x000d129c	audlen=%d\r\n	FUN_0001cffc
+0x000d12a8	Audio Buffer Alloc Fail\r\n	FUN_0001cffc
+0x000d12c4	AudEncStartFail!!!\r\n	FUN_0001cffc
+0x000d12dc	AVI_AUDIO_RECORD_STOPING\r\n	FUN_0001cffc
+0x000d12f8	AVI_AUDIO_RECORD_RESTART\r\n	FUN_0001cffc
+0x000d1314	G:%d\r\n	FUN_0001cffc
+0x000d131c	avi_audio_record_entry	FUN_0001cd4c
+0x000d1334	avi_audio_record_entry	FUN_0001cffc
+0x000d134c	avi_adc_record_task_create	FUN_0001cd4c
+0x000d1378	jpg_full\r\n	FUN_0001d88c
+0x000d1384	exit jpeg send ,size %d >%d \r\n	FUN_0001d8d4
+0x000d13a4	RTP audio buffer err\r\n	
+0x000d13bc	ap_peripheral_next_key_exe	FUN_0001e904
+0x000d13d8	ap_peripheral_IO_ISO_key_exe	FUN_0001dcb8
+0x000d13f8	ap_peripheral_pw_key_exe	FUN_0001e130
+0x000d1444	ap_peripheral_F_key_exe	FUN_0001dd6c
+0x000d145c	------------------mode 1--------------------------\r\n	
+0x000d1494	MODE_ACTIVE\r\n	
+0x000d14a4	%s,%d\r\n	FUN_0001dcb8, FUN_0001dd6c, FUN_0001de20
+0x000d14ac	------------------mode 2--------------------------\r\n	
+0x000d14e4	 OK KEY RETURN \r\n	FUN_0001df64
+0x000d14f8	%s %d \r\n	FUN_0001df64
+0x000d1504	 sensor err \r\n	FUN_0001df64
+0x000d1514	%s,%d \r\n	FUN_0001e130
+0x000d1520	-----------------------------Power key OFF\r\n	FUN_0001e130
+0x000d1550	------------------mode 3--------------------------\r\n	FUN_0001e658
+0x000d1588	\r\nadc_key_judge -Key %d \r\n	FUN_0001e2fc
+0x000d15a4	\r\nLCD ON	FUN_0001e414
+0x000d15b0	\r\nLCD OFF	FUN_0001e414
+0x000d15bc	 ==============ap_Mode1Key \r\n	FUN_0001e4f8
+0x000d15dc	 ============ap_Mode2Key \r\n	FUN_0001e5a8
+0x000d15f8	 ==============ap_Mode power on key 3\r\n	FUN_0001e658
+0x000d1620	MSG_APQ_PREV_KEY_ACTIVE\r\n	
+0x000d163c	MSG_APQ_NEXT_KEY_ACTIVE\r\n	FUN_0001e904
+0x000d1658	bat_lvl_cal=%d\r\n	FUN_0001e9b4
+0x000d166c	low_voltage_cnt=%d,%d\r\n	FUN_0001e9b4
+0x000d16e4	Battery low Power off!\r\n	FUN_0001e9b4
+0x000d1700	battery_adc=%d %d \r\n	FUN_0001ed4c
+0x000d1718	Power key OFF\r\n	
+0x000d1728	power off 5s \r\n	FUN_0001f3d4
+0x000d1738	Send MSG_USBD_INITIAL to USB device, uvc host status %d\r\n	FUN_0001f3d4
+0x000d1774	USBD_CONNECTED_TO_CHARGER but IO plug out\r\n	FUN_0001f3d4
+0x000d17a0	USBD_CONNECTED_TO_CHARGER (%d)\r\n	FUN_0001f3d4
+0x000d17c4	usbd_connected_state from USBD_CONNECTED_TO_HOST to USBD_CONNECTED_EMPTY\r\n	FUN_0001f3d4
+0x000d1810	 KEY_MODE_DISABLE \r\n	FUN_0001f7e8
+0x000d1828	[WARN]invalid key type=%d\r\n	FUN_0001f7e8
+0x000d1844	USB host IO detected, send plug in\r\n	
+0x000d186c	gsensor int actived, flag:%d\r\n	
+0x000d188c	watchdog alarm time:%lx\r\n	
+0x000d18a8	watchdog now time:%lx\r\n	
+0x000d18c0	rtc reset cnt:%x\r\n	
+0x000d18d4	ap_peripheral_rtc_alarm_reboot \r\n	FUN_0001fbac
+0x000d18f8	ap_peripheral_T_key_exe	FUN_0001de20
+0x000d1910	ap_peripheral_ok_key_exe	FUN_0001df64
+0x000d192c	task_peripheral_handling_entry	
+0x000d194c	task_peripheral_handling_init	FUN_00021c60
+0x000d19a4	Hot_Temperature!!! \r\n	FUN_00021b44
+0x000d19bc	Hot_Temperature Power off!\r\n	FUN_00021b44
+0x000d19dc	PLAYBACK video play end or parse\r\n	
+0x000d1a00	@@@CLOSE SPEAKER\r\n	
+0x000d1a14	--gPower_off_count=%d ,%d\r\n	
+0x000d1a30	-----------5 min Auto power off !!! \r\n	
+0x000d1a58	volume = %d\r\n	FUN_000226cc, FUN_000229e4
+0x000d1a68	CAMERA.WAV	FUN_00022828
+0x000d1a74	CLICK.WAV	FUN_00022828
+0x000d1a80	POWERON_AUDIO.WAV	FUN_00022828
+0x000d1a94	POWEROFF_AUDIO.WAV	FUN_00022828
+0x000d1aa8	BEEP.WAV	FUN_00022828
+0x000d1ab4	[warn]invalid effect file handle!!\r\n	FUN_00022a80
+0x000d1adc	@@@OPEN SPEAKER %d\r\n	FUN_00022a80
+0x000d1af4	sequence mode\r\n	
+0x000d1b04	repeat mode\r\n	
+0x000d1b14	umi task - resume success\r\n	FUN_000230b4
+0x000d1b30	umi task - pause success\r\n	FUN_000230b4
+0x000d1b4c	Failed to get file info. slot = %d, Index=%d\r\n	FUN_00022d00
+0x000d1b7c	Failed to open file\r\n	FUN_00022d00
+0x000d1b94	play file : %s\r\n	FUN_00022e28
+0x000d1ba8	file size : %d\r\n	FUN_00022e28
+0x000d1bbc	wrong index\r\n	
+0x000d1bcc	state task - invalid file format\r\n	FUN_000230b4
+0x000d1bf0	state task - decode finsish\r\n	FUN_000230b4
+0x000d1c10	state task - decode fail\r\n	FUN_000230b4
+0x000d1c2c	stop success\r\n	FUN_000230b4
+0x000d1c64	################ap_state_config_default_set##################\r\n	FUN_0002352c
+0x000d1ca4	set time_lapse = %d\r\n	FUN_0002352c
+0x000d1cbc	store CRC = %02x %02x %02x %02x\r\n	FUN_00023fa4, FUN_00024094
+0x000d1ce0	verify failed, store again\r\n	FUN_00023fa4, FUN_00024094
+0x000d1d00	config_store_power_off\r\n	FUN_00024094
+0x000d1d1c	Global_User_Optins.item.ifdirty = %d \r\n	FUN_00024094
+0x000d1d44	load CRC = %02x %02x %02x %02x\r\n	FUN_000241b4
+0x000d1d68	expect CRC = %02x %02x %02x %02x\r\n	FUN_000241b4
+0x000d1d8c	crc error\r\n	FUN_000241b4
+0x000d1d98	 Global_User_Optins.item.User_i =%d \r\n	FUN_000241b4
+0x000d1dc0	Failed to draw char font\r\n	FUN_000242fc, FUN_000245f0, FUN_00027fbc, FUN_00029710
+0x000d1ddc	Upgrade	FUN_000245f0
+0x000d1de4	%s%3d%%	FUN_000245f0
+0x000d1dec	Upgrade OK\r\n	FUN_000245f0
+0x000d1dfc	Remove SD card and restart now\r\n	FUN_000245f0
+0x000d1e20	Upgrade Fail\r\n	FUN_000245f0
+0x000d1e30	Failed to read font header in resource_font_load()\r\n	FUN_000245f0, FUN_00027ea4, FUN_000289c0
+0x000d1e68	Failed to read font table in resource_font_load()\r\n	FUN_000245f0, FUN_00027ea4, FUN_000289c0
+0x000d1e9c	%s%3s%%	FUN_000245f0
+0x000d1ea8	String memory malloc fail\r\n	FUN_000245f0, FUN_000259c8, FUN_00025ba4
+0x000d1ec4	Failed to allocate input_buffer in resource_font_load()\r\n	FUN_000245f0, FUN_000289c0
+0x000d1f00	Failed to read font data in resource_font_load()\r\n	FUN_000245f0, FUN_000289c0
+0x000d1f40	Wi-Fi Upgrade:[0x%x], size=%d\r\n	FUN_00024fe8
+0x000d1f60	firmware upgrade total_size=%ld \r\n\r\n	FUN_00024fe8
+0x000d1f88	--------------------------------------------------------------------------------\r\n	FUN_00024fe8
+0x000d1fdc	-----------------------------SD Upgrade--------------------------------\r\n	FUN_00024fe8
+0x000d2028	G:\GP_CARDVR_UPGRADE.BIN	FUN_00024fe8, FUN_00025968
+0x000d2044	C:\gp_cardvr_upgrade_no_del.bin	FUN_00024fe8, FUN_00025968
+0x000d2064	firmware upgrade open file fail\r\n	FUN_00024fe8
+0x000d2088	firmware upgrade stat file fail\r\n	FUN_00024fe8
+0x000d20ac	firmware upgrade fail!!  total_size too small  \r\n\r\n	FUN_00024fe8
+0x000d20e0	firmware upgrade allocate fail\r\n	FUN_00024fe8
+0x000d2104	firmware upgrade read fail\r\n	FUN_00024fe8
+0x000d2124	FW header: %c %c %c %c\r\n	FUN_00024fe8
+0x000d2140	magic OK\r\n	FUN_00024fe8
+0x000d214c	 magic fail\r\n	FUN_00024fe8
+0x000d215c	Tmr Svc	FUN_00024fe8, FUN_0005ea98
+0x000d216c	task_uart_cmd_entry	FUN_00024fe8
+0x000d2180	del(%d) %s\r\n	FUN_00024fe8
+0x000d2190	Erase Fail,retry[%d]\r\n	FUN_00024fe8
+0x000d21a8	Verify 0x%x (0x%x) Error !!\r\n	FUN_00024fe8
+0x000d21c8	0x%x page is not empty\r\n	FUN_00024fe8
+0x000d21e4	Rewrite 0x%x Error!!\r\n	FUN_00024fe8
+0x000d21fc	Reread 0x%x Error!!\r\n	FUN_00024fe8
+0x000d2214	0x%x rewrite OK\r\n	FUN_00024fe8
+0x000d2228	Delete gp_cardvr_upgrade.bin file_stat.st_mode=0x%x\r\n	FUN_00024fe8
+0x000d2260	Skip deleting read-only file: gp_cardvr_upgrade.bin\r\n	FUN_00024fe8
+0x000d2298	20260604 Skip deleting read-only file\r\n	FUN_00024fe8
+0x000d22c0	 20260604 \r\n	FUN_00024fe8
+0x000d22d0	 ap_state_firmware_upgrade_check \r\n	FUN_00025968
+0x000d22f8	String resolution get fail\r\n	FUN_000259c8
+0x000d2318	Icon memory malloc fail\r\n	FUN_000259c8
+0x000d2334	please insert sd card\r\n	FUN_00025ea8
+0x000d234c	no sd card\r\n	FUN_00025f08
+0x000d235c	sd card full\r\n	FUN_00025f58
+0x000d236c	sd card error\r\n	FUN_00025f8c
+0x000d237c	battery low\r\n	FUN_0002602c
+0x000d238c	  ap_state_handling_connect_to_pc \r\n	FUN_000261c8
+0x000d23b4	  temp=%d \r\n	FUN_000261c8
+0x000d23c4	     MSG_USBD_PLUG_IN %d\r\n	FUN_000261c8
+0x000d23e0	Ext RTC Alarm interrupt\r\n	
+0x000d23fc	Ext RTC wakeup interrupt\r\n	
+0x000d2418	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++// \r\n	FUN_000262e8, FUN_0002e324, FUN_00034630, FUN_000362b8
+0x000d2460	                       @@@@@ power off !!! %d @@@@@@@@ \r\n	FUN_000262e8
+0x000d249c	%s.\r\n	FUN_000262e8
+0x000d24a4	POWER OFF CONFIG STORE! u8BattLv=%d\r\n	FUN_000262e8
+0x000d24cc	 gSetting_RTC=%d \r\n	FUN_000262e8
+0x000d24e0	 disconnect pc Power key OFF\r\n	FUN_00026500
+0x000d2500	%s = %d\r\n	FUN_00094a64, FUN_00095104
+0x000d250c	get photo thumbnail 0x%x,0x%x,0x%x\r\n	FUN_0002664c
+0x000d2534	H264 parser failed \r\n	FUN_00026850
+0x000d254c	h.264 decode browse parser fail_1\r\n	FUN_00026850
+0x000d2570	h.264 decode browse parser fail_2\r\n	FUN_00026850
+0x000d2594	thumbnail decode jpeg file fail.\r\n	FUN_00026850, FUN_00027af0
+0x000d25b8	input_width = %d\r\n	FUN_00026850
+0x000d25cc	input_height = %d\r\n	FUN_00026850
+0x000d25e0	output_width = %d\r\n	FUN_00026850
+0x000d25f4	output_height = %d\r\n	FUN_00026850
+0x000d260c	video_output_image_width = %d\r\n	FUN_00026850
+0x000d262c	video_output_image_x_offset = %d\r\n	FUN_00026850
+0x000d2650	GP565/YUYV\r\n	FUN_00026850
+0x000d2660	video_output_image_height = %d\r\n	FUN_00026850
+0x000d2684	video_output_image_y_offset1 = %d\r\n	FUN_00026850
+0x000d26a8	output buffer = 0x%x\r\n	FUN_00026850
+0x000d26c0	Parse header failed. Skip this file\r\n	FUN_000272b8
+0x000d26e8	Failed to allocate memory in jpeg_memory_allocate()\r\n	FUN_000272b8
+0x000d2720	Failed to call jpeg_decode_output_set()\r\n	FUN_000272b8
+0x000d274c	VLC address exceeds file range\r\n	FUN_000272b8
+0x000d2770	Failed to call jpeg_decode_once_start()\r\n	FUN_000272b8
+0x000d279c	Failed to allocate scaler_out_buffer\r\n	FUN_000272b8
+0x000d27c4	Failed to call scaler_restart\r\n	FUN_000272b8
+0x000d27e4	mjpg decode preview parser fail_1\r\n	
+0x000d2808	mjpg decode preview parser fail_2\r\n	
+0x000d282c	thumbnail allocate jpeg input buffer fail.[%d]\r\n	FUN_00027af0
+0x000d2860	thumbnail read jpeg file fail.\r\n	FUN_00027af0
+0x000d2884	State browse allocate jpeg input buffer fail.[%d]\r\n	FUN_00027af0
+0x000d28b8	State browse read jpeg file fail.\r\n	FUN_00027af0
+0x000d28dc	ap_state_handling_power_off	FUN_000262e8
+0x000d28f8	[ERROR] resource handle is null! @%s:%d\r\n	FUN_00027d54
+0x000d2924	Failed to read string header in resource_string_load()\r\n	FUN_00027dd0
+0x000d2960	fail to allocate buffer size %d in resource_string_load\r\n	FUN_00027dd0
+0x000d299c	Failed to read string data in resource_string_load()\r\n	FUN_00027dd0
+0x000d29d4	Failed load string\r\n	FUN_00027fbc, FUN_00029710
+0x000d29ec	Failed to read font header in ap_state_resource_number_font_cache_init()\r\n	FUN_0002809c
+0x000d2a38	Failed to read font table in ap_state_resource_number_font_cache_init()\r\n	FUN_0002809c
+0x000d2a84	Failed to allocate buffer in ap_state_resource_number_font_cache_init()\r\n	FUN_0002809c
+0x000d2ad0	Failed to read font data in ap_state_resource_number_font_cache_init()\r\n	FUN_0002809c
+0x000d2b1c	Resource cache initial OK!\r\n	FUN_0002809c
+0x000d2b3c	Failed to read user config in resource_user_items_load()\r\n	FUN_000283ac
+0x000d2b78	Failed to allocate resource_header in umi_resource_init\r\n	FUN_00028710
+0x000d2bb4	GPRS.PAK	FUN_00028710
+0x000d2bc0	Failed to open resource from NVRAM \r\n	FUN_00028710
+0x000d2be8	Failed to read resource_header in umi_resource_init\r\n	FUN_00028710
+0x000d2c20	Failed to allocate buffer_ptr in umi_resource_init\r\n	FUN_00028710
+0x000d2c58	GP_CONSOLA.TTF	FUN_00028710
+0x000d2c68	Failed to open consola.ttf\r\n	FUN_00028710
+0x000d2c88	consola.ttf size 0\r\n	FUN_00028710
+0x000d2ca0	stb_truetype_buf malloc fail\r\n	FUN_00028710
+0x000d2cc0	stbtt_InitFont failed	FUN_00028710
+0x000d2cd8	consola.ttf open success\r\n	FUN_00028710
+0x000d2cf4	resource_read	FUN_00027d54
+0x000d2d04	 nvmemory_init \r\n	FUN_00029c1c
+0x000d2d18	==close MD OK!==\r\n	FUN_00029c1c
+0x000d2d2c	state_handling_init OK!\r\n	FUN_00029c1c
+0x000d2d48	###########ENTER MODE [%x]\r\n	FUN_00029d20
+0x000d2d68	state_handling_init	FUN_00029c1c
+0x000d2d7c	state_handling_entry	FUN_00029d20
+0x000d2e14	Failed to init motion jpeg task\r\n	FUN_00029ec0
+0x000d2e38	vol = %d \r\n	FUN_0002a1dc
+0x000d2e5c	year = %d, 	FUN_0002a434
+0x000d2e68	mon = %d, 	FUN_0002a434
+0x000d2e74	day = %d, 	FUN_0002a434
+0x000d2e80	hour = %d, 	FUN_0002a434
+0x000d2e8c	min = %d, 	FUN_0002a434
+0x000d2e98	sec = %d\r\n	FUN_0002a434
+0x000d2ea8	%dx%d	FUN_0002a504
+0x000d2eb0	AUDIO_REC_BG.JPG	FUN_0002a6bc, FUN_0002b0e4
+0x000d2ec4	State browser allocate jpeg input buffer fail.[%d]\r\n	FUN_0002a6bc, FUN_0002b0e4
+0x000d2efc	Failed to read resource_header in ap_browse_reply_action()\r\n	FUN_0002a6bc, FUN_0002b0e4
+0x000d2f3c	State browser decode AUDIO_REC_BG.jpeg file fail.\r\n	FUN_0002a6bc, FUN_0002b0e4
+0x000d2f70	browse_sts:%d, browse_total_file_num:%d\r\n	FUN_0002acd8
+0x000d2f9c	BROWSE_PLAYBACK_BUSY\r\n	FUN_0002acd8, FUN_0002c53c
+0x000d2fb4	[SKIP]State browse decode file fail.\r\n	FUN_0002b0e4, FUN_0002befc
+0x000d2fdc	file handle = %d\r\n	FUN_0002bb40
+0x000d2ff0	State browser allocate pscaler output buffer fail.[%d]\r\n	FUN_0002befc
+0x000d302c	Pscaler error\r\n	FUN_0002befc, FUN_0002c714, FUN_0002c87c
+0x000d303c	browse_sts:%d browse_total_file_num:%d\r\n	FUN_0002c53c
+0x000d3068	Pscaler zoom in\r\n	FUN_0002c714
+0x000d307c	Pscaler zoom out\r\n	FUN_0002c714
+0x000d3090	No image source\r\n	FUN_0002c714, FUN_0002c87c
+0x000d30a4	Pscaler shift up\r\n	FUN_0002c87c
+0x000d30b8	Pscaler shift down\r\n	FUN_0002c87c
+0x000d30d0	Pscaler shift left\r\n	FUN_0002c87c
+0x000d30e8	Pscaler shift right\r\n	FUN_0002c87c
+0x000d3128	1080FHD	FUN_00035540
+0x000d3160	state_browse_entry	FUN_0002cb34
+0x000d3174	state_browse_exit	FUN_0002ca60
+0x000d3188	audio_finish:[%d][%d]	FUN_0002cb34
+0x000d31a0	[State Browse Mount OK]\r\n	FUN_0002cb34
+0x000d31bc	[State Browse Mount FAIL]\r\n	FUN_0002cb34
+0x000d31d8	@@Ready stop!!!\r\n	FUN_0002cb34
+0x000d31ec	Quit MSQ_APQ_ZOOM_CONTROL_MODE_KEY\r\n	FUN_0002cb34
+0x000d3214	Run MSQ_APQ_ZOOM_CONTROL_MODE_KEY\r\n	FUN_0002cb34
+0x000d3238	MSG_APQ_NEXT_KEY_ACTIVE not Execute!\r\n	FUN_0002cb34
+0x000d3260	NEXT_KEY_ACTIVE!\r\n	FUN_0002cb34
+0x000d3274	MSG_APQ_PREV_KEY_ACTIVE not Execute!\r\n	FUN_0002cb34
+0x000d329c	PREV_KEY_ACTIVE!\r\n	FUN_0002cb34
+0x000d32b0	MSG_APQ_MJPEG_DECODE_END\r\n	FUN_0002cb34
+0x000d32cc	AUDIO UP DOWN\r\n	FUN_0002cb34
+0x000d32dc	BACK SENSOR PLUG IN\r\n	FUN_0002cb34, FUN_0002e324, FUN_00034630, FUN_000362b8
+0x000d32f4	BACK SENSOR PLUG OUT\r\n	FUN_0002cb34, FUN_0002e324, FUN_00034630, FUN_000362b8
+0x000d330c	browse status BACK A CAR ON\r\n	FUN_0002cb34
+0x000d332c	state_browse_init	FUN_0002ca14
+0x000d33c0	temp_awb=%d \r\n	FUN_0002db04
+0x000d33d0	User_Del_Pic_File\r\n	
+0x000d33f8	pic_del_jpg = %s\r\n	
+0x000d3420	del1 = %s\r\n	FUN_0003c458
+0x000d342c	SDC error,please format\r\n	FUN_0002dea4, FUN_00035860
+0x000d3448	  NO_STORAGE\r\n	FUN_0002dea4
+0x000d3458	vfsFreeSpac= %d MB,g_factory=%d,file_index=%d\r\n	FUN_0002dea4
+0x000d3488	Capture OK, Size=%d kbtye\r\n	FUN_0002dff4
+0x000d34a4	state_photo_capture_exit	FUN_0002e2ec
+0x000d34c0	temp=%d \r\n	
+0x000d34cc	                       @@@@@ photo @@@@@@@@ %d\r\n	FUN_0002e324
+0x000d3500	[Capture Mount OK]\r\n	FUN_0002e324
+0x000d3518	[Capture Mount FAIL]\r\n	FUN_0002e324
+0x000d3530	MSG_APQ_MODE_TO_VIDEO \r\n 	FUN_0002e324
+0x000d354c	MSG_APQ_MODE_TO_LIGHT_METERING \r\n 	FUN_0002e324
+0x000d3570	MSG_APQ_MODE_TO_PHOTO \r\n 	FUN_0002e324
+0x000d358c	photo CAP_CAPING MSG_APQ_CONNECT_TO_PC =%d \r\n	FUN_0002e324
+0x000d35bc	0706 MSG_APQ_DISCONNECT_TO_PC \r\n	FUN_0002e324
+0x000d35e0	 capture done \r\n	FUN_0002e324
+0x000d35f4	[Capture Mount OK]1\r\n	FUN_0002e324
+0x000d360c	[Capture Mount FAIL]1\r\n	FUN_0002e324
+0x000d3624	state_photo_capture_entry:MSG_APQ_PREV_KEY_ACTIVE\r\n	FUN_0002e324
+0x000d3658	Wifi_function_disable \r\n	FUN_0002e324
+0x000d3674	 continuous_shooting_count=%d \r\n	FUN_0002e324
+0x000d3698	1178 photo MSG_APQ_CONNECT_TO_PC   \r\n 	FUN_0002e324
+0x000d36c0	 MSG_APQ_DISCONNECT_TO_PC msg_id=%d\r\n	FUN_0002e324
+0x000d36e8	SWITCH to preview mode:%d\r\n	FUN_0002e324
+0x000d3704	 MSG_APQ_AUDIO_EFFECT_UP \r\n	FUN_0002e324
+0x000d3720	BACK A CAR ON\r\n	FUN_0002e324, FUN_000362b8
+0x000d3730	BACK A CAR OFF\r\n	FUN_0002e324, FUN_000362b8
+0x000d3744	Front zoom percent : %d ,step=%d \r\n	FUN_0002e324
+0x000d3768	Rear zoom percent : %d\r\n	FUN_0002e324, FUN_000362b8
+0x000d3784	state_photo_capture_init	FUN_0002e2bc
+0x000d37ac	Jan01	FUN_0002f560
+0x000d3830	setting exit\r\n	FUN_0002f3ac
+0x000d384c	DMA fail drv_l1_dma_transfer() result=%d\r\n	FUN_0002f698
+0x000d3878	2000 / 00 / 00   00 : 00 : 00	FUN_00030290, FUN_000324e4
+0x000d3898	00 / 00 / 2000   00 : 00 : 00	FUN_00030290
+0x000d38b8	allocate BACKGROUND.GPZP read buffer fail.[%d]\r\n	FUN_000305f0
+0x000d38ec	Failed to read icon_buffer resource\r\n	FUN_000305f0
+0x000d3914	setting allocate icon_buffer buffer fail.[%d]\r\n	FUN_000305f0
+0x000d3944	Failed to unzip GPZP file\r\n	FUN_000305f0
+0x000d3960	SELECTBOX_SUB.GPZP	FUN_00030770, FUN_00032400, FUN_000324e4
+0x000d3974	SELECTBAR_MIDD.GPZP	FUN_00030770
+0x000d3988	TOPBAR.GPZP	FUN_00030b90, FUN_00031314
+0x000d3994	BACKGROUND.GPZP	FUN_00031314, FUN_00031540, FUN_000317f8, FUN_00034208
+0x000d39a4	SELECTBAR_LONG.GPZP	FUN_00031314, FUN_000313e4, FUN_00031a6c
+0x000d39b8	INSERTSDC.GPZP	FUN_00031e04, FUN_00031f80, FUN_00032090, FUN_000321a0, FUN_000322b0
+0x000d39c8	no SDC show waiting...\r\n	FUN_00031e04
+0x000d39e4	no SDC show OK\r\n	FUN_00031e04
+0x000d39f9	0140115 V1.0 	FUN_00032400
+0x000d3a20	YEAR_SELECTBAR.GPZP	FUN_000324e4
+0x000d3a34	DAY_SELECTBAR.GPZP	FUN_000324e4
+0x000d3a48	00 : 00 : 00	FUN_000324e4
+0x000d3a60	2000 / 00 / 00	FUN_000324e4
+0x000d3a70	set default time[19][%d][%d][%d][%d][%d]\r\n	FUN_00032f24
+0x000d3a9c	USB_select_entry	FUN_00034630
+0x000d3ab0	SD_POWER_EN 1 \r\n	FUN_00034630
+0x000d3ac4	SD_POWER_EN 0 \r\n	FUN_00034630
+0x000d3ad8	                       @@@@@ usb_select @@@@@@@@ \r\n	FUN_00034630
+0x000d3b0c	 ------storage:%d  : msg_id = %d\r\n	FUN_00034630
+0x000d3b30	[Setting Mount OK]\r\n	FUN_00034630
+0x000d3b48	[Setting Mount FAIL]\r\n	FUN_00034630
+0x000d3b60	setting state init enter\r\n	FUN_00034958
+0x000d3b7c	 setting msg_id=%d \r\n	
+0x000d3b94	372 MSG_APQ_CONNECT_TO_PC \r\n	
+0x000d3bb4	setting format done!\r\n	
+0x000d3bcc	setting status BACK A CAR ON\r\n	
+0x000d3bec	Exit setting state\r\n	
+0x000d3c04	538 MSG_APQ_CONNECT_TO_PC \r\n	
+0x000d3c24	state_setting_init	FUN_00034958
+0x000d3c38	state_setting_entry	
+0x000d3c4c	state_startup_exit	FUN_00035198
+0x000d3c60	state_startup_entry	FUN_00035210
+0x000d3c74	!!!!battery_value = %d,dc_in = %d\n	
+0x000d3c98	%d %s ... \r\n	FUN_00035210
+0x000d3ca8	 default \r\n	FUN_00035210
+0x000d3cb4	state_startup_init	FUN_000350b0
+0x000d3ce8	next file name %s\r\n	
+0x000d3d00	  ap_video_record_init  \r\n	FUN_0003561c
+0x000d3d1c	ap_video_record_init--ev temp =%d \r\n	FUN_0003561c
+0x000d3d44	wait 1s to record stop!!\r\n	FUN_00035860, FUN_00036254
+0x000d3d60	Video Record Stop Fail\r\n	FUN_00035860
+0x000d3d7c	Video Record Stop\r\n	FUN_00035860
+0x000d3d90	* record time = %d\r\n	FUN_00035860
+0x000d3da8	===free size = %lld\r\n	
+0x000d3dc0	Cyclic video record open file Fail\r\n	FUN_00035af8
+0x000d3de8	Video Record Fail1\r\n	FUN_00035af8
+0x000d3e00	==free size = %lld\r\n	FUN_00035af8
+0x000d3e18	Video Record Fail\r\n	FUN_00035dbc
+0x000d3e2c	state_video_record_init	FUN_000361a8
+0x000d3e44	state_video_record_exit	FUN_00036214
+0x000d3e5c	User_ISO_lock=%d \r\n	
+0x000d3e70	User_T_lock=%d \r\n	FUN_000362b8
+0x000d3e84	video_record state init enter\r\n	FUN_000361a8
+0x000d3ea4	STATUS_OK \r\n 	FUN_000361a8
+0x000d3eb4	STATUS_fail!!! \r\n 	FUN_000361a8
+0x000d3ec8	Exit video_record state\r\n	FUN_00036214
+0x000d3ee4	====@@@@@@Change mode,stop encode@@@@@@====\r\n	FUN_00036254, FUN_000362b8
+0x000d3f14	%s ...  \r\n	FUN_000362b8
+0x000d3f20	                       @@@@@@video@@@@@@ \r\n	FUN_000362b8
+0x000d3f4c	[Record Mount OK]\r\n	FUN_000362b8
+0x000d3f60	SD_M1!!auto_record_st:0x%x\r\n	FUN_000362b8
+0x000d3f80	2 AUTO_Record_start!!!!\r\n	FUN_000362b8
+0x000d3f9c	[Record Mount FAIL]\r\n	FUN_000362b8
+0x000d3fb4	3 AUTO_Record_start!!!!\r\n	FUN_000362b8
+0x000d3fd0	Switched to %d mode\r\n	FUN_000362b8
+0x000d3fe8	  VIDEO_RECORD_WAIT\r\n	FUN_000362b8
+0x000d4000	wait 1s to record stop\r\n	FUN_000362b8
+0x000d401c	 sd full \r\n	FUN_000362b8
+0x000d4028	file_handle=%d\r\n	FUN_000362b8
+0x000d403c	snap_reset[%d]\r\n	FUN_000362b8
+0x000d4050	video-gpio_read_io(MODE_2_KEY)=%d,msg_id=%d \r\n	FUN_000362b8
+0x000d4080	MSG_STORAGE_SERVICE_VID_REPLY \r\n	FUN_000362b8
+0x000d40a4	state_video_record_entry:MSG_APQ_PREV_KEY_ACTIVE\r\n	FUN_000362b8
+0x000d40d8	2183 MSG_APQ_CONNECT_TO_PC\r\n	FUN_000362b8
+0x000d40f8	2305 MSG_APQ_AVI_PACKER_ERROR\r\n	FUN_000362b8
+0x000d4118	2354 \r\n	FUN_000362b8
+0x000d4120	  MSG_APQ_USER_CONFIG_STORE  \r\n	FUN_000362b8
+0x000d4140	2436 \r\n	FUN_000362b8
+0x000d4148	Front zoom percent : %d\r\n	FUN_000362b8
+0x000d4164	state_video_record_entry	FUN_000362b8
+0x000d41a0	GODOX.TXT	FUN_00037914
+0x000d41ac	Time sync file has invalid date %04d-%02d-%02d\r\n	FUN_00037914
+0x000d41e0	Time synced from file: %04d-%02d-%02d %02d:%02d:%02d\r\n	FUN_00037914
+0x000d4218	G:\TIME.TXT	FUN_00037914
+0x000d4224	G:\FACTORY.TXT	FUN_00037914
+0x000d4234	-----------------ap_storage_service_init-------------- \r\n	FUN_00037cac
+0x000d4270	G:\VERSION.TXT	FUN_00037f34
+0x000d4280	 del version \r\n	FUN_00037f34
+0x000d4290	C100-%s\r\n	FUN_00037f34
+0x000d429c	V1.1.6	FUN_00037f34, FUN_0005f290
+0x000d42a4	ver.txt created: C100 %s\r\n	FUN_00037f34
+0x000d42c0	DCIMA\MOVA%04d.avi	FUN_00037fe8, FUN_00039428, FUN_0003aee0, FUN_0003c458
+0x000d42d4	IMG_%04d.mov	FUN_00037fe8, FUN_0003898c, FUN_00039428, FUN_0003aee0, FUN_0003c458
+0x000d42e4	IMG_%04d.jpg	FUN_00037fe8, FUN_0003898c, FUN_00038bf8, FUN_0003aee0, FUN_0003c458
+0x000d42f4	DCIMB\MOVB%04d.avi	FUN_00037fe8, FUN_00039428, FUN_0003aee0, FUN_0003c458
+0x000d4308	DCIMB\MOVB%04d.mov	FUN_00037fe8, FUN_0003aee0
+0x000d431c	DCIMB\PICB%04d.jpg	FUN_00037fe8, FUN_0003aee0
+0x000d4330	g_file_path = %s\r\n	FUN_00037fe8
+0x000d4344	*.wav	FUN_0003c030
+0x000d4354	WAV index[%d]\r\n	
+0x000d4364	%d,ap_storage_service_set_no_storage\r\n	
+0x000d438c	g_file_num=%d \r\n	
+0x000d43a0	C:\DCIM	FUN_0003898c, FUN_00038bf8
+0x000d43a8	LOC%04d.mov	FUN_0003898c
+0x000d43b4	IMG%04d.mov	FUN_00038bf8
+0x000d43c0	G:\DCIM\%03dMEDIA	FUN_00039270, FUN_0003934c, FUN_0003a18c, FUN_0003a540, FUN_0003a8b0, FUN_0003c030, FUN_0003c298
+0x000d43d4	PREV find[%s]\r\n	
+0x000d43e4	NEXT find[%s]\r\n	
+0x000d43fc	[DELETE FOLDER & CREATE START FOLDER %s]\r\n	
+0x000d4428	[ORG FOLDER %s]\r\n	
+0x000d443c	BORWSE_SAVE_PARA \r\n	
+0x000d4450	BORWSE_EXIT_PARA_RETURN %d\r\n	
+0x000d4470	[FIND FOLDER]=%d \r\n	FUN_00038e34
+0x000d4484	[FIND FOLDER] SD card removed, abort!\r\n	FUN_00038e34
+0x000d44ac	%s\%03dMEDIA	FUN_00038e34, FUN_000391a0
+0x000d44bc	[FIND FOLDER] jump to exist %s ok\r\n	FUN_00038e34
+0x000d44e0	[FIND FOLDER] SD card removed during search, abort!\r\n	FUN_00038e34
+0x000d4518	%s\500MEDIA	FUN_00038e34
+0x000d4524	[FIND FOLDER] SD card removed during for loop, abort!\r\n	FUN_00038e34
+0x000d455c	[FIND FOLDER] found exist %03dMEDIA\r\n	FUN_00038e34
+0x000d4584	[FIND FOLDER] SD card removed before mkdir, abort!\r\n	FUN_00038e34
+0x000d45bc	[FIND FOLDER] mkdir DCIM status=%d\r\n	FUN_00038e34
+0x000d45e4	[FIND FOLDER] enter DCIM ok\r\n	FUN_00038e34
+0x000d4604	100MEDIA	FUN_00038e34, FUN_0003bc2c
+0x000d4610	[FIND FOLDER] mkdir 100MEDIA status=%d\r\n	FUN_00038e34
+0x000d463c	[FIND FOLDER] create folder structure success\r\n	FUN_00038e34
+0x000d466c	[FIND FOLDER] ERROR: cannot enter 100MEDIA, status=%d\r\n	FUN_00038e34
+0x000d46a4	[FIND FOLDER] retry create %d...\r\n	FUN_00038e34
+0x000d46c8	[FIND FOLDER] ERROR: cannot enter DCIM, status=%d\r\n	FUN_00038e34
+0x000d46fc	[FIND FOLDER] create new folder structure\r\n	FUN_00038e34
+0x000d4728	[JUMP FOLDER] cannot enter %s, re-find folder...\r\n	FUN_000391a0
+0x000d475c	*.mov	FUN_00039270, FUN_0003934c, FUN_0003a18c, FUN_0003a540, FUN_0003c030
+0x000d4764	del = %s\r\n	FUN_00039428, FUN_0003c458
+0x000d4770	FileName9 = %s\r\n	FUN_00039428
+0x000d4784	DCIMB\MOVB%04d.vi	FUN_00039428
+0x000d4798	FileName10 = %s\r\n	FUN_00039428
+0x000d47ac	replace = %s\r\n	FUN_00039428, FUN_0003c458
+0x000d47bc	BackFileName = %s\r\n	FUN_00039428, FUN_0003c458
+0x000d47d0	FileName11 = %s\r\n	FUN_00039428
+0x000d47e4	nRet=%d folder_i=%d\r\n	FUN_0003a18c
+0x000d4800	MOV index[%d] size is 0, del\r\n	FUN_0003a18c
+0x000d4834	g_file_path %s...\r\n	
+0x000d4848	unlink fail\r\n	
+0x000d4858	delete %s... 	
+0x000d4868	*.jpg	FUN_0003a8b0, FUN_0003c030
+0x000d4870	JPG index[%d] size is 0, del	FUN_0003a8b0
+0x000d4890	cur_folder max: h264=%d, avi=%d, jpg=%d, g_file_index=%d, full=%d\r\n	FUN_0003abf0
+0x000d48d4	Delete file fail.\r\n	FUN_0003ad1c
+0x000d48e8	Delete file [%s] OK.\r\n	FUN_0003ad1c
+0x000d4900	RECR%04d.wav	FUN_0003aee0
+0x000d4910	File Path=%s	FUN_0003aee0
+0x000d4920	(H264)\r\n	FUN_0003aee0
+0x000d492c	(JPEG)\r\n	FUN_0003aee0
+0x000d4938	SDC format start, flush buffers first...\r\n	FUN_0003bc2c
+0x000d4964	SDC size=%ld \r\n	FUN_0003bc2c
+0x000d4974	SDC FAT32 formating.... \r\n	FUN_0003bc2c
+0x000d4990	SDC exFAT formating.... \r\n	FUN_0003bc2c
+0x000d49ac	SDC format OK !\r\n	FUN_0003bc2c
+0x000d49c0	GODOX	FUN_0003bc2c
+0x000d49c8	SDC info, st_free.total_clusters [%d]\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d49f0	SDC info, st_free.avail_clusters [%d]\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d4a18	SDC info, st_free.sectors_per_cluster [%d]\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d4a48	SDC info, st_free.bytes_per_sector [%d]\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d4a74	SDC total size [%lld]MB\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d4a90	max_lock_file_size [%lld]MB\r\n	FUN_0003bc2c, FUN_0003da8c
+0x000d4ab0	Mount OK, free size [%lld]\r\n	FUN_0003bc2c
+0x000d4ad0	SDC format fail !\r\n	FUN_0003bc2c
+0x000d4ae4	G:\factory.txt	FUN_0003bc2c
+0x000d4af4	 user_format \r\n	FUN_0003bff8
+0x000d4b04	G:\FORMAT.TXT	FUN_0003bff8
+0x000d4b14	[CHANGE NEXT FOLDER]	FUN_0003c298
+0x000d4b2c	NEXT FOLDER[%s]\r\n	FUN_0003c298
+0x000d4b40	[NEXT FOLDER] mkdir %s status=%d\r\n	FUN_0003c298
+0x000d4b64	[SD NO FREE FOLDER]\r\n	FUN_0003c298
+0x000d4b7c	rec_time_config = %d\r\n	FUN_0003c458
+0x000d4b94	file_size_to_create = %d,%d\r\n	FUN_0003c458
+0x000d4bb4	jpg_file_table[del_index >> 4]=%d %d\r\n	FUN_0003c458
+0x000d4bdc	del_index=%d \r\n	FUN_0003c458
+0x000d4bec	              ***FileName2 = %s\r\n	FUN_0003c458
+0x000d4c10	0618 VID_REQ ret=%lld \r\n	FUN_0003c458
+0x000d4c2c	FileName3 = %s\r\n	FUN_0003c458
+0x000d4c40	FileName4 = %s\r\n	FUN_0003c458
+0x000d4c54	PICB%03d_%04d.jpg	FUN_0003c458
+0x000d4c68	--------------------------------FileName6 = %s\r\n	FUN_0003c458
+0x000d4c9c	Back FileName = %s\r\n	FUN_0003c458
+0x000d4cb4	\r\nFileName5 = %s\r\n	FUN_0003c458
+0x000d4cc8	RECR%03d_%04d.wav	FUN_0003c458
+0x000d4cdc	UNKNOW STORAGE SERVICE\r\n	FUN_0003c458
+0x000d4cf8	file index full\r\n	FUN_0003c458
+0x000d4d0c	0613 =free size = %lld ,%d\r\n	FUN_0003c458
+0x000d4d2c	 MSG_STORAGE_SERVICE_PIC_REQ2 \r\n	FUN_0003c458
+0x000d4d50	------------delay---------mount---------\r\n	FUN_0003da8c
+0x000d4d7c	----------drvl2_sd_init----%d----\r\n	FUN_0003da8c
+0x000d4da0	SD init fail, retry %d\r\n	FUN_0003da8c
+0x000d4dbc	------------SDC_ERR = %d\r\n	FUN_0003da8c
+0x000d4dd8	SD card plug out, flush buffers and unmount...\r\n	FUN_0003da8c
+0x000d4e0c	fs_format = 0x%x\r\n	FUN_0003da8c
+0x000d4e20	sdc_total_size = %d\r\n	FUN_0003da8c
+0x000d4e38	----------------------mount--------%d-----------------------\r\n	FUN_0003da8c
+0x000d4e78	Mount OK, free size [%d]\r\n	FUN_0003da8c
+0x000d4e94	-----------------------------------------------------\r\n	FUN_0003da8c
+0x000d4ecc	[MOUNT] SD card removed after mount, skip!\r\n	FUN_0003da8c
+0x000d4efc	[MOUNT] SD removed before sync_time!\r\n	FUN_0003da8c
+0x000d4f24	[MOUNT] SD removed before FILE_FIND_FOLDER!\r\n	FUN_0003da8c
+0x000d4f54	##########SDC_ERR = %d\r\n	FUN_0003da8c
+0x000d4f70	need change folder back %s \r\n	
+0x000d4f90	need change new folder %s \r\n	
+0x000d4fb0	task_storage_service_entry	FUN_0003e3a0
+0x000d4fcc	 task_storage_service_init OK!\r\n	FUN_0003e33c
+0x000d4ff0	MSG_STORAGE_SERVICE_VID_H264_REQ \r\n	FUN_0003e3a0
+0x000d5014	--------------MSG_STORAGE_SERVICE_VID_CYCLIC_REQ\r\n	FUN_0003e3a0
+0x000d5048	MSG_STORAGE_SERVICE_BROWSE_REQ\r\n	FUN_0003e3a0
+0x000d506c	task_storage_service_init	FUN_0003e33c
+0x000d50a8	++++++++usb_mode_detect_callback \r\n	FUN_0003e5ac
+0x000d50cc	++++++++usb_mode_detect_callback msdc_mode_flag=%d \r\n	FUN_0003e5ac
+0x000d5104	Send event to UVCTaskQ failed\r\n	FUN_0003ece0
+0x000d5124	EP5 done cbk send event to UVCTaskQ failed\r\n	FUN_0003e650
+0x000d5154	USB webcam start(%d)\r\n	FUN_0003e6a0
+0x000d516c	Vid EP5 flush\r\n	FUN_0003e6a0
+0x000d517c	Vid EP7 flush\r\n	FUN_0003e6a0
+0x000d518c	USB webcam stop(%d)\r\n	FUN_0003e6a0
+0x000d51a4	----------------------------usb_mode_detect \r\n	
+0x000d51d4	[WARN] usb_mode_detect_flag is 1, return \r\n	
+0x000d5200	drv_l2_usbd_ctl_init failed!\r\n	FUN_0003e954, FUN_0003ed7c
+0x000d5220	drv_l1_usbd_init failed!\r\n	FUN_0003e954
+0x000d523c	msdc_mode_flag=%d \r\n	
+0x000d5254	--------------usb_msdc_init--------------\r\n	FUN_0003e954
+0x000d5280	0722 drv_l2_usbd_msdc_init \r\n	FUN_0003e954
+0x000d52a0	drv_l2_usbd_msdc_uninit failed!\r\n	FUN_0003e954
+0x000d52c4	USB MSDC device init completed!\r\n	FUN_0003e954
+0x000d52e8	drv_l2_usbd_uvc_init failed!\r\n	FUN_0003ed7c
+0x000d5308	UVCTaskQ create failed\r\n	FUN_0003ed7c
+0x000d5324	UVCThreadId create failed\r\n	FUN_0003ed7c
+0x000d5340	drv_l1_usbd_uvc_init failed!\r\n	FUN_0003ed7c
+0x000d5360	USB UVC device init completed!!!\r\n	FUN_0003ed7c
+0x000d5384	uvc_task	FUN_0003ed7c
+0x000d5390	UVCTask	FUN_0003e6a0
+0x000d5398	  0706 MSG_USBD_PLUG_IN \r\n	FUN_0003f014
+0x000d53b4	   MSG_USBD_PLUG_OUT \r\n	FUN_0003f014
+0x000d53cc	   MSG_CHARGE_PLUG_OUT \r\n	FUN_0003f014
+0x000d53e8	usb_webcam_start fail\r\n	FUN_0003f014
+0x000d5400	usb_webcam_stop fail\r\n	FUN_0003f014
+0x000d542c	1 sd-%u dma left count is same after a while. %u, %u, %u, %u, 0x%08x, %u\r\n	FUN_000428f8
+0x000d5478	dma result.status = 0x%x timeout=%u msecwait=%u count=%u w=%u\r\n	FUN_000428f8
+0x000d54b8	dma copy fail\r\n	FUN_00043190
+0x000d54c8	%s s_addr %x t_addr %x width %d byte len %d\r\n	
+0x000d54f8	illegal RX channel %u\r\n	FUN_000435bc
+0x000d5510	RX disable timeout after %d wait. RX_CTRL=0x%08x RX_STATUS=0x%08x\r\n	FUN_00043650
+0x000d5554	RX disable require %d wait. RX_CTRL=0x%08x RX_STATUS=0x%08x\r\n	FUN_00043650
+0x000d5594	RX enable timeout after %d wait. RX_CTRL=0x%08x RX_STATUS=0x%08x\r\n	FUN_000436d4
+0x000d55d8	RX enable require %d wait. RX_CTRL=0x%08x RX_STATUS=0x%08x\r\n	FUN_000436d4
+0x000d5618	drv_l1_mipi_set_parameter	FUN_0004434c
+0x000d5634	\r\n%s-STATUS_FAIL\r\n	FUN_0004434c
+0x000d5648	%s---\r\n	FUN_0004434c
+0x000d565c	ext_rtc_time_set()~~~~~~~~~~~~~~~\r\n	
+0x000d5680	SPI time:\r\n	
+0x000d568c	Ext RTC 0x10 = 0x%08X\r\n	
+0x000d56a4	Ext RTC 0x11 = 0x%08X\r\n	
+0x000d56bc	Ext RTC 0x12 = 0x%08X\r\n	
+0x000d56d4	Ext RTC 0x13 = 0x%08X\r\n	
+0x000d56ec	Ext RTC 0x14 = 0x%08X\r\n	
+0x000d5704	Ext RTC 0x15 = 0x%08X\r\n	
+0x000d571c	========================\r\n	
+0x000d5738	Current time:\r\n	
+0x000d5748	Final time:\r\n	
+0x000d5758	ext_rtc_alarm_enable()_2: byValue=0x%08X \r\n	FUN_000455c4
+0x000d5784	ext_rtc_alarm_enable()_1: byValue=0x%08X \r\n	FUN_000455c4
+0x000d57b0	Failed to get Ext RTC reliable\r\n	FUN_00045838
+0x000d57d4	Ext RTC reliable is wrong=0x%02X, set again\r\n	FUN_00045838
+0x000d5804	Failed to set/get Ext RTC reliable!!\r\n	FUN_00045838
+0x000d582c	Ext RTC reliable is OK\r\n	FUN_00045838
+0x000d5848	0x3:0x%x\r\n	FUN_00045994
+0x000d5860	drv_l1_spi_clk_set	FUN_00045e3c
+0x000d5874	xSemaphoreGiveFromISR is pdFALSE. %u\r\n	
+0x000d589c	[%s]WIFI DISABLE ,LINE %d\r\n	FUN_00045e3c, FUN_0004603c
+0x000d58b8	CTRL != reg, 0x%08x, should 0x%08x\r\n	
+0x000d58e0	spi nand rx dma fail %d\r\n	
+0x000d58fc	spi nand tx dma fail %d\r\n	
+0x000d5918	rx wait more than 500ms. %u, %u\r\n	
+0x000d593c	spi nand rx dma timeout\r\n	
+0x000d5958	spi nand rx dma complete fail %d, rcv_len=%u\r\n	
+0x000d5988	tx wait more than 500ms. %u, %u\r\n	
+0x000d59ac	spi nand tx dma timeout\r\n	
+0x000d59c8	spi nand tx dma complete fail %d, len=%u\r\n	
+0x000d59f4	drv_l1_spi_transceive_dma_v2 fail %d\r\n	
+0x000d5a1c	spi nand tx cpu timeout\r\n	
+0x000d5a38	spi nand rx cpu timeout\r\n	
+0x000d5a54	drv_l1_spi_transceive_cpu_v2 fail %d\r\n	
+0x000d5a7c	\r\n left_cnt=%d	
+0x000d5a8c	drv_l1_spi_transceive_cpu	FUN_0004603c
+0x000d5aa8	spifc wait flag fail! timeout=0x%x\r\n	FUN_00046074
+0x000d5ad0	drv_l1_sys_power_handler	FUN_00026630
+0x000d5aec	>>> %s ... \r\n	FUN_00026630
+0x000d5afc	off \r\n	FUN_00026630
+0x000d5b04	SYSFIFO select the same before!\r\n	FUN_00047060
+0x000d5b28	Disable H264 share ram\r\n	FUN_00047060
+0x000d5b44	SYSFIFO disable\r\n	FUN_00047060
+0x000d5b58	SYSFIFO = 0x%x\r\n	FUN_00047060
+0x000d5b6c	R_UART1_STATUS: %x, RS485 CR: %x\r\n	
+0x000d5b90	UART RX DATA: data %x\r\n	
+0x000d5ba8	value %x\r\n	
+0x000d5bbc	TFT under run\r\n	
+0x000d5bcc	TFT2 under run\r\n	
+0x000d5be0	Enable TFT dither.\r\n	FUN_000493c0
+0x000d5bf8	->[%s] Width[%d] must be a multiple of 16!  \r\n	FUN_000493c0
+0x000d5c28	drv_l2_display_start	FUN_000493c0
+0x000d5c70	tft_auo_a027dtn019_init	FUN_000497ac
+0x000d5c98	[MSG] G SENSOR Off\r\n	FUN_0002392c
+0x000d5cb0	[MSG] G SENSOR HIGH\r\n	FUN_0002392c
+0x000d5cc8	[MSG] G SENSOR MID\r\n	FUN_0002392c
+0x000d5ce0	[MSG] G SENSOR LOW\r\n	FUN_0002392c
+0x000d5cf8	G_sensor_Disable ISR = 0x%02x\r\n	FUN_0002392c
+0x000d5d18	The function isn't implement yet\r\n	FUN_0002392c
+0x000d5d3c	>>> %s ... ,Level:%d\r\n	
+0x000d5d54	====PARKING======0X8F =0x%x\r\n	
+0x000d5d74	end reg[0x47]=%x\n	
+0x000d5d88	>>> %s Level:%d... \r\n	
+0x000d5da0	chip_id = %x\r\n	
+0x000d5db0	==========gsensor power on=========\r\n	
+0x000d5dd8	==========key power on=============\r\n	
+0x000d5e00	high active\r\n	
+0x000d5e10	low active\r\n	
+0x000d5e20	G sensor Who am I = %02X\r\n	
+0x000d5e3c	G sensor sw reset = %02X\r\n	
+0x000d5e58	[WARING]Get SC7A30E ID:0x%x Error!!\r\n	
+0x000d5e80	sc7a30e_chip_id = 0x%x\r\n	
+0x000d5e9c	==>>SC7A30E_CTRL_REG_6:0x%x\r\n	
+0x000d5ebc	==>>SC7A30E_High_Active\r\n	
+0x000d5ed8	==>>SC7A30E_Low_Active\r\n	
+0x000d5ef4	==>>SC7A30E_CLICK_THS:0x%x\r\n	
+0x000d5f14	==>>SC7A30E_CTRL_REG_3:0x%x\r\n	
+0x000d5f34	==>>SC7A30E_CLICK_CFG:0x%x\r\n	
+0x000d5f54	==>>SC7A30E_CTRL_REG_1:0x%x\r\n	
+0x000d5f74	==>>SC7A30E_INT1_SOURCE:0x%x\r\n	
+0x000d5f94	==>>SC7A30E_INT1_CFG:0x%x\r\n	
+0x000d5fb0	no G sensor\r\n	
+0x000d5fc0	HT1621 init \r\n	FUN_0004ad68
+0x000d5fd0	sem_id error\r\n	FUN_0004b4d0
+0x000d5fe0	%s, select:%d exceed MAX_SENSOR_NUM:%d\r\n	FUN_0004b8d8
+0x000d600c	%s, sensor_obj over write\r\n	FUN_0004b8d8
+0x000d6028	Index[%d] is wrong when get ops\r\n	FUN_0004b934, FUN_0004bb94, FUN_0004bbd4
+0x000d604c	drv_l2_cdsp_set_ae_window_ReDo(w=%d, h=%d) \r\n	FUN_0004bc14
+0x000d607c	RAW_Win Set: size[%d, %d],  offset[%d, %d]\r\n	FUN_0004bc14
+0x000d60ac	 >>0.frame_width_after_clip:(%d,%d),gframeRangeArgs.point_x=(%d,%d)\r\n	FUN_0004bcd8
+0x000d60f4	==drv_l2_sensor_frame_range_clip fail\r\n	FUN_0004bf58
+0x000d611c	drv_l2_sensor_register_ops	FUN_0004b8d8
+0x000d6138	drv_l2_sensor_set_mclkout	FUN_0004b9e4
+0x000d6aa4	%s: sccb write fail: reg = 0x%x, val = 0x%x\r\n	FUN_0004c0b4
+0x000d6ad4	i2C read fail!\n	FUN_0004c1c8
+0x000d6ae4	>>Set frequence 30fps 50Hz.\r\n	
+0x000d6b04	>>Set frequence 25fps 50Hz.\r\n	
+0x000d6b24	>>Set frequence 25fps 50Hz. ev:%d\r\n	
+0x000d6b48	>>Set frequence 25fps 60Hz. ev:%d\r\n	
+0x000d6b6c	 @30fps \r\n	FUN_0004c5c0
+0x000d6b78	 @25fps \r\n	FUN_0004c5c0
+0x000d6b84	CDSP init completed\r\n	FUN_0004c6c4
+0x000d6b9c	cdsp set normal mode!!!\r\n	FUN_0004c010
+0x000d6bb8	cdsp set fmt err!!!\r\n	FUN_0004c010
+0x000d6bd0	MIPI%d init fail !!!\r\n	FUN_0004c010
+0x000d6be8	MIPI%d init completed.\r\n	FUN_0004c010
+0x000d6c04	Sccb open fail.\r\n	FUN_0004c010
+0x000d6c18	chip id= 0x%02x%02x \r\n	FUN_0004c010
+0x000d6c30	------- cdsp  init  err !!!!!!!!!!!!\r\n	FUN_0004c010
+0x000d6c58	Sensor GC4653 30fps init completed\r\n	FUN_0004c010
+0x000d6c80	Sensor GC4653 25fps init completed\r\n	FUN_0004c010
+0x000d6ca8	gc_2083_cdsp_mipi	
+0x000d9040	gc2083_sccb_write_table	FUN_0004c0b4
+0x000d9058	spi read id fail!\r\n	
+0x000d906c	 drv_l2_spiflash_global_protect_enable \r\n	FUN_0004cae8
+0x000d9098	 global_protect_disable \r\n	FUN_0004cb18
+0x000d90b4	spi nor uninit!!\r\n	
+0x000d90dc	task_system_software_timer	FUN_0004cd90
+0x000d912c	USBDL2: drv_l2_usbd_misc_handle, Received RST!\r\n	
+0x000d9160	USBDL2: drv_l2_usbd_misc_handle, Get set config!\r\n	
+0x000d9194	USBDL2: 0821 drv_l2_usbd_misc_handle, Received suspend!!!\r\n	
+0x000d91d0	USBDL2: CLR0 value 0x%x, index 0x%x\r\n	
+0x000d91f8	USBDL2: CLRX stall for other EP\r\n	
+0x000d921c	USBDL2: Set address = 0x%x\r\n	
+0x000d923c	L2_USBD_SVN_NUM: %s\r\n	
+0x000d9264	L2_USBD_LIB_BUILD_TIME: %s\r\n	
+0x000d9298	drv_l2_usbd_main	FUN_0004d798
+0x000d934c	drv_l2_usbd_msdc_get_cbw_data error, len = %d\r\n	FUN_0004da88
+0x000d937c	IN ACK, data cnt = 0x%x, stall IN pipe\r\n	
+0x000d93a8	EP1 IN NAK\r\n	
+0x000d93b8	EP8 IN NAK\r\n	
+0x000d93c8	Start Stop unit, LoEj_Start = 0x%x \r\n	
+0x000d93f0	Storage LUN %d start stop unit!!\r\n	
+0x000d9414	Storage LUN %d start stop unit, but init failed!!\r\n	
+0x000d9448	Storage LUN %d inserted!!\r\n	FUN_0004e958
+0x000d9464	Storage LUN %d inserted, but init failed!!\r\n	FUN_0004e958
+0x000d9494	Storage LUN %d removed!!\r\n	FUN_0004e958
+0x000d94b0	USBDL2MSDC: LUN %d Storage init failed \r\n	FUN_0004ec54
+0x000d94dc	USBDL2MSDC: LUN %d Storage un-init-ed!\r\n	
+0x000d9508	USBDL2MSDC: i %d msdc_dma_buf %p, size %d!!\r\n	FUN_0004ed90
+0x000d9538	msdc_ctlblk.dataptr =0x%x\r\n	FUN_0004ed90
+0x000d9554	USBDL2MSDC: MSDC DMA buffer alloc failed!!\r\n	FUN_0004ed90
+0x000d9584	EP2 OUT NAK\r\n	
+0x000d9594	EP9 OUT NAK\r\n	
+0x000d95a4	Got vendor command 0x%x\r\n	FUN_0004f77c
+0x000d968c	date: %d_%d_%d_%d_%d_%d\r\n	FUN_0004f888
+0x000d96a8	**IN ACK, data cnt = 0x%x, stall IN pipe\r\n	
+0x000d96d4	user_auth_vendorcmd_function %d \r\n	FUN_0004f77c
+0x000d97a4	L2: ISO OUT, DMA done,data is in isobuf!\r\n	
+0x000d97d0	UVC INT IN state, event = %d\r\n	
+0x000d97f0	L2: ISO IN, unknown event %d!\r\n	
+0x000d9810	Received RST!!\r\n	
+0x000d9824	Get set config!\r\n	
+0x000d9838	SET INTERFACE EP5[%d][%d] EP7[%d][%d]!\r\n	
+0x000d9864	Received suspend!\r\n	
+0x000d9878	Received resume!\r\n	
+0x000d988c	L2: USBD_MISC_MSDC_INSERT_EVENT!\r\n	
+0x000d98b0	Error, out cnt[%d] does not match EP0 request[%d]\r\n	FUN_000524b8
+0x000d98e4	usbd uvc layer 1 init, rSYS_CTRL_NEW =0x%x\r\n	FUN_0005292c
+0x000d9914	drv_l2_usbd_uvc_init ok\r\n	FUN_00052a90
+0x000d9970	j=%d\r\n	FUN_00052df8
+0x000d9ab4	nv_open retry fail~~~~~~!\r\n	FUN_00059368
+0x000d9ad0	SPI READ FAIL\r\n	FUN_00059648
+0x000d9ae0	nvmemory_rs_byte_load memloc fail\r\n	FUN_0005969c
+0x000d9b04	 SPIFC_Flash_read_page \r\n	FUN_00059d74
+0x000d9b20	 SPIFC_Flash_read_page 1\r\n	FUN_00059d74
+0x000d9b40	 SPIFC_Flash_read_page 2\r\n	FUN_00059d74
+0x000da540	MM fix is 0\r\n	FUN_0005cbf4
+0x000da550	sp_fixed_size_free can not find allocate ptr=0x%x\r\n	FUN_0005cbf4
+0x000da584	MM variable is 0\r\n	FUN_0005cbf4
+0x000da598	MM Error 3\r\n	FUN_0005cbf4
+0x000da5a8	MM Error 4\r\n	FUN_0005cbf4
+0x000da5b8	ptr=0x%X is not found in gp_free\r\n	FUN_0005cbf4
+0x000da5dc	sp_fix_MM_BYTE_NUM_set fail, memory has already initiated\r\n	FUN_0005b978
+0x000da618	sp_fix_MM_BYTE_NUM_set fail. num=%d must divide by 8\r\n	FUN_0005b978
+0x000da650	sp_fix_MM_BYTE_NUM_set fail. mem_type =%d error\r\n	FUN_0005b978
+0x000da684	MM Dump\r\n	FUN_0005ba70
+0x000da690	  Fix64 now=%d max=%d total=%d\r\n	FUN_0005ba70
+0x000da6b4	  Fix256 now=%d max=%d total=%d\r\n	FUN_0005ba70
+0x000da6d8	  Fix1024 now=%d max=%d total=%d\r\n	FUN_0005ba70
+0x000da6fc	  Fix2048 now=%d max=%d total=%d\r\n	FUN_0005ba70
+0x000da720	  Fix4096 now=%d max=%d total=%d\r\n	FUN_0005ba70
+0x000da744	  Free now=%d max=%d\r\n	FUN_0005ba70
+0x000da75c	 Used 0x%06x size=%d      [%d]:%s\r\n	FUN_0005ba70
+0x000da780	 ____ 0x%06x size=%d\r\n	FUN_0005ba70
+0x000da798	Fix number is not enough! size=%d\r\n	FUN_0005bba4
+0x000da7bc	MM Error 2\r\n	FUN_0005bba4
+0x000da7cc	MM fail in sp_malloc(size=%d)\r\n	FUN_0005bba4
+0x000da7ec	MM Error 1\r\n	
+0x000da7fc	MM fail in gp_malloc_align(size=%d align=%d)\r\n	
+0x000da82c	Buf=0x%x , size = 0x%x \r\n	
+0x000da848	w=0x%x,r=0x%x\r\n	FUN_0005ca54
+0x000da858	Allocate cnt > MAX_CNT  \r\n	FUN_0005ca54
+0x000da874	 ____ 0x%06X size=%d\r\n	FUN_0005cda0
+0x000da88c	pvPortMalloc	FUN_0005ca54
+0x000da934	SP_ICON.GPZP	FUN_0005ee84
+0x000da944	Failed to open SP_ICON.GPZP\r\n	FUN_0005ee84
+0x000da964	Failed to read size for SP_ICON\r\n	FUN_0005ee84
+0x000da988	Failed to allocate read_buf\r\n	FUN_0005ee84
+0x000da9a8	Failed to unzip SP_ICON GPZP file\r\n	FUN_0005ee84
+0x000daa6c	InitTask \r\n	FUN_0005f048
+0x000daa78	FPS_tft(vblank,update,ispEof,FPS,)=(%d, %d, %d, %d)\r\n	FUN_0005f048
+0x000daab0	free heap size: %d\r\n	FUN_0005f048
+0x000daac8	Malloc Failed\r\n	
+0x000daad8	task name %s\r\n	
+0x000daae8	SYS_CLK=%d\r\n	FUN_0005f290
+0x000daaf8	BUILD TIME: Sep 29 2026-10:12:06\r\n	FUN_0005f290
+0x000dab1c	+++++++++++++%s++++++++++++++++++\r\n	FUN_0005f290
+0x000dab40	traceMALLOC( 0x%X, %d )\r\n	
+0x000dab5c	traceFREE( 0x%X, %d )\r\n	
+0x000dab74	InitTask	FUN_0005f290
+0x000dab80	state_usb_device_entry	FUN_0005f048
+0x000dab98	task_storage_service_entry	FUN_0005f048
+0x000dabb4	task_peripheral_handling_entry	FUN_0005f048
+0x000dabd4	state_handling_entry	FUN_0005f048
+0x000dabec	audio_dac_task_entry	FUN_0005f048
+0x000dac04	task_display_entry	FUN_0005f048
+0x000dac18	audio_task_entry	FUN_0005f048
+0x000dac74	MultiMediaParser_Task\r\n	FUN_00065c50
+0x000dac8c	MMP_MSG_REFILL_AID error ret = %d\r\n	FUN_00065c50
+0x000dacb0	MMP_MSG_REFILL_AID refill error(%d)!!!!\r\n	FUN_00065c50
+0x000dacdc	MMP_MSG_REFILL_VID error ret = %d\r\n	FUN_00065c50
+0x000dad00	MMP_MSG_REFILL_VID refill error(%d)!!!!\r\n	FUN_00065c50
+0x000dad2c	MMP_MSG_SEEK\r\n	FUN_00065c50
+0x000dad3c	MMP_MSG_STOP\r\n	FUN_00065c50
+0x000dad4c	MMP_MSG_ENABLE_FOLLOW_MODE\r\n	FUN_00065c50
+0x000dad6c	MMP_MSG_DISABLE_FOLLOW_MODE\r\n	FUN_00065c50
+0x000dad8c	DISABLE_FOLLOW_MODE=%d\r\n	FUN_00065c50
+0x000dada8	MMP_MSG_ENABLE_REVERSE_PLAY\r\n	FUN_00065c50
+0x000dadc8	ENABLE_REVERSE_PLAY=%dSec\r\n	FUN_00065c50
+0x000dade4	MMP_MSG_DISABLE_REVERSE_PLAY\r\n	FUN_00065c50
+0x000dae04	DISABLE_REVERSE_PLAY=%dSec\r\n	FUN_00065c50
+0x000dae24	MultiMediaParser_Task enter error mode\r\n	FUN_00065c50
+0x000dae50	MultiMediaParser_Release\r\n	FUN_00066750
+0x000dae6c	MultiMediaParser_Create\r\n	FUN_00066b4c
+0x000dae88	VidBufNum=%d\r\n	FUN_00066b4c
+0x000dae98	MultiMediaParser_Task	FUN_00066b4c
+0x000daeb0	%s:%d error ret=%d mmpapi=0x%x\r\n	FUN_00066b4c
+0x000daee0	MultiMediaParser_Delete\r\n	FUN_00067484
+0x000daefc	MULTIMEDIAPARSER_ACK_OK\r\n	FUN_00067484, FUN_00067540, FUN_00067694, FUN_0006781c
+0x000daf18	MultiMediaParser_SeekTo\r\n	FUN_00067540
+0x000daf34	MultiMediaParser_EnableAudStreaming\r\n	FUN_00067694
+0x000daf5c	MultiMediaParser_EnableReversePlay\r\n	FUN_0006781c
+0x000daf84	MultiMediaParser_GetAudRing\r\n	FUN_00067b0c
+0x000dafa4	MultiMediaParser_GetAudRingLen\r\n	FUN_00067b74
+0x000dafc8	MultiMediaParser_RefillAudBuf flag error: 0x%x\r\n	FUN_00067c38
+0x000daffc	MultiMediaParser_GetVidBuf flag error: 0x%x\r\n	FUN_00067fcc
+0x000db02c	VidBuf[%d]=0x%x\r\n	
+0x000db040	MultiMediaParser_ReCreate=%dSec\r\n	
+0x000db070	MULTIMEDIA_PARSER_SVN_VERSION = %s \r\n	
+0x000db0ac	MULTIMEDIA_PARSER_LIB_BUILD_TIME = %s \r\n	
+0x000db0ec	GP$221 Generalplus Multi-Media Parser 2016.09.07	
+0x000db120	MultiMediaParser_Create	FUN_00066b4c
+0x000db13c	4444442114444444444444444	FUN_00068e10
+0x000db158	444444112244444444444	FUN_00068e10
+0x000db170	444442	FUN_00068e10
+0x000db178	411144	FUN_00068e10
+0x000db190	GP$214 Generalplus QTFF Parser 2014.04.15	
+0x000db200	21224	FUN_00071400
+0x000db244	24442444	FUN_00071d8c
+0x000db260	L1_JPEG_SVN_VERSION: %s\r\n	
+0x000db28c	L1_JPEG_LIB_BUILD_TIME: %s\r\n	
+0x000db2c0	jpeg_decode_parse_header(): parameter len is 0!\r\n	FUN_00075d98
+0x000db2f4	jpeg_decode_parse_header(): First byte is not 0xFF!\r\n	FUN_00075d98
+0x000db32c	jpeg_decode_parse_header(): Second byte is not 0xD8!\r\n	FUN_00075d98
+0x000db364	jpeg_decode_parse_header(): Not parsing thumbnail but in STATE_PARSING_THUMBNAIL state!\r\n	FUN_00075d98
+0x000db3c0	jpeg_decode_parse_header(): Unknown state!\r\n	FUN_00075d98
+0x000db3f0	jpeg_decode_parse_thumbnail_header(): First byte is not 0xFF!\r\n	FUN_00076208
+0x000db430	jpeg_decode_parse_thumbnail_header(): Second byte is not 0xD8!\r\n	FUN_00076208
+0x000db474	jpeg_decode_parse_thumbnail_header(): Run out of application data!\r\n	FUN_00076208
+0x000db4bc	jpeg_decode_parse_thumbnail_header(): Unknown state!\r\n	FUN_00076208
+0x000db4f4	parse_table(): progressive mode in thumbnail is not supported!\r\n	FUN_00076974
+0x000db538	parse_table(): Second byte(0x%02X) of marker code is not supported!\r\n	FUN_00076974
+0x000db580	parse_table(): Unknown state!\r\n	FUN_00076974
+0x000db5a0	parse_quantization(): table len(%d) is less than 65!\r\n	FUN_00076dc8
+0x000db5d8	parse_quantization(): Pq and Tq(0x%x) is larger than 0x13!\r\n	FUN_00076dc8
+0x000db618	parse_quantization(): table len(%d) is less than 129!\r\n	FUN_00076dc8
+0x000db650	parse_quantization(): Ideqnitifer(0x%x) is larger than %d!\r\n	FUN_00076dc8
+0x000db690	parse_quantization(): less than 64 entries(%d) are read!\r\n	FUN_00076dc8
+0x000db6cc	Calling to drv_l1_jpeg_huffman_dc_lum_mincode_set() failed\r\n	FUN_000772a8
+0x000db70c	Calling to drv_l1_jpeg_huffman_dc_lum_valptr_set() failed\r\n	FUN_000772a8
+0x000db748	Calling to drv_l1_jpeg_huffman_dc_chrom_mincode_set() failed\r\n	FUN_000772a8
+0x000db788	Calling to drv_l1_jpeg_huffman_dc_chrom_valptr_set() failed\r\n	FUN_000772a8
+0x000db7c8	Calling to drv_l1_jpeg_huffman_ac_lum_mincode_set() failed\r\n	FUN_000772a8
+0x000db808	Calling to drv_l1_jpeg_huffman_ac_lum_valptr_set() failed\r\n	FUN_000772a8
+0x000db844	Calling to drv_l1_jpeg_huffman_ac_chrom_mincode_set() failed\r\n	FUN_000772a8
+0x000db884	Calling to drv_l1_jpeg_huffman_ac_chrom_valptr_set() failed\r\n	FUN_000772a8
+0x000db8c4	parse_huffman(): Unsupported identifer(0x%02X)!\r\n	FUN_00077748
+0x000db8f8	parse_huffman(): Less than 16 entries(%d) are read!\r\n	FUN_00077748
+0x000db930	parse_huffman(): Number(%d) of huffman DC code values is larger than 256!\r\n	FUN_00077748
+0x000db97c	parse_restart_interval(): First byte(0x%02X) is not 0x00!\r\n	FUN_00077fb4
+0x000db9b8	parse_restart_interval(): length(%d) is not 0x04!\r\n	FUN_00077fb4
+0x000db9ec	Calling to drv_l1_jpeg_restart_interval_set() failed\r\n	FUN_00077fb4
+0x000dba24	parse_app_exif() Unknown byte order(0x%02x)\r\n	FUN_000789e8
+0x000dba54	parse_app_exif() second byte order is not 0x49(0x%02x)\r\n	FUN_000789e8
+0x000dba90	parse_app_exif() second byte order is not 0x4D(0x%02x)\r\n	FUN_000789e8
+0x000dbacc	parse_app_exif() can not find 0x2A(0x%02x)\r\n	FUN_000789e8
+0x000dbafc	parse_app_exif() can not find 0x00(0x%02x)\r\n	FUN_000789e8
+0x000dbb2c	parse_app_exif() IFD0 offset is incorrect(0x%x < 0x%x)\r\n	FUN_000789e8
+0x000dbb68	parse_app_exif() run out of application data\r\n	FUN_000789e8
+0x000dbb98	parse_app_exif() IFD1 offset is incorrect(0x%x < 0x%x)\r\n	FUN_000789e8
+0x000dbbd4	parse_app_exif() thumbnail offset is incorrect(0x%x < 0x%x)\r\n	FUN_000789e8
+0x000dbc14	parse_frame(): Precision(%d) is not 0x08 nor 0x0C!\r\n	FUN_0007c970
+0x000dbc4c	parse_frame(): Component number(%d) is larger than %d!\r\n	FUN_0007c970
+0x000dbc88	parse_frame(): Quantization ID(%d) is larger than %d!\r\n	FUN_0007c970
+0x000dbcc0	parse_frame(): Unknown data(len=%d) in frame header!\r\n	FUN_0007c970
+0x000dbcf8	parse_scan(): Component number(%d) is larger than %d!\r\n	FUN_0007d2bc
+0x000dbd30	parse_scan(): Component number in scan header(%d) is larger than frame header(%d)!\r\n	FUN_0007d2bc
+0x000dbd88	parse_scan(): Not matched identifier(0x%02X) is found in frame header!\r\n	FUN_0007d2bc
+0x000dbdd4	parse_scan(): Entropy coding(huffman) selector(0x%02X) is not supported!\r\n	FUN_0007d2bc
+0x000dbe20	parse_scan(): Start of spectral(0x%02X) is larger than 0x3F!\r\n	FUN_0007d2bc
+0x000dbe60	parse_scan(): End of spectral(0x%02X) is larger than 0x3F!\r\n	FUN_0007d2bc
+0x000dbea0	parse_scan(): Approximation(0x%02X) is larger than 0xDD!\r\n	FUN_0007d2bc
+0x000dbedc	parse_scan(): Unknown data(len=%d) in scan header!\r\n	FUN_0007d2bc
+0x000dbf14	Unknown YUV mode\r\n	FUN_0007d2bc
+0x000dbf28	Calling to drv_l1_jpeg_image_size_set(%d, %d) failed\r\n	FUN_0007d2bc
+0x000dbf60	Calling to drv_l1_jpeg_yuv_sampling_mode_set(0x%x) failed\r\n	FUN_0007d2bc
+0x000dbf9c	Calling to drv_l1_jpeg_quant_luminance_set() failed\r\n	FUN_0007d2bc
+0x000dbfd4	Calling to drv_l1_jpeg_huffman_dc_lum_huffval_set() failed\r\n	FUN_0007d2bc
+0x000dc014	Calling to drv_l1_jpeg_huffman_ac_lum_huffval_set() failed\r\n	FUN_0007d2bc
+0x000dc054	Calling to drv_l1_jpeg_quant_chrominance_set() failed\r\n	FUN_0007d2bc
+0x000dc08c	Calling to drv_l1_jpeg_huffman_dc_chrom_huffval_set() failed\r\n	FUN_0007d2bc
+0x000dc0cc	Calling to drv_11_jpeg_huffman_ac_chrom_huffval_set() failed\r\n	FUN_0007d2bc
+0x000dc10c	jpeg_decode_once_start(): JPEG decoding has already started\r\n	FUN_0007ee74
+0x000dc14c	Calling to drv_l1_jpeg_vlc_addr_set() failed\r\n	FUN_0007ee74, FUN_0007ef54
+0x000dc17c	Calling to drv_l1_jpeg_vlc_maximum_length_set() failed\r\n	FUN_0007ee74
+0x000dc1b8	Calling to drv_l1_jpeg_decompression_start() failed\r\n	FUN_0007ee74, FUN_0007ef54
+0x000dc1f0	Parameter buf is not 16-byte alignment in jpeg_decode_on_the_fly_start()\r\n	FUN_0007ef54
+0x000dc23c	Calling to drv_l1_jpeg_multi_vlc_input_restart() failed\r\n	FUN_0007ef54
+0x000dc278	Calling to drv_l1_jpeg_multi_vlc_input_init() failed\r\n	FUN_0007ef54
+0x000dc2e6	'.5<=6/7>?invalid width or height (%d, %d)\r\n	
+0x000dc314	invalide qp value %d\r\n	FUN_00081c68
+0x000dc333	`%s, LumaAddr0=0x%x fail\r\n	
+0x000dc350	%s, ChromaAddr0=0x%x fail\r\n	FUN_00082394, FUN_00082788
+0x000dc36c	Allocate Lumaaddr fail \r\n	FUN_00082788
+0x000dc388	Allocate ChromaAddr fail \r\n	FUN_00082788
+0x000dc3a4	%s, DivOutLumaAddr0=0x%x fail\r\n	FUN_00082788
+0x000dc3c4	%s, DivOutChromaAddr0=0x%x fail\r\n	FUN_00082788
+0x000dc3e8	mb2scan timeout\r\n	FUN_00083364
+0x000dc400	===============================\r\n	
+0x000dc424	%p = %08x\r\n	
+0x000dc430	L1_H264_SVN_VERSION: %s\r\n	
+0x000dc45c	L1_H264_LIB_BUILD_TIME: %s\r\n	
+0x000dc490	H264Enc_InitBuffers	FUN_00082394
+0x000dc4a4	H264Dec_InitBuffers	FUN_00082788
+0x000dc4b8	%s fail: out of memory\r\n	FUN_00083b1c
+0x000dc4d4	%s: buffer init fail\r\n	FUN_00083b1c
+0x000dc4ec	decode time out\r\n	FUN_00083cd4
+0x000dc500	gp_h264dec_init	FUN_00083b1c
+0x000dc510	[ERR] encMutex is null: %d \r\n	FUN_000843a4, FUN_000843ec
+0x000dc53c	H264 Wait timeout (%d ms)\r\n	FUN_00084510
+0x000dc558	H.264 Encoder: Invalid width or height\r\n	FUN_000845f4
+0x000dc584	H.264 Encoder: Initial Buffers Fail, Out of Memory\r\n	FUN_000845f4
+0x000dc5bc	ENABLE H264 CLK\r\n	FUN_000845f4
+0x000dc5d0	DISABLE H264 CLK\r\n	FUN_00085718
+0x000dc5e4	L2_H264_SVN_VERSION: %s\r\n	
+0x000dc610	L2_H264_LIB_BUILD_TIME: %s\r\n	
+0x000dc644	->[%s:%d]\r\n	FUN_000858e4
+0x000dc650	currentMovHandle: %x,%d\r\n	FUN_000858e4
+0x000dc66c	nextMovHandle: %x,%d\r\n	FUN_000858e4
+0x000dc684	Tick overflow tmp=%d, now=%d\r\n	FUN_000858e4
+0x000dc6a4	[WARNING] pts=0\r\n	FUN_000858e4
+0x000dc6b8	video packer write fail a\r\n	FUN_000858e4
+0x000dc6d4	close write fail\r\n	FUN_000858e4
+0x000dc6e8	close write \r\n	FUN_000858e4
+0x000dc6f8	@@currentMovHandle = 0x%x,%d\r\n	FUN_000858e4
+0x000dc718	@@pkt_video.frameType = %d\r\n	FUN_000858e4
+0x000dc738	pkt_video.frameType = %d\r\n	FUN_000858e4
+0x000dc754	video packer write fail b\r\n	FUN_000858e4
+0x000dc770	NO File to write\r\n	FUN_000858e4
+0x000dc784	audio packer write fail\r\n	FUN_000858e4
+0x000dc7a0	video packer write fail c\r\n	FUN_000858e4
+0x000dc7bc	close currentMovHandle\r\n	FUN_000858e4
+0x000dc7d8	close nextMovHandle\r\n	FUN_000858e4
+0x000dc7f0	close currentWriteHandle\r\n	FUN_000858e4
+0x000dc80c	close nextWriteHandle\r\n	FUN_000858e4
+0x000dc824	%s ... \r\n	FUN_00086854
+0x000dc830	[ERR:%s:%d] pAviEncPacker->VideoPackerQ is null \r\n	FUN_00086854
+0x000dc864	[ERR:%s:%d] pAviEncPacker->msgAck is null \r\n	FUN_00086854
+0x000dc894	MOV_PACKER0	FUN_00086854
+0x000dc8a0	MOV_PACKER1	FUN_00086854
+0x000dc8ac	#time lapse:%d second\r\n	FUN_000869a0
+0x000dc8c4	->MovPacker_WriteData ERR: %x \r\n	FUN_000869a0
+0x000dc8f4	->MovPacker_Close ERR: %x \r\n	FUN_00086ce8, FUN_00086db4
+0x000dc914	video_packer_task_entry	FUN_000858e4
+0x000dc92c	video_packer_task_create	FUN_00086854
+0x000dc960	avc1isom	FUN_00087040
+0x000dc974	mp41isom	FUN_00087040
+0x000dc988	IDX00001.TMP	FUN_00089520
+0x000dc9e8	VideoHandler	FUN_00088fb4
+0x000dca00	SoundHandler	FUN_00088fb4
+0x000dca18	DataHandler	FUN_00088fb4
+0x000dcb14	Fail %s, gpMP4IdxBufStart malloc fail\n	FUN_0008d3c8
+0x000dcb44	GPLIB_VIDMUX_SVN_VERSION: %s\r\n	
+0x000dcb74	GPLIB_VIDMUX_LIB_BUILD_TIME: %s\r\n	
+0x000dcbac	vidMP4PackerInit	FUN_0008d3c8
+0x000dcc14	gp_ae_process	FUN_00092a48
+0x000dcc24	gp_sensor_ae_process	FUN_0009309c
+0x000dcc3c	gp_awb_process	FUN_00092dd8
+0x000dcc4c	\r\n ==== %s ==== \r\n	FUN_00092a48, FUN_00092dd8, FUN_0009309c
+0x000dcc60	%s: Err msg status: 0x%x\r\n	FUN_00092a48, FUN_00092dd8, FUN_0009309c
+0x000dcc7c	%s: msg stop: 0x%x\r\n	FUN_00092a48, FUN_00092dd8
+0x000dcc94	AE THREAD EXIT!\r\n	FUN_00092a48
+0x000dcca8	AWB mode = AWB_AUTO_DC\r\n	FUN_00092dd8
+0x000dccc4	AWB THREAD EXIT!\r\n	FUN_00092dd8
+0x000dccd8	%s: stop msg: 0x%x\r\n	FUN_0009309c
+0x000dccf0	%s: Unknow msg: 0x%x\r\n	FUN_0009309c
+0x000dcd08	SENSOR AE THREAD EXIT!\r\n	FUN_0009309c
+0x000dcd2c	\r\nhistogram total = %d, hist_cnt x 64 = %d\r\n\r\n	
+0x000dcd64	AE Thread is terminated successfully.\r\n	
+0x000dcd8c	Failed to terminate AE  Thread!!!\r\n	
+0x000dcdb0	AWB Thread is terminated successfully.\r\n	
+0x000dcddc	Failed to terminate AWB Thread!!!\r\n	
+0x000dce00	SENSOR AE control Thread is terminated successfully.\r\n	
+0x000dce38	Failed to terminate SENSOR AE control Thread!!!\r\n	
+0x000dce6c	AE workmem alloc failed!\r\n	FUN_0009337c
+0x000dce88	AWB workmem alloc failed!\r\n	FUN_0009337c
+0x000dcea4	Err : create gp_ae_msg_q\r\n	FUN_0009337c
+0x000dcec0	Err : create gp_awb_msg_q\r\n	FUN_0009337c
+0x000dcedc	Err : create gp_sensor_ae_msg_q\r\n	FUN_0009337c
+0x000dcf00	Err : create aeawb_sem!\r\n	FUN_0009337c
+0x000dcf1c	Err : create ae_sem!\r\n	FUN_0009337c
+0x000dcf34	Err : create gp_awb_thread_id\r\n	FUN_0009337c
+0x000dcf54	Err : create gp_ae_thread_id\r\n	FUN_0009337c
+0x000dcf74	>>SensorAE ID:%d\r\n	FUN_0009337c
+0x000dcf88	Err : create gp_sensor_ae_thread_id\r\n	FUN_0009337c
+0x000dcfb0	gp_sensor_ae_task	FUN_0009337c
+0x000dcfc4	gp_awb_task	FUN_0009337c
+0x000dcfd0	gp_ae_task	FUN_0009337c
+0x000dcfdc	drv_l2_CdspSetHbNr	FUN_00095104
+0x000dcff0	drv_l2_CdspSetWDR	FUN_00095104
+0x000dd004	drv_l2_cdsp_sat_contrast_reinit_thr	FUN_000939cc
+0x000dd028	sat_yuv_thr_1 [0]= %d, [1]=%d, [2]=%d,[3]=%d...[15]=%d\r\n	FUN_00093864
+0x000dd064	sat_yuv_thr = %d, %d, %d,%d\r\n	FUN_00093958
+0x000dd084	===%s===\r\n	FUN_000939cc
+0x000dd090	AeWinTest = %d\r\n	FUN_000942a0
+0x000dd0a4	RawWinOffset[%d,%d]\r\n	FUN_000942a0
+0x000dd0bc	RawWinCellSize[%d,%d]\r\n	FUN_000942a0
+0x000dd0d4	AeWp&BpThr[%d,%d]\r\n	FUN_000942a0
+0x000dd0e8	Err: send Sensor AE message\r\n	FUN_000949a4
+0x000dd108	Err: gp_sensor_ae_msg_q=%d\r\n	FUN_000949a4
+0x000dd130	\r\n ==>>Set Edge value: %d,Day Edge AMPGA= %d,  %d,R_CDSP_SP_THRD:0x%x \r\n	
+0x000dd17c	rawFmt = %d, rawFmtFlag = %d\r\n	FUN_00094d44
+0x000dd19c	\r\n[case]:MSG_CDSP_SCALE_CROP	FUN_00095104
+0x000dd1bc	++++++length_para = %d\r\n	FUN_00095104
+0x000dd1d8	gp_isp_awb_set_cnt_thr & gp_isp_ae_set_lum_bound\r\n	FUN_00095104
+0x000dd20c	gp_isp_ae_set_meter = 0x%x\r\n	FUN_00095104
+0x000dd22c	**************CDSP_AE_USER_DEFAULT_SET****************\r\n	FUN_00095104
+0x000dd268	**************CDSP_AE_USER_WEIGHT_SET****************\r\n	FUN_00095104
+0x000dd2a0	AE target night = %d\r\n	FUN_00095104
+0x000dd2b8	 ==>>AWB Mode:%d\r\n	FUN_00095104
+0x000dd2cc	 ==>>AWB SPEED:%d\r\n	FUN_00095104
+0x000dd2e0	 ==>>ae_target:%d\r\n	FUN_00095104
+0x000dd2f4	 ==>>ae_ev_idx_gain[val]:%d\r\n	FUN_00095104
+0x000dd314	org ae target = %d, after EV[%d] [%d]= %d\r\n	FUN_00095104
+0x000dd340	YUV Data don't support[MSG_CDSP_NEW_WB]\r\n	FUN_00095104
+0x000dd36c	MipiRawFmt = %d\r\n	FUN_000964bc
+0x000dd380	MipiYuvFmt = 0\r\n	FUN_000964bc
+0x000dd39c	sensor type get name no m!\r\n	FUN_00096b4c
+0x000dd3c4	sensor type[%d] 0x%x\r\n	FUN_00096b4c
+0x000dd3dc	==>sat_yuv_thr:%d, si.max_ev_idx:%d, si.night_ev_idx:%d\r\n	FUN_00096b4c
+0x000dd418	MSG: gp_aeawb_create ok!!\r\n	FUN_00096b4c
+0x000dd434	Err: gp_aeawb_create failed!\r\n	FUN_00096b4c
+0x000dd454	Warn: gp_aeawb_create already create!\r\n	FUN_00096b4c
+0x000dd47c	\r\n ****** CdspDev ALLOC FAILED!!!!!!! \r\n\r\n	FUN_00096fb0
+0x000dd4a8	>>MD_size:%d\r\n	FUN_00096fb0
+0x000dd4b8	 >>md_work_iram_addr:0x%x\r\n	FUN_00096fb0
+0x000dd4d4	L2_CDSP_SVN_VERSION: %s\r\n	
+0x000dd500	L2_CDSP_LIB_BUILD_TIME: %s\r\n	
+0x000dd534	[Warning]%s:AeTable Fail!!\r\n	FUN_0009718c
+0x000dd554	g_AeTable[%d]=%d\r\n	FUN_0009718c
+0x000dd568	frame end wait error!\r\n	
+0x000dd580	\r\n\r\n>>drop frame wait time out !!\r\n	
+0x000dd5a4	\r\n [F]sensor_frame:%d\r\n	
+0x000dd5bc	Err: send AWB message\r\n	FUN_00097308
+0x000dd5d4	Err:1.send AE message\r\n	FUN_00097308
+0x000dd5f8	=>CaptureRaw_Mode=0x%x\r\n	FUN_00097cf4
+0x000dd624	RAW Out: MODE_PURERAW\r\n	
+0x000dd63c	RAW Out: MODE_LINCORR\r\n	
+0x000dd654	RAW Out: MODE_LENSCMP\r\n	
+0x000dd66c	RAW Out: MODE_WBGAIN,LSC En\r\n	
+0x000dd68c	RAW Out: MODE_WBGAIN\r\n	
+0x000dd6a4	RAW Out: MODE_LUTGAMMA\r\n	
+0x000dd6c0	RAW PATH not selsect! \r\n	
+0x000dd6f0	=>drv_l2_capture_raw_set_cfg\r\n	
+0x000dd710	=>pIspCaptureRaw->CaptureMode=0x%x\r\n	
+0x000dd790	drv_l2_IspSetAWB	FUN_00094a64
+0x000dd7a4	drv_l2_CdspSetSharpen	FUN_00095104
+0x000dd7bc	drv_l2_CdspUserAeTableRegister	FUN_0009718c
+0x000dd7dc	drv_l2_cdsp_enable	FUN_00098b14
+0x000dd7f0	VIDIOC_S_CTRL fail!!!\r\n	FUN_00097d14, FUN_00097dc4, FUN_00097e68, FUN_00097eb8, FUN_00097fa4, FUN_000981b0, FUN_000981fc, FUN_00098248, FUN_000982a4, FUN_000982f0, FUN_0009835c, FUN_000983e4, FUN_00098458, FUN_0009852c, FUN_000985d8, FUN_00098654, FUN_000986d0, FUN_00098720, FUN_00098770, FUN_000987c0, FUN_00098810, FUN_00098874, FUN_00098948, FUN_00098998
+0x000dd808	RAW_Win Set: subsample = %d, size[%d, %d],  offset[%d, %d]\r\n	FUN_00097fa4
+0x000dd848	===set ae_user_weight_table===\r\n	FUN_00097fa4
+0x000dd86c	*********** ae.ae_user_weight_table != NULL;**********\r\n	FUN_00097fa4
+0x000dd8a8	*********** ae.ae_user_weight_table = NULL;**********\r\n	FUN_00097fa4
+0x000dd8e0	cdsp set enable finish\r\n	FUN_00098b14
+0x000dd8fc	drv_l2_cdsp_enable_pre	FUN_000989e8
+0x000dddd4	.          	FUN_0009944c
+0x000ddde0	..         	FUN_0009944c
+0x000dddec	\r\nErr-DE_INVLDDATA	FUN_000a3f40
+0x000dde00	SD write fail 6\r\n	FUN_0009b4bc
+0x000dde14	SD write fail 7\r\n	
+0x000ddebc	FAT16	FUN_000a0ff4
+0x000ddec4	MSWIN5.1	FUN_000a0ff4
+0x000dded0	MSWIN4.1	FUN_000a1490
+0x000ddedc	EXFAT   	FUN_000a1a74
+0x000ddf18	NO NAME    	FUN_000a0ff4, FUN_000a1490
+0x000ddf24	FAT32	FUN_000a1490
+0x000ddf34	..         	FUN_000a6894
+0x000ddf40	\r\n\r\n [WARRING] CARD FULL!!!!	FUN_000a81c4
+0x000ddf68	\/:*?"<>|	FUN_000a9b78
+0x000de937	$illegal device id=%u\r\n	
+0x000de950	drvl1_sdc_status_set_wait cmd=0x%08x arg=0x%08x kind=%u\r\n	FUN_000ab980
+0x000de98c	drvl1_sdc_status_set_wait timeoutbit=%u, pollbit=0x%0x, timeout=%u, Status=0x%08x\r\n	FUN_000ab980
+0x000de9e0	drvl1_sdc_status_set_wait timeout=%u, pollbit=0x%0x, Status=0x%08x\r\n	FUN_000ab980
+0x000dea28	SDERR 41. status=%08x timeout=%u cmd=0x%08x arg=0x%08x kind=%u\r\n	FUN_000ac5e0
+0x000dea6c	SDERR 42. status=%08x timeout=%u cmd=0x%08x arg=0x%08x kind=%u\r\n	FUN_000ac5e0
+0x000deab8	2 sd-%u dma left count is same after a while. %u, %u, %u, 0x%08x\r\n	FUN_000ac84c
+0x000deafc	drvl1_sdc_busy_polling time out %u\r\n	FUN_000ac84c
+0x000deb24	drvl1_sdc_read_byte_by_dma count must 4 multiple\r\n	FUN_000acc08
+0x000deb58	C_SDC_EXT_WAIT_ENABLE is on.  0x%08x \r\n	FUN_000acd60
+0x000deb80	C_SDC_CTL_DUMMYCLK is on.  0x%08x \r\n	FUN_000acd60
+0x000deba8	L1_SD_LIB_BUILD_TIME: %s\r\n	
+0x000debd8	L1_SD_SVN_NUM: %s\r\n	
+0x000debfc	sd-%u polling timeout. status=0x%08x ctl=0x%08x cmd=0x%08x arg=0x%08x resp=0x%08x\r\n	
+0x000dec74	WRITE_AU_END       	
+0x000dec88	WRITE_ONE_SECTOR   	
+0x000dec9c	WRITE_RANDOM_ACCESS	
+0x000decb0	WRITE_BECAUSE_READ 	
+0x000decc4	WRITE_FLUSH        	
+0x000decd8	READ_AU_END        	
+0x000decec	READ_ONE_SECTOR    	
+0x000ded00	READ_RANDOM_ACCESS 	
+0x000ded14	READ_BECAUSE_WRITE 	
+0x000ded28	READ_FLUSH         	
+0x000ded3c	\r\n===========================================\r\n	
+0x000ded6c	%s count: %u\r\n	
+0x000ded7c	===========================================\r\n	
+0x000dedc4	illegal start end bit %u, %u. must start_bit >= end_bit, (start_bit - end_bit) <= 31\r\n	FUN_000ad63c
+0x000dee1c	sd_sema_count not 0 before lock. %d\r\n	FUN_000ad8a8
+0x000dee44	sd_sema_count not 0 after unlock. %d\r\n	FUN_000ad954
+0x000dee6c	sd device id must 0 or 1, could not %u\r\n	FUN_0004cb44
+0x000dee98	sd[%u] bit_mode must 1 or 4, could not %d\r\n	FUN_0004cb44
+0x000deec4	SD1 #2 DAT1~3 conflict with JTAG. disable JTAG. R_GPIOCTRL=%08x\r\n	FUN_0004cb44
+0x000def08	set sd[%u] bit_mode to %u\r\n	FUN_0004cb44
+0x000def24	sd clock rate must between %u~%u\r\n	
+0x000def48	limit sd[%u] max clock rate to %u\r\n	
+0x000def6c	sd-%d: read retry=%u, write retry=%u\r\n	
+0x000def94	sd-%d: read retry timeout=%u, write retry timeout=%u\r\n	
+0x000defcc	drvl2_sd_init sd-%u removed app said\r\n	FUN_000adb6c
+0x000deff4	1 drvl2_sd_init drvl2_sd_flush done\r\n	FUN_000adb6c
+0x000df01c	SDERR 1\r\n	FUN_000adb6c
+0x000df028	SDERR 3\r\n	FUN_000adb6c
+0x000df034	SDERR 4\r\n	FUN_000adb6c
+0x000df040	SDERR 5\r\n	FUN_000adb6c
+0x000df04c	SDERR 6\r\n	FUN_000adb6c
+0x000df058	SDERR 7\r\n	FUN_000adb6c
+0x000df064	sd[%u] clock rate=%u, root rate=%u divider=%u\r\n	FUN_000adb6c
+0x000df094	recover_sd_base sd removed!\r\n	FUN_000ae1c4
+0x000df0b4	SDRECOVERERR 1\r\n	FUN_000ae1c4
+0x000df0c8	SDRECOVERERR 2\r\n	FUN_000ae1c4
+0x000df0dc	SDRECOVERERR 3\r\n	FUN_000ae1c4
+0x000df0f0	SDRECOVERERR4\r\n	FUN_000ae1c4
+0x000df100	SDRECOVERERR 5\r\n	FUN_000ae1c4
+0x000df114	SDRECOVERERR 6\r\n	FUN_000ae1c4
+0x000df128	0 fail to reset sd controller\r\n	FUN_000ae6b8
+0x000df148	fail to get state. response=0x%08x\r\n	FUN_000ae6b8
+0x000df170	fail to get state aft reset. response=0x%08x\r\n	FUN_000ae6b8
+0x000df1a0	aft reset sd card, still not in tranfer state\r\n	FUN_000ae6b8
+0x000df1d0	1 fail to reset sd controller\r\n	FUN_000ae6b8
+0x000df1f0	1 go to reset sd card\r\n	FUN_000ae6b8
+0x000df208	2 fail to reset sd controller\r\n	FUN_000ae6b8
+0x000df228	fail to send CMD12. response=0x%08x\r\n	FUN_000ae6b8
+0x000df250	fail to get state aft CMD12. response=0x%08x\r\n	FUN_000ae6b8
+0x000df280	aft CMD12, become PRG\r\n	FUN_000ae6b8
+0x000df298	card is still busy after CMD12\r\n	FUN_000ae6b8
+0x000df2bc	2 go to reset sd card\r\n	FUN_000ae6b8
+0x000df2d4	card is still busy at PRG state\r\n	FUN_000ae6b8
+0x000df2f8	3 go to reset sd card\r\n	FUN_000ae6b8
+0x000df310	3 fail to reset sd controller\r\n	FUN_000ae6b8
+0x000df330	fail to recover to transfer state. response=0x%08x\r\n	FUN_000ae6b8
+0x000df368	MCLK is [%u], sd[%u] clock rate=%u, root rate=%u divider=%u\r\n	FUN_000aeb84
+0x000df3a8	SDERR 31=0x%08x, 0x%08x\r\n	FUN_000aeccc
+0x000df3c4	SDERR 32\r\n	FUN_000aeccc
+0x000df3d0	sd_adtc drvl1_sdc_command_set error[%d]. status=0x%08x count=%u command=0x%x old status=0x%08x\r\n	FUN_000aee24
+0x000df434	sd_adtc drvl1_sdc_command_complete_wait error[%d]. status=0x%08x count=%u command=0x%x old status=0x%08x\r\n	FUN_000aee24
+0x000df4a0	sd_adtc drvl1_sdc_read_byte_by_dma error[%d]. status=0x%08x count=%u command=0x%x old status=0x%08x\r\n	FUN_000aee24
+0x000df508	sd_adtc read data_complete_wait fail[%d]. status=0x%08x count=%u\r\n	FUN_000aee24
+0x000df54c	sd_adtc drvl2_sdrvl1_sdc_read_byte_by_dmad_read crc error[%d]. status=0x%08x count=%u\r\n	FUN_000aee24
+0x000df5a4	unknown speed class %u\r\n	FUN_000af86c
+0x000df5c0	unknown bus width %u\r\n	FUN_000af914
+0x000df5d8	unknown card type %u\r\n	FUN_000afa0c
+0x000df5f0	unknown uhs speed grade %u\r\n	FUN_000afaf0
+0x000df610	sd_data_bus_width=%u\r\n	FUN_000afc24
+0x000df628	sd_secured_mode=%u\r\n	FUN_000afc24
+0x000df640	sd_sd_card_type=%u\r\n	FUN_000afc24
+0x000df658	sd_speed_class=%u\r\n	FUN_000afc24
+0x000df66c	sd_flow_write_au_sectors=%u erase_au=%u\r\n	FUN_000afc24
+0x000df698	sd_erase_size_au=%u\r\n	FUN_000afc24
+0x000df6b0	sd_uhs_speed_grade=%u\r\n	FUN_000afc24
+0x000df6c8	sd_uhs_au_sectors=%u\r\n	FUN_000afc24
+0x000df6e0	SDERR 20\r\n	FUN_000affc8
+0x000df6ec	SDERR 21\r\n	FUN_000affc8
+0x000df6f8	SDERR 22\r\n	FUN_000affc8
+0x000df704	SDERR 23\r\n	FUN_000affc8
+0x000df710	SD USE 1 BIT ONLY!\r\n	FUN_000affc8
+0x000df728	SDERR 24.1\r\n	FUN_000affc8
+0x000df738	SDERR 24\r\n	FUN_000affc8
+0x000df744	SDERR 25\r\n	FUN_000affc8
+0x000df750	SDHC_CARD. c_size=%d total_sector=%u\r\n	FUN_000affc8
+0x000df778	SD_CARD. c_size=%d total_sector=%u block_len=%d mult=%d\r\n	FUN_000affc8
+0x000df7b4	SDERR 26\r\n	FUN_000affc8
+0x000df7c0	SDERR 27\r\n	FUN_000affc8
+0x000df7cc	SDERR 28\r\n	FUN_000affc8
+0x000df7d8	MMC USE 1 BIT ONLY!\r\n	FUN_000b0608
+0x000df7f0	MMC use 4 bit\r\n	FUN_000b0608
+0x000df800	MMC max speed is 52M\r\n	FUN_000b0608
+0x000df818	MMCHC_CARD. total_sector=%u\r\n	FUN_000b0608
+0x000df838	MMC_CARD. c_size=%d total_sector=%u block_len=%d mult=%d\r\n	FUN_000b0608
+0x000df874	SDERR 10\r\n	FUN_000b09f0
+0x000df880	SDERR 11\r\n	FUN_000b09f0
+0x000df88c	SD standy\r\n	FUN_000b09f0
+0x000df898	drvl2_sd_read_start_base not SD_CARD_STATE_TRANSFER. Status=0x%08x\r\n	FUN_000b0ed0
+0x000df8e0	drvl2_sd_read_start_base busywait timeout. Status=0x%08x\r\n	FUN_000b0ed0
+0x000df91c	drvl2_sd_read_start_base sd command err. comamnd=0x%08x Status=0x%08x response=%08x\r\n	FUN_000b0ed0
+0x000df974	drvl2_sd_read_start_base mmc command err. comamnd=0x%08x Status=0x%08x response=%08x\r\n	FUN_000b0ed0
+0x000df9cc	drvl2_sd_read_start_base comamnd complete wait error[%d]. status=0x%08x\r\n	FUN_000b0ed0
+0x000dfa18	1 drvl2_sd_read_sector_base err %d. start=%u nr=%u. ret=%d status=0x%08x\r\n	FUN_000b11d8
+0x000dfa64	1 drvl2_sd_read_sector_base err complete wait error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfab0	1 drvl2_sd_read_sector_base err crc error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfaf0	2 drvl2_sd_read_sector_base err %d. start=%u nr=%u. ret=%d status=0x%08x MCLK=%u\r\n	FUN_000b11d8
+0x000dfb44	2 drvl2_sd_read_sector_base err complete wait error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfb90	2 drvl2_sd_read_sector_base err crc error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfbd0	3 drvl2_sd_read_sector_base err %d. sector_count=%u status=0x%08x\r\n	FUN_000b11d8
+0x000dfc14	3 drvl2_sd_read_sector_base err complete wait error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfc60	3 drvl2_sd_read_sector_base err crc error[%d]. status=0x%08x\r\n	FUN_000b11d8
+0x000dfca0	drvl2_sd_read_stop_base complete wait error[%d]. status=0x%08x\r\n	FUN_000b17bc
+0x000dfce4	drvl2_sd_read_stop_base crc error[%d]. status=0x%08x\r\n	FUN_000b17bc
+0x000dfd1c	drvl2_sd_read_stop_base stop controller error[%d]. status=0x%08x\r\n	FUN_000b17bc
+0x000dfd60	drvl2_sd_erase_all start. bulk_sector=%u\r\n	
+0x000dfd8c	drvl2_sd_erase_all done. ret=%d, total=%u left=%u\r\n	
+0x000dfdc0	1 drvl2_sd_write_sector_base err %d. sector_count=%u. ret=%d status=0x%08x\r\n	FUN_000b1af8
+0x000dfe10	1 drvl2_sd_write_sector_base. drvl1_sdc_data_complete_wait err. status=0x%08x\r\n	FUN_000b1af8
+0x000dfe60	1 drvl2_sd_write_sector_base crc error[%d]. status=0x%08x\r\n	FUN_000b1af8
+0x000dfe9c	2 drvl2_sd_write_sector_base err %d. sector_count=%u. ret=%d status=0x%08x save_status=0x%08x\r\n	FUN_000b1af8
+0x000dfefc	2 drvl2_sd_write_sector_base. drvl1_sdc_data_complete_wait err. status=0x%08x\r\n	FUN_000b1af8
+0x000dff4c	2 drvl2_sd_write_sector_base crc error[%d]. status=0x%08x\r\n	FUN_000b1af8
+0x000dff88	3 drvl2_sd_write_sector_base err %d. sector_count=%u. ret=%d status=0x%08x\r\n	FUN_000b1af8
+0x000dffd8	3 drvl2_sd_write_sector_base. drvl1_sdc_data_complete_wait err. status=0x%08x\r\n	FUN_000b1af8
+0x000e0028	3 drvl2_sd_write_sector_base crc error[%d]. status=0x%08x\r\n	FUN_000b1af8
+0x000e0064	drvl2_sd_write_stop_base. drvl1_sdc_data_complete_wait err. status=0x%08x\r\n	FUN_000b1f14
+0x000e00b0	3 drvl2_sd_write crc error[%d]. status=0x%08x\r\n	FUN_000b1f14
+0x000e00e0	drvl2_sd_write_stop_base. drvl1_sdc_stop_controller err. status=0x%08x\r\n	FUN_000b1f14
+0x000e012c	drvl2_sd_write_stop_base. CMD12 err. status=0x%08x\r\n	FUN_000b1f14
+0x000e0164	drvl2_sd_write_stop_base. drvl2_sd_card_busy_wait err. status=0x%08x\r\n	FUN_000b1f14
+0x000e01ac	\r\nsd_write_start:endforce read stop err %d\r\n	FUN_000b2158
+0x000e01dc	\r\nsd_write_start:endforce write stop err %d. start=%u, nr=%u, lastend=%u accnr=%u\r\n	FUN_000b2158
+0x000e0230	\r\nsd_write_start:sd write base err %d, start=%u nr=%u\r\n	FUN_000b2158
+0x000e0268	single write CMD12 enforce result=%d\r\n	FUN_000b24d0
+0x000e0290	single write CMD12 busy wait enforce result=%d\r\n	FUN_000b24d0
+0x000e02c4	3 drvl1_sdc_command_complete_wait error[%d]. status=0x%08x start=%u nr=%u\r\n	FUN_000b2b28
+0x000e0310	3 read data_complete_wait fail[%d]. status=0x%08x start=%d, sector_count=%d\r\n	FUN_000b2b28
+0x000e0360	3 drvl2_sd_read crc error[%d]. status=0x%08x start=%u nr=%u\r\n	FUN_000b2b28
+0x000e03a0	3 sd read stop error[%d]. status=0x%08x start=%u nr=%u\r\n	FUN_000b2b28
+0x000e03e0	x\r\n\r\n	FUN_000b302c
+0x000e03e8	o\r\n\r\n	FUN_000b302c
+0x000e03f0	\r\nsd_read_start:sd read base err %d, start=%u nr=%u\r\n	FUN_000b3108
+0x000e0428	1 sd discover card busy after read error !\r\n	FUN_000b33b8
+0x000e0458	drvl2_sd_card_remove\r\n	FUN_000b3844
+0x000e0470	drvl2_sd_card_remove pass lock\r\n	FUN_000b3844
+0x000e0494	L2_SD_SVN_VERSION: %s\r\n	
+0x000e04bc	L2_SD_LIB_BUILD_TIME: %s\r\n	
+0x000e06ac	GP$ v1.7.0 AE AWB library by Comi 20250227	
+0x000e06d8	drv_l1_usbd_set_ep_stall, mask = 0x%x\r\n	FUN_000bd260
+0x000e0700	L1: USBD_BULKAB_OUT_M_DMA_AB_DONE_EVENT\r\n	
+0x000e072c	un-process newep IF 0x%x, IE 0x%x in ISR\r\n	
+0x000e0758	PHY IIC addr=0x06, data=%x\r\n	FUN_000bdcd4
+0x000e0778	driver l1 MSDC init ok!\r\n	FUN_000bdd40
+0x000e0794	PHY IIC addr=0x01, data=%x\r\n	FUN_000bdd40
+0x000e07b4	drv_l1_usbd_uac_init ok\r\n	
+0x000e07d0	L1_USBD_SVN_NUM: %s\r\n	
+0x000e07f8	L1_USBD_LIB_BUILD_TIME: %s\r\n	
+0x000e082c	Addr 0x0C set value = 0x%x\r\n	FUN_000bdf5c
+0x000e084c	Addr 0x0E set value = 0x%x\r\n	FUN_000bdf5c
+0x000e086c	Addr 0x15 set value = 0x%x\r\n	FUN_000bdf5c
+0x000e088c	Addr 0x16 set value = 0x%x\r\n	FUN_000bdf5c
+0x000e08ac	Addr 0x18 set value = 0x%x\r\n	FUN_000bdf5c
+0x000e0900	Write DMA return -1\r\n	
+0x000e0918	Read DMA return -1\r\n	
+0x000e0930	SDCARD_WriteSectorDMA	FUN_000be4b4
+0x000e097c	[%s] id=%d ret=%d\r\n	FUN_000be4b4, FUN_000be5e4
+0x000e0990	drvl2_sd_read_stop err=%d\r\n	FUN_000be5e4
+0x000e09ac	drvl2_sd_read_sector err=%d\r\n	FUN_000be5e4
+0x000e09cc	drvl2_sd_read_start err=%d\r\n	FUN_000be5e4
+0x000e09ec	[%s] drvl2_sd_init fail. id=%d ret=%d\r\n	FUN_000be848
+0x000e0a14	SDCARD_Initial_Storage	FUN_000be848
+0x000e0a2c	SDCARD_ReadSectorDMA	FUN_000be5e4
+0x000e0a44	\r\nH264_RC: i_qp_min can't be greater than i_qp_max!! Set i_qp_max = i_qp_min\r\n	FUN_000beedc
+0x000e0a94	\r\nH264_RC: VBV enable...\r\n	FUN_000beab0
+0x000e0ab0	\r\nH264_RC: i_vbv_max_bitrate can't be smaller than i_bitrate!! Set i_vbv_max_bitrate = i_bitrate\r\n	FUN_000beab0
+0x000e0b14	\r\nH264_RC: i_vbv_buffer_size can't be smaller than one frame. Set i_vbv_buffer_size = one frame\r\n	FUN_000beab0
+0x000e0b78	\r\nH264_RC: f_rf_constant_max must be greater than f_rf_constant. Set rate_factor_max_increment = 0\r\n	FUN_000beab0
+0x000e0be0	\r\nH264_RC: VBV not enable...\r\n	FUN_000beab0
+0x000e0c00	\r\nH264_RC: i_bitrate <= 0!! Set i_rc_method = H264_RC_CQP\r\n	FUN_000beedc
+0x000e0c3c	\r\nH264_RC: i_fps < 1!! Set i_fps = 1\r\n	
+0x000e0c64	\r\nH264_RC: i_hpframes must be greater than 0!! Set i_hpframes = 1\r\n	FUN_000beedc
+0x000e0ca8	\r\nH264_RC: i_mb_count can't be smaller than 1. Set i_mb_count = 1\r\n	FUN_000beedc
+0x000e0cec	\r\nH264_RC: i_rawY_delay can't be greater than 4!! Set i_rawY_delay = 4\r\n	FUN_000beedc
+0x000e0d38	H264_RC: Frame %d VBV underflow!! Try to reduce bitrate or increase qualityLevel if you always see this message.\r\n	FUN_000c178c
+0x000e0dac	H264_MBRC: Can't allocate bits inside the frame because (i_mb_count/i_mb_step_size) >= MBRC_MAX_WEIGHTING_TABLE_SIZE. Reset i_mb_step_size = %d.\r\n	
+0x000e1054	0123456789ABCDEF	
+0x000e1068	0123456789abcdef	
+0x000e1084	0000000000000000Infinity	FUN_000c9bf8, FUN_000ca380, FUN_000ca5b6
+0x000e10a4	POSIX	

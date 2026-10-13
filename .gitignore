@@ -1,0 +1,8 @@
+/ghidra
+/images
+/build/ghidra
+/build/obj
+/build/*.bin
+/build/*.elf
+
+.DS_Store
