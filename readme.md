@@ -1,24 +1,15 @@
-# Updating the annoying sounds on my Godox C100
+# Tinkering with the Godox C100 firmware
 
-I'm not that much of a firmware tinkerer, but AI had no problem helping me do it XD
+I'm not that much of a hardware tinkerer, but AI is getting so good, and it had no problem helping me figure out how to disassemble and patch the firmware of this toy camera I got :P
 
-It helped a lot that the firmware and instructions to flash it are published: https://www.godox.com/product-e/C100.html
+The firmware and flashing instructions are published by the manufacturer: https://www.godox.com/product-e/C100.html
 
-The firmware at this time is in `Godox_C100_V1.1.6.zip` (and extracted to `c100_v1.1.6_20260929/`).
+The camera runs on a GeneralPlus (GP22B) chip, an ARM processor running FreeRTOS that is apparently often used for cheap dashcams and kids’ cameras and other gadgets like these.
 
-It turns out it runs on a GeneralPlus (GP22B) chip, an ARM processor running FreeRTOS that is apparently often used for cheap dashcams and kids’ cameras and other gadgets like these.
+## Sounds
 
-Then, I downloaded my favorite two sounds from Super Mario from https://themushroomkingdom.net/media/smb/wav — Kick and Coin.
+I updated the startup and shutter sounds to the Coin and Kick sound from Super Mario, which I got from here: https://themushroomkingdom.net/media/smb/wav. They needed to be reduced in bitrate, and compressed and shortened a bit though.
 
-I let AI compress them, shorten them, and fade the longer Coin out, creating `build/{kick,coin}_11k.wav`
+## Retro colorized pixelated dithering
 
-Then:
-
-```sh
-python3 tools/patch_res.py c100_v1.1.6_20260929/GP_CARDVR_UPGRADE.BIN CAMERA.wav build/kick_11k.wav build/GP_CARDVR_UPGRADE.BIN
-CAMERA.wav: wrote 4040/7168 B at 0x171e00; 6288 bytes changed, all inside the slot -> build/GP_CARDVR_UPGRADE.BIN
-python3 tools/patch_res.py build/GP_CARDVR_UPGRADE.BIN POWERON_AUDIO.wav build/coin_11k.wav build/GP_CARDVR_UPGRADE.BIN
-POWERON_AUDIO.wav: wrote 16362/16384 B at 0x1b0400; 15715 bytes changed, all inside the slot -> build/GP_CARDVR_UPGRADE.BIN
-```
-
-Finally, flash the new firmware: place the `GP_CARDVR_UPGRADE.BIN` in the root of the SD, turn it back on, wait for it to flash, it automatically restarts, done ☺️
+And then, I made the pictures pixelated, dithered, and colored -- like the Pixless Camera project (mine still hasn't arrived haha, but now I have my own!)

@@ -15,6 +15,7 @@ base:
     .equ    NPAL,        7
     .equ    BAYER_ADDR,    0x000bb040
     .equ    PAL_IDX_ADDR,  0x000bb054
+    .equ    SEEDED_ADDR,   0x000bb058
     .equ    PALETTES_ADDR, 0x000bb0c0
 
     .org    0xbab6c
@@ -44,7 +45,26 @@ hook:
     mov     lr, pc
     b       CACHE_INV
     mov     r11, r5                     @ r11 = even_base (row 2b)
-    @ ---- select palette base from the persistent index ----
+    @ ---- seed PAL_IDX once per boot from sensor pixel entropy ----
+    ldr     r4, =SEEDED_ADDR
+    ldrb    r0, [r4]
+    cmp     r0, #0
+    bne     2f
+    ldrb    r0, [r11, #0]
+    ldrb    r1, [r11, #64]
+    add     r0, r0, r1
+    ldrb    r1, [r11, #128]
+    add     r0, r0, r1
+    ldrb    r1, [r11, #192]
+    add     r0, r0, r1                  @ sum of 4 luma samples (noisy low bits)
+3:  cmp     r0, #NPAL                   @ reduce mod NPAL (runs once per boot)
+    subhs   r0, r0, #NPAL
+    bhs     3b
+    ldr     r1, =PAL_IDX_ADDR
+    strb    r0, [r1]
+    mov     r0, #1
+    strb    r0, [r4]                    @ mark seeded
+2:  @ ---- select palette base from the current index ----
     ldr     r4, =PAL_IDX_ADDR
     ldrb    r0, [r4]
     cmp     r0, #NPAL
@@ -233,7 +253,10 @@ BAYER:
 
     .org    PAL_IDX_ADDR
 PAL_IDX:
-    .byte   6, 0, 0, 0                   @ init 6 -> first photo wraps to 0 (riso6)
+    .byte   6, 0, 0, 0                   @ init 6; overridden by the random seed
+    .org    SEEDED_ADDR
+SEEDED:
+    .byte   0, 0, 0, 0                   @ 0 until the per-boot seed has run
 
     .org    0xbb080
 photo43:
@@ -260,6 +283,55 @@ PALETTES:                               @ NPAL x 6 colours, JPEG/JFIF (Y,U,V)
     .byte 99,105,197, 89,123,106, 185,114,111, 235,106,132, 41,118,137, 41,118,137    @ vibrant_nature
     .byte 108,138,215, 83,192,155, 52,187,133, 103,207,108, 178,159,88, 178,159,88    @ bold_hues
     .byte 199,145,105, 128,156,89, 37,145,113, 193,54,162, 155,65,183, 155,65,183     @ refreshing
+
+@ Aspect-ratio shrink stubs, reached directly from the resolution jump table
+@ (ldrls pc,[pc,idx,lsl#2] @ 0xf3c8, table @ 0xf3d0). Each keeps the native crop
+@ and first-scaler size (so the sensor is scaled, not cropped) and sets a small
+@ 320-wide final size at that aspect. r4 = size struct, r9 = 1080 at entry.
+    .org    0xbb140
+stub169:                                @ 16:9  crop 1920x1080 -> 320x180
+    mov     r6, #320
+    mov     r7, #180
+    strh    r6, [r4, #14]
+    strh    r7, [r4, #16]
+    mov     r0, #1
+    strb    r0, [r4, #4]
+    mov     r0, #1920
+    strh    r0, [r4, #6]
+    strh    r9, [r4, #8]
+    strh    r0, [r4, #10]
+    strh    r9, [r4, #12]
+    b       PHOTO_PATH
+
+    .org    0xbb180
+stub32:                                 @ 3:2  crop 1616x1080 -> 320x214
+    mov     r6, #320
+    mov     r7, #214
+    strh    r6, [r4, #14]
+    strh    r7, [r4, #16]
+    mov     r0, #1
+    strb    r0, [r4, #4]
+    mov     r0, #1616
+    strh    r0, [r4, #6]
+    strh    r9, [r4, #8]
+    strh    r0, [r4, #10]
+    strh    r9, [r4, #12]
+    b       PHOTO_PATH
+
+    .org    0xbb1c0
+stub11:                                 @ 1:1  crop 1024x1024 -> 320x320
+    mov     r6, #320
+    mov     r7, #320
+    strh    r6, [r4, #14]
+    strh    r7, [r4, #16]
+    mov     r0, #1
+    strb    r0, [r4, #4]
+    mov     r0, #1024
+    strh    r0, [r4, #6]
+    strh    r0, [r4, #8]
+    strh    r0, [r4, #10]
+    strh    r0, [r4, #12]
+    b       PHOTO_PATH
 
     .org    0xbb2c0
 idx_stub:                               @ hooks FUN_000187c4 (once per photo)

@@ -43,12 +43,18 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 }
 
 # --- code patches ---
-PHOTO43_JUMP=$(asm photo43_jump 0xf74c 0xf750)
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c)
 CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8)     # per-photo palette advance
 CAVE=$(asm photo_cave 0xbab6c 0xbb340)      # dead FUN_000bab6c
+# Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
+# absolute handler addresses, so point each photo aspect ratio straight at its
+# cave stub. 0/1=16:9 1920, 2=3:2 1616, 3=4:3 1440, 4=1:1 1024; b/c = hi-res.
 python3 tools/patch_code.py "$OUT" "$OUT" \
-    "$PHOTO43_JUMP" "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
-    0xf3dc:c4f70000:4cf70000 \
-    0xf3fc:60f70000:4cf70000 \
-    0xf400:74f70000:4cf70000
+    "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
+    0xf3d0:9cf70000:40b10b00 \
+    0xf3d4:9cf70000:40b10b00 \
+    0xf3d8:b0f70000:80b10b00 \
+    0xf3dc:c4f70000:80b00b00 \
+    0xf3e0:d4f60000:c0b10b00 \
+    0xf3fc:60f70000:80b00b00 \
+    0xf400:74f70000:80b00b00
