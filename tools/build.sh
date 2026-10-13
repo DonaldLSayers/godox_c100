@@ -34,7 +34,7 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 # --- code patches ---
 PHOTO43_JUMP=$(asm photo43_jump 0xf74c 0xf750)
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c)
-CAVE=$(asm photo_cave 0xbab6c 0xbad6c)      # first 512 bytes of dead FUN_000bab6c
+CAVE=$(asm photo_cave 0xbab6c 0xbb200)      # dead FUN_000bab6c
 python3 tools/patch_code.py "$OUT" "$OUT" \
     "$PHOTO43_JUMP" "$HOOK_JUMP" "$CAVE" \
     0xf3dc:c4f70000:4cf70000 \
