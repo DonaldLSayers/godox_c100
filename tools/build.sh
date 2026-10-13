@@ -9,8 +9,19 @@ OUT=build/GP_CARDVR_UPGRADE.BIN
 mkdir -p build/obj
 
 # --- sounds ---
-python3 tools/patch_res.py "$ORIG" CAMERA.wav build/kick_11k.wav "$OUT"
-python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/coin_11k.wav "$OUT"
+# SILENT=1 makes the shutter and power-on silent (same slots, zeroed samples).
+#   SILENT=1 sh tools/build.sh   -> no sounds
+#   sh tools/build.sh            -> Super Mario kick / coin sounds
+SILENT=${SILENT:-0}
+if [ "$SILENT" = "1" ]; then
+    python3 -I tools/mk_silence.py build/kick_11k.wav build/silent_cam.wav
+    python3 -I tools/mk_silence.py build/coin_11k.wav build/silent_pwr.wav
+    python3 tools/patch_res.py "$ORIG" CAMERA.wav build/silent_cam.wav "$OUT"
+    python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/silent_pwr.wav "$OUT"
+else
+    python3 tools/patch_res.py "$ORIG" CAMERA.wav build/kick_11k.wav "$OUT"
+    python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/coin_11k.wav "$OUT"
+fi
 
 # --- assemble a patch: prints ADDR:OLDHEX:NEWHEX for patch_code.py ---
 asm() {  # asm NAME START END
@@ -34,9 +45,10 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 # --- code patches ---
 PHOTO43_JUMP=$(asm photo43_jump 0xf74c 0xf750)
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c)
-CAVE=$(asm photo_cave 0xbab6c 0xbb200)      # dead FUN_000bab6c
+CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8)     # per-photo palette advance
+CAVE=$(asm photo_cave 0xbab6c 0xbb340)      # dead FUN_000bab6c
 python3 tools/patch_code.py "$OUT" "$OUT" \
-    "$PHOTO43_JUMP" "$HOOK_JUMP" "$CAVE" \
+    "$PHOTO43_JUMP" "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
     0xf3dc:c4f70000:4cf70000 \
     0xf3fc:60f70000:4cf70000 \
     0xf400:74f70000:4cf70000

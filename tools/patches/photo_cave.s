@@ -1,18 +1,21 @@
-@ EXPERIMENT 3 / OPTION B: true nearest-palette colour matching, per 2x2 block
-@ (one chroma pair per block in 4:2:0), with 4x4 Bayer ordered dithering on the
-@ block's representative luma. Single palette (riso6). Built on the proven
-@ band/pixel-pair write structure from the colour-bars experiment.
+@ OPTION B + palette cycling: true nearest-palette colour matching, per 2x2
+@ block (one chroma pair per block in 4:2:0), with 4x4 Bayer ordered dithering
+@ on the block's representative luma. A persistent index (PAL_IDX) selects one
+@ of NPAL palettes, advanced once per photo by idx_stub (hooks FUN_000187c4).
     .syntax unified
     .arm
 base:
     .set    RESUME,      base + 0x1544c
     .set    PHOTO_PATH,  base + 0xf188
+    .set    RESUME187,   base + 0x187c8
     .set    CACHE_INV,   base + 0x401ac
     .set    CACHE_CLEAN, base + 0x401b8
     .equ    PHOTO,       0x1317ac
     .equ    STRIP_BYTES, 0x13155c
-    .equ    BAYER_ADDR,  0x000bb040
-    .equ    PAL_ADDR,    0x000bb058
+    .equ    NPAL,        7
+    .equ    BAYER_ADDR,    0x000bb040
+    .equ    PAL_IDX_ADDR,  0x000bb054
+    .equ    PALETTES_ADDR, 0x000bb0c0
 
     .org    0xbab6c
 hook:
@@ -40,8 +43,16 @@ hook:
     mov     r1, r7, lsl #6
     mov     lr, pc
     b       CACHE_INV
-
     mov     r11, r5                     @ r11 = even_base (row 2b)
+    @ ---- select palette base from the persistent index ----
+    ldr     r4, =PAL_IDX_ADDR
+    ldrb    r0, [r4]
+    cmp     r0, #NPAL
+    movhs   r0, #0
+    ldr     r5, =PALETTES_ADDR
+    add     r1, r0, r0, lsl #3          @ idx*9
+    add     r1, r1, r1                  @ idx*18
+    add     r5, r5, r1                  @ r5 = palbase (18 bytes/palette)
     mov     r10, #0                    @ r10 = band index b (0..31)
 bandloop:
     mov     r9, #0                     @ r9 = block index c (0..159), x = 2c
@@ -81,7 +92,7 @@ pixloop:
     ldrb    r1, [r6]                    @ U
     ldrb    r2, [r6, #1]                @ V
     @ ---- nearest of 6 palette colours (Manhattan Y+U+V) ----
-    ldr     r4, =PAL_ADDR               @ r4 = palette base
+    mov     r4, r5                      @ r4 = palette base
     mov     r3, #0                     @ best offset
     mvn     r12, #0                    @ best distance
     ldrb    r6, [r4, #0]
@@ -175,7 +186,7 @@ pixloop:
     movlo   r12, lr
     movlo   r3, #15
     @ ---- write the winning palette colour to the whole 2x2 block ----
-    add     r4, r4, r3                  @ palptr = palbase + best offset
+    add     r4, r5, r3                  @ palptr = palbase + best offset
     ldrb    r0, [r4]                    @ pY
     ldrb    r1, [r4, #1]                @ pU
     ldrb    r2, [r4, #2]                @ pV
@@ -219,14 +230,10 @@ BAYER:
     .byte   12, 4, 14, 6
     .byte   3, 11, 1, 9
     .byte   15, 7, 13, 5
-    .org    PAL_ADDR
-PAL:                                    @ riso6, JPEG/JFIF YCbCr (Y,U,V) x6
-    .byte   30, 144, 125                @ 1a1a3a navy
-    .byte   115, 114, 206               @ e0405a pink-red
-    .byte   164, 72, 183                @ f09040 orange
-    .byte   125, 148, 69                @ 2aa0a0 teal
-    .byte   225, 109, 139               @ f0e0c0 cream
-    .byte   255, 128, 128               @ ffffff white
+
+    .org    PAL_IDX_ADDR
+PAL_IDX:
+    .byte   6, 0, 0, 0                   @ init 6 -> first photo wraps to 0 (riso6)
 
     .org    0xbb080
 photo43:
@@ -242,4 +249,26 @@ photo43:
     strh    r0, [r4, #10]
     strh    r9, [r4, #12]
     b       PHOTO_PATH
+    .ltorg
+
+    .org    PALETTES_ADDR
+PALETTES:                               @ NPAL x 6 colours, JPEG/JFIF (Y,U,V)
+    .byte 30,144,125, 115,114,206, 164,72,183, 125,148,69, 225,109,139, 255,128,128   @ riso6
+    .byte 82,137,113, 235,103,135, 167,76,160, 85,108,177, 39,120,153, 39,120,153     @ dark_sunset
+    .byte 130,105,196, 198,58,159, 164,77,110, 131,174,87, 108,162,138, 108,162,138   @ vibrant_summer
+    .byte 187,57,166, 138,74,190, 106,130,216, 88,196,152, 127,192,90, 127,192,90     @ fiesta
+    .byte 99,105,197, 89,123,106, 185,114,111, 235,106,132, 41,118,137, 41,118,137    @ vibrant_nature
+    .byte 108,138,215, 83,192,155, 52,187,133, 103,207,108, 178,159,88, 178,159,88    @ bold_hues
+    .byte 199,145,105, 128,156,89, 37,145,113, 193,54,162, 155,65,183, 155,65,183     @ refreshing
+
+    .org    0xbb2c0
+idx_stub:                               @ hooks FUN_000187c4 (once per photo)
+    ldr     r12, =PAL_IDX_ADDR
+    ldrb    r0, [r12]
+    add     r0, r0, #1
+    cmp     r0, #NPAL
+    movhs   r0, #0
+    strb    r0, [r12]
+    push    {r3, r4, r5, r6, r7, lr}    @ replaced instruction from 0x187c4
+    b       RESUME187
     .ltorg
