@@ -174,10 +174,81 @@ fiesta, vibrant nature, bold hues, refreshing), 6 colours each as JPEG YCbCr.
   matcher or drop back to a smaller size.
 - Photos land in `DCIM` as `IMG_xxxx.jpg`.
 
+## Look knobs (contrast / brightness)
+
+`build.sh` applies an optional per-block brightness pre-map before palette
+matching (hue/colour mapping is untouched), as assemble-time constants so there
+is no runtime division:
+
+- `CONTRAST` — percent, 100 = neutral. Higher (≈115–140) is more dramatic (pushes
+  midtones to the palette's dark/bright ends, good for flat/dim scenes); lower
+  (≈70–90) is softer. Useful range ~70–160.
+- `BRIGHT` — luma offset, 0 = neutral; positive lifts, negative darkens
+  (≈ −60…60).
+
+e.g. `CONTRAST=130 BRIGHT=10 SILENT=1 sh tools/build.sh`.
+
+## UI graphics (GPZP, logos, and the OSD overlay)
+
+The firmware's on-screen graphics come from three different places.
+
+### GPZP images (menu/status assets) — editable
+
+`.gpzp` resources are `GPZP` magic + raw fixed-Huffman DEFLATE of **RGB565**
+(little-endian, 2 B/px). `0x8C71` is the transparency key (the live LCD shows
+through). The LCD is **320×240**. `tools/gpzp.py` decodes/encodes these:
+
+```
+gpzp.py decode IN.gpzp OUT.png [WIDTH]     # WIDTH auto-detected if omitted
+gpzp.py encode IN.png  OUT.gpzp            # width/height from the PNG
+gpzp.py decode-all FIRMWARE.BIN OUTDIR     # every GPZP -> PNG
+```
+
+Round-trip is pixel-exact and re-encodes smaller than the slot (fixed Huffman).
+To change one: edit the PNG (same size; alpha-0 = transparent), `encode`, then
+`patch_res.py` it in (size-checked). Decoded PNGs are in `gpzp/decoded/`.
+Confirmed widths: BACKGROUND 320×240, TFT_WIFI_SYM 320×240, SELECTBAR_LONG
+296×40. The small bars / SP_ICON sheet have ambiguous widths (colours are always
+right; only the row-wrap may be off) — pin them from their draw calls if needed.
+
+### Power logos — editable, and unused
+
+`POWER_ON_LOGO.jpg` is a **beach photo** and `POWER_OFF_LOGO.jpg` is **"Good
+Bye!"** — plain JPEGs, left over from the OEM/children's-camera software this
+firmware descends from (like `WIFI.xml`). They are standard JPEGs: replace with
+a 320×240 baseline JPEG that fits the slot via `patch_res.py`.
+
+### The live-view OSD overlay — code-drawn, not a file
+
+The mode icons (📷🎥), metering icon, **battery**, **corner framing/aspect
+brackets**, **centre reticle**, **ISO/F/SS** labels + digits, and the standby
+**"Godox" wordmark** are **not stored images**. They are rendered by the
+GeneralPlus bitmap-glyph/OSD engine:
+
+- Source data: `GPRS.pak`, a **nested** GeneralPlus archive (no RGB565/alpha-key
+  images inside — it is glyph/index tables).
+- Loader/parser: `FUN_00028710` → `FUN_0002809c`.
+- Draw routines: `FUN_00027fbc` (glyph string), `FUN_00027ea4` (one glyph), and
+  the OSD callers `FUN_000242fc` / `FUN_000245f0` / `FUN_00029710` (these log
+  "Failed to draw char font"). Battery: `FUN_0001ed4c`, `FUN_0002602c`.
+
+Pak format cracked so far: `GPRS` + version, a header whose pointers at offsets
+`0xb8/0xe8/0xec` reach **3 glyph groups × 12 descriptors**
+(`[advance, w, h, _, u32 dataOffset]`; bitmap = `w*h` bytes, 1 B/px alpha, at
+`groupBase + dataOffset`, `groupBase` = word 2 of the group's 0xC-byte
+subheader). Those 36 are small anti-aliased strip glyphs — a minor sub-set. The
+main icons sit behind a further index layer (e.g. the block at `0x9f07`, step
+`0x570`, begins with another table of counts/offsets, not pixels), not yet
+unwound.
+
+Practical takeaway: to change the overlay, **patching the draw calls** (e.g. NOP
+the "Godox" wordmark draw, or move/hide an element) is far more tractable than
+fully reverse-engineering and re-packing `GPRS.pak`.
+
 ## Ideas not yet done
 
 - Persist the palette index across power cycles (needs a spot that survives
   reboot, e.g. a tiny file on the card).
-- Contrast stretch before matching (photos are a little dim, so detail bunches
-  in the mid shades).
 - Per-pixel (rather than per-2×2-block) luma dithering for finer gradients.
+- Fully unwind `GPRS.pak` to extract/edit the OSD icon bitmaps, or (easier)
+  patch specific overlay draw calls (e.g. remove the "Godox" wordmark).
