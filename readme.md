@@ -12,7 +12,7 @@ I updated the startup and shutter sounds to the Coin and Kick sound from Super M
 
 ## Retro colorized pixelated dithering
 
-And then, I made the pictures pixelated, dithered, and colored -- like the Pixless Camera project (mine still hasn't arrived haha, but now I have my own!)
+And then, I made the pictures and videos pixelated, dithered, and colored -- like the Pixless Camera project (mine still hasn't arrived haha, but now I have my own!)
 
 <table>
     <tr>
