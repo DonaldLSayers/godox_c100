@@ -9,24 +9,42 @@ OUT=build/GP_CARDVR_UPGRADE.BIN
 mkdir -p build/obj
 
 # --- sounds ---
-# SILENT=1 makes the shutter and power-on silent (same slots, zeroed samples).
-#   SILENT=1 sh tools/build.sh   -> no sounds
+# SILENT=1 makes the shutter, power-on and mode-switch click silent (same slots,
+# zeroed samples) AND never switches the speaker amplifier on (see SPK_PATCHES
+# below), so there is no amp hiss either.
+#   SILENT=1 sh tools/build.sh   -> no sounds, speaker amp stays off
 #   sh tools/build.sh            -> Super Mario kick / coin sounds
 SILENT=${SILENT:-0}
+python3 tools/gp_res.py "$ORIG" build/res >/dev/null
 if [ "$SILENT" = "1" ]; then
     python3 -I tools/mk_silence.py build/kick_11k.wav build/silent_cam.wav
     python3 -I tools/mk_silence.py build/coin_11k.wav build/silent_pwr.wav
+    python3 -I tools/mk_silence.py build/res/CLICK.wav build/click_silent.wav
     python3 tools/patch_res.py "$ORIG" CAMERA.wav build/silent_cam.wav "$OUT"
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/silent_pwr.wav "$OUT"
+    python3 tools/patch_res.py "$OUT" CLICK.wav build/click_silent.wav "$OUT"
 else
     python3 tools/patch_res.py "$ORIG" CAMERA.wav build/kick_11k.wav "$OUT"
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/coin_11k.wav "$OUT"
 fi
 
 # BEEP.wav (the UI/focus beep) is always silenced, in both sound profiles.
-python3 tools/gp_res.py "$ORIG" build/res >/dev/null
 python3 -I tools/mk_silence.py build/res/BEEP.wav build/beep_silent.wav
 python3 tools/patch_res.py "$OUT" BEEP.wav build/beep_silent.wav "$OUT"
+
+# Speaker amplifier = GPIO 0x2c, driven by gpio_write FUN_000433f4(pin, level).
+# Sound playback FUN_00022a80 switches it on, waits 100 ms, then queues the WAV;
+# the peripheral task (FUN_00021e60, ~1 s tick) only switches it off again on
+# its 2nd tick after that, so every sound gives ~1-2 s of amp hiss even when
+# the WAV is silent. With SILENT=1 the "on" calls become NOPs (pure pin writes,
+# return value unused), so the amp is never powered:
+#   0x22b38  FUN_00022a80, every UI sound (shutter, click, power-on, beep)
+#   0x350f0  state_startup_init, unconditional "on" at boot
+#   0x2ed50  photo state, the remaining "on"
+SPK_PATCHES=""
+if [ "$SILENT" = "1" ]; then
+    SPK_PATCHES="0x22b38:2d8200eb:0000a0e1 0x350f0:bf3800eb:0000a0e1 0x2ed50:a75100eb:0000a0e1"
+fi
 
 # --- look knobs (applied to each block's brightness before palette matching) ---
 # CONTRAST: percent, 100 = neutral. Higher = more dramatic (spreads midtones to
@@ -85,4 +103,5 @@ python3 tools/patch_code.py "$OUT" "$OUT" \
     "$(jt 0xf3dc c4f70000 photo43)" \
     "$(jt 0xf3e0 d4f60000 stub11)" \
     "$(jt 0xf3fc 60f70000 photo43)" \
-    "$(jt 0xf400 74f70000 photo43)"
+    "$(jt 0xf400 74f70000 photo43)" \
+    $SPK_PATCHES

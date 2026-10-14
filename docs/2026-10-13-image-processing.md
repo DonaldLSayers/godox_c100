@@ -41,7 +41,8 @@ breaking the boot path or the updater itself would remove SD recovery.
 - `build.sh` — **rebuild `build/GP_CARDVR_UPGRADE.BIN` from the original**:
   applies sounds, then assembles each `tools/patches/*.s` and patches it in.
   Fails if a patch overflows its slot or has an unresolved relocation.
-  `SILENT=1 sh tools/build.sh` builds with no sounds; plain `sh tools/build.sh`
+  `SILENT=1 sh tools/build.sh` builds with no sounds and the speaker amp never
+  switched on; plain `sh tools/build.sh`
   uses the Super Mario kick (shutter) and coin (power-on). The UI/focus beep
   (`BEEP.wav`) is silenced in both.
 - `sim_dither.py` — off-camera preview of palette + ordered dithering (early,
@@ -184,6 +185,21 @@ fiesta, vibrant nature, bold hues, refreshing), 6 colours each as JPEG YCbCr.
 - Shutter (`CAMERA.wav`) and power-on (`POWERON_AUDIO.wav`): custom clips, or
   silent with `SILENT=1`.
 - UI/focus beep (`BEEP.wav`): always silenced.
+- Mode-switch sound = `CLICK.wav` (sound slot 0). The mode switch handlers
+  (`------mode N------` at 0x1dc0c etc.) post message `0x7018` together with
+  `MSG_APQ_MODE_TO_*`; the state loops answer `0x7018` with `FUN_00022a80(0)`,
+  which plays `CLICK.WAV` if the key-tone setting (config byte +0x19) is on.
+  Silenced with `SILENT=1`.
+- Sound player `FUN_00022a80(slot)`: 0=CLICK, 1=CAMERA, 2/3=POWERON_AUDIO,
+  4=unused handle, 5=BEEP. It turns the **speaker amp (GPIO 0x2c)** on, waits
+  100 ms, then queues the WAV to the audio task. The amp is switched off by the
+  peripheral task `FUN_00021e60` on message `0x6002` (posted every ~1 s): the
+  first tick after a sound arms a counter, the second prints `@@@CLOSE SPEAKER`
+  and drives GPIO 0x2c low. That is the ~1–2 s of hiss after every sound, even
+  a silent one. Boot (`state_startup_init`, 0x350f0) also turns the amp on
+  unconditionally.
+- `SILENT=1` NOPs the three amp-on calls (0x22b38, 0x350f0, 0x2ed50), so the
+  amp is never powered: no sounds and no hiss.
 
 ## Timing notes
 
