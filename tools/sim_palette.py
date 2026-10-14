@@ -17,6 +17,8 @@ Usage (needs numpy + pillow; e.g. `uv run --with numpy,pillow tools/sim_palette.
   --wy W       luma weight in the distance (W*|dY| + |dU| + |dV|)
   --cdither A  also dither U,V with Bayer amplitude A (luma uses 32)
   --sat S      chroma gain in percent before matching (100 = neutral)
+  --lut YS CS  match via a lookup table on Y,U,V quantised to steps of 2^YS and
+               2^CS, as the camera would; 3 4 = 33x17x17 entries (~9.5 KB)
 """
 import argparse, os, re
 import numpy as np
@@ -67,7 +69,8 @@ def add_mixes(pal, n, how='gap'):
     return [tuple(int(round(x)) for x in c) for c in pal]
 
 
-def render(img, pal, wy=1, cdither=0, contrast=100, bright=0, sat=100):
+def match(img, pal, wy=1, cdither=0, contrast=100, bright=0, sat=100, lut=None):
+    """Palette index chosen for each 2x2 block, as the camera would."""
     ycc = np.asarray(img.convert('YCbCr'), dtype=np.int32)
     h, w = ycc.shape[0] // 2 * 2, ycc.shape[1] // 2 * 2
     blk = ycc[:h, :w].reshape(h // 2, 2, w // 2, 2, 3).sum(axis=(1, 3)) // 4
@@ -84,9 +87,20 @@ def render(img, pal, wy=1, cdither=0, contrast=100, bright=0, sat=100):
         U = np.clip(U + bc * cdither // 8, 0, 255)
         V = np.clip(V - bc * cdither // 8, 0, 255)
     P = np.array(pal)
+    if lut:  # camera-style lookup: table indexed by quantised Y,U,V, entry =
+        # nearest colour at the bin centre. Bins are centred on multiples of the
+        # step, so neutral grey (U=V=128) sits mid-bin instead of on an edge.
+        ys, cs = lut
+        Y = np.clip((Y + (1 << ys >> 1)) >> ys << ys, 0, 255)
+        U = np.clip((U + (1 << cs >> 1)) >> cs << cs, 0, 255)
+        V = np.clip((V + (1 << cs >> 1)) >> cs << cs, 0, 255)
     d = (wy * np.abs(Y[..., None] - P[:, 0]) + np.abs(U[..., None] - P[:, 1])
          + np.abs(V[..., None] - P[:, 2]))
-    out = P[d.argmin(axis=-1)].astype(np.uint8)
+    return d.argmin(axis=-1)
+
+
+def render(img, pal, **kw):
+    out = np.array(pal)[match(img, pal, **kw)].astype(np.uint8)
     out = out.repeat(2, axis=0).repeat(2, axis=1)
     return Image.fromarray(out, 'YCbCr').convert('RGB')
 
@@ -107,9 +121,10 @@ def main():
     ap.add_argument('--contrast', type=int, default=100)
     ap.add_argument('--bright', type=int, default=0)
     ap.add_argument('--sat', type=int, default=100)
+    ap.add_argument('--lut', type=int, nargs=2, metavar=('YSHIFT', 'CSHIFT'))
     a = ap.parse_args()
     pal = add_mixes(load_palettes()[a.palette], a.mix, a.how)
-    render(prepare(a.src, a.width), pal, a.wy, a.cdither, a.contrast, a.bright, a.sat).save(a.dst)
+    render(prepare(a.src, a.width), pal, a.wy, a.cdither, a.contrast, a.bright, a.sat, a.lut).save(a.dst)
     print(f'{len(pal)} colours:', pal)
 
 

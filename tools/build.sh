@@ -43,7 +43,7 @@ BFIX=$(( BRIGHT + 128 ))           # bias so the assembler never sees a negative
 # --- assemble a patch: prints ADDR:OLDHEX:NEWHEX for patch_code.py ---
 asm() {  # asm NAME START END
     $LLVM/llvm-mc -triple=armv5te-none-eabi --defsym=CONTRAST_FIX=$CFIX --defsym=BRIGHT_FIX=$BFIX \
-        -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
+        -I build/obj -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
     if $LLVM/llvm-readobj -r "build/obj/$1.o" | grep -q R_ARM; then
         echo "$1: unresolved relocation (use 'mov lr, pc; b X' instead of 'bl X')" >&2; exit 1
     fi
@@ -61,8 +61,10 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 }
 
 # --- code patches ---
+# Palette table from tools/palettes.py, included by photo_cave.s.
+python3 -I tools/palettes.py asm > build/obj/palettes.inc
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c)
-CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8)     # per-photo palette advance
+CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8)     # per-photo palette pick + table
 CAVE=$(asm photo_cave 0xbab6c 0xbb340)      # dead FUN_000bab6c
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its

@@ -44,7 +44,16 @@ breaking the boot path or the updater itself would remove SD recovery.
   `SILENT=1 sh tools/build.sh` builds with no sounds; plain `sh tools/build.sh`
   uses the Super Mario kick (shutter) and coin (power-on). The UI/focus beep
   (`BEEP.wav`) is silenced in both.
-- `sim_dither.py` — off-camera preview of palette + ordered dithering.
+- `sim_dither.py` — off-camera preview of palette + ordered dithering (early,
+  grayscale-ramp version).
+- `sim_palette.py` — exact off-camera replica of the current hook (blocks,
+  Bayer, weighted nearest colour, lookup-table quantisation).
+- `palettes.py` — the palette definitions; `palettes.py asm` generates the
+  table `build.sh` assembles into the cave.
+- `palette_preview.py` — renders every palette on photos (contact sheets).
+- `emu_cave.py` — runs the built cave code in an ARM emulator (Unicorn) and
+  checks it pixel-for-pixel against `sim_palette.py`.
+  See [2026-10-14-palettes.md](2026-10-14-palettes.md).
 
 Reverse engineering: Ghidra headless project under `build/ghidra/`, decompiled
 C in `decomp/c100.c`, string→function index in `decomp/strings.tsv`
@@ -58,6 +67,10 @@ C in `decomp/c100.c`, string→function index in `decomp/strings.tsv`
 - `v003_smaller_image.bin` — + 4:3 photo mode remapped to 320×240.
 - `v004_bw.bin` — + clean black & white (320×240). Re-flashed to confirm the
   photo path is fully recoverable.
+- `v005_bw_dithering.bin`, `v006_first_colored_dithering.bin`,
+  `v007_cycled_color_palettes_dithering.bin`,
+  `v008_cycled_color_palettes_dithering_larger.bin` — the dithering steps up to
+  v1 palettes at 640 wide.
 
 ## The code cave
 
@@ -133,7 +146,10 @@ solid colour bars) before attempting colour matching is what finally made the
 colour work predictable: it separated "can we address and write pixels" from
 "is the colour maths right."
 
-### Effect: palette dithering (what ships)
+### Effect: palette dithering (v1)
+
+> Superseded on 2026-10-14 by 10–32 colour palettes and a per-photo lookup
+> table: see [2026-10-14-palettes.md](2026-10-14-palettes.md).
 
 Per 2×2 block the hook:
 
@@ -147,7 +163,9 @@ Per 2×2 block the hook:
 Per-block is the natural unit in 4:2:0 (one chroma pair per block) and keeps the
 work well inside the interrupt budget.
 
-### Palette cycling and a random start
+### Palette cycling and a random start (v1)
+
+> v2 picks a random palette for every photo instead (see the palettes doc).
 
 Seven palettes are stored in the cave (riso6, dark sunset, vibrant summer,
 fiesta, vibrant nature, bold hues, refreshing), 6 colours each as JPEG YCbCr.
