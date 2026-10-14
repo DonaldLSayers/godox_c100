@@ -41,9 +41,11 @@ CFIX=$(( CONTRAST * 128 / 100 ))   # contrast in /128 fixed point (128 = neutral
 BFIX=$(( BRIGHT + 128 ))           # bias so the assembler never sees a negative
 
 # --- assemble a patch: prints ADDR:OLDHEX:NEWHEX for patch_code.py ---
-asm() {  # asm NAME START END
+asm() {  # asm NAME START END [extra llvm-mc args, e.g. --defsym=X=1]
+    name=$1 start=$2 end=$3; shift 3
     $LLVM/llvm-mc -triple=armv5te-none-eabi --defsym=CONTRAST_FIX=$CFIX --defsym=BRIGHT_FIX=$BFIX \
-        -I build/obj -filetype=obj "tools/patches/$1.s" -o "build/obj/$1.o"
+        -I build/obj "$@" -filetype=obj "tools/patches/$name.s" -o "build/obj/$name.o"
+    set -- "$name" "$start" "$end"
     if $LLVM/llvm-readobj -r "build/obj/$1.o" | grep -q R_ARM; then
         echo "$1: unresolved relocation (use 'mov lr, pc; b X' instead of 'bl X')" >&2; exit 1
     fi
@@ -63,18 +65,24 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 # --- code patches ---
 # Palette table from tools/palettes.py, included by photo_cave.s.
 python3 -I tools/palettes.py asm > build/obj/palettes.inc
-HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c)
-CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8)     # per-photo palette pick + table
 CAVE=$(asm photo_cave 0xbab6c 0xbb340)      # dead FUN_000bab6c
+sym() {  # address of a label in the assembled cave
+    $LLVM/llvm-nm build/obj/photo_cave.o | awk -v s="$1" '$3 == s { print "0x" $1 }'
+}
+HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c --defsym=HOOK=$(sym hook))
+CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8 --defsym=STUB=$(sym idx_stub))  # per-photo palette + table
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its
 # cave stub. 0/1=16:9 1920, 2=3:2 1616, 3=4:3 1440, 4=1:1 1024; b/c = hi-res.
+jt() {  # jt ENTRY OLDHEX LABEL -> ENTRY:OLDHEX:<label address, little-endian>
+    printf '%s:%s:%s\n' "$1" "$2" "$(python3 -I -c "import sys; print(int(sys.argv[1], 0).to_bytes(4, 'little').hex())" "$(sym "$3")")"
+}
 python3 tools/patch_code.py "$OUT" "$OUT" \
     "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
-    0xf3d0:9cf70000:40b10b00 \
-    0xf3d4:9cf70000:40b10b00 \
-    0xf3d8:b0f70000:80b10b00 \
-    0xf3dc:c4f70000:80b00b00 \
-    0xf3e0:d4f60000:c0b10b00 \
-    0xf3fc:60f70000:80b00b00 \
-    0xf400:74f70000:80b00b00
+    "$(jt 0xf3d0 9cf70000 stub169)" \
+    "$(jt 0xf3d4 9cf70000 stub169)" \
+    "$(jt 0xf3d8 b0f70000 stub32)" \
+    "$(jt 0xf3dc c4f70000 photo43)" \
+    "$(jt 0xf3e0 d4f60000 stub11)" \
+    "$(jt 0xf3fc 60f70000 photo43)" \
+    "$(jt 0xf400 74f70000 photo43)"

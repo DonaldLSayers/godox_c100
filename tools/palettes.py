@@ -10,7 +10,7 @@ dropping near-duplicates. Colours are JPEG/JFIF YCbCr, which is what the
 camera's buffer holds.
 
   palettes.py            print every palette (hex + Y,U,V)
-  palettes.py asm        print palettes.inc for photo_cave.s (NPAL + PALETTE_DATA)
+  palettes.py asm        print palettes.inc for photo_cave.s (palettes + tags)
 """
 import sys
 
@@ -136,6 +136,48 @@ def expanded():
     return pals
 
 
+# Palette tag: two letters in a 3x5 pixel font, drawn top right on every photo
+# so you can tell which palette it got. Letters in the palette's lightest
+# colour, with a one-pixel outline (8 neighbours) in its darkest.
+TAG = {'riso6': 'R6', 'refreshing': 'RF', 'mid_century': 'MC', 'harbour': 'HB',
+       'db16': 'DB', 'endesga32': 'EG', 'sweetie16': 'S6', 'nes': 'NS'}
+FONT = {  # rows top to bottom, 3 pixels each
+    'B': ['110', '101', '110', '101', '110'], 'C': ['111', '100', '100', '100', '111'],
+    'D': ['110', '101', '101', '101', '110'], 'E': ['111', '100', '110', '100', '111'],
+    'F': ['111', '100', '110', '100', '100'], 'G': ['111', '100', '101', '101', '111'],
+    'H': ['101', '101', '111', '101', '101'], 'M': ['101', '111', '111', '101', '101'],
+    'N': ['110', '101', '101', '101', '101'], 'R': ['110', '101', '110', '101', '101'],
+    'S': ['011', '100', '010', '001', '110'], '6': ['111', '100', '111', '101', '111'],
+}
+TAG_ROWS, TAG_COLS = 7, 9   # 5x7 text area (3 + 1 gap + 3) plus the outline
+TAG_SCALE = 2               # blocks per font pixel (a block is 2x2 image pixels)
+TAG_TOP, TAG_RIGHT = 4, 4   # margins in blocks
+
+
+def tag_cells(name):
+    """TAG_ROWS x TAG_COLS grid: 0 = photo shows through, 1 = dark, 2 = light."""
+    text = [[0] * TAG_COLS for _ in range(TAG_ROWS)]
+    for k, ch in enumerate(TAG[name]):
+        for r, row in enumerate(FONT[ch]):
+            for c, bit in enumerate(row):
+                text[1 + r][1 + 4 * k + c] = int(bit)
+    cells = [[0] * TAG_COLS for _ in range(TAG_ROWS)]
+    for r in range(TAG_ROWS):
+        for c in range(TAG_COLS):
+            if text[r][c]:
+                cells[r][c] = 2
+            elif any(text[rr][cc] for rr in range(max(r - 1, 0), min(r + 2, TAG_ROWS))
+                     for cc in range(max(c - 1, 0), min(c + 2, TAG_COLS))):
+                cells[r][c] = 1
+    return cells
+
+
+def tag_colours(cols):
+    """Indices of the darkest and lightest colour (by Y) of an expanded palette."""
+    ys = [c[0] for c, _ in cols]
+    return ys.index(min(ys)), ys.index(max(ys))
+
+
 def main():
     pals = expanded()
     if sys.argv[1:] == ['asm']:
@@ -144,6 +186,21 @@ def main():
         print('    .macro  PALETTE_DATA                  @ per palette: count, then count x (Y,U,V)')
         for name, cols in pals.items():
             print(f'    .byte {len(cols)}, ' + ', '.join('%d,%d,%d' % c for c, _ in cols) + f'   @ {name}')
+        print('    .endm')
+        print(f'    .equ    TAG_ROWS, {TAG_ROWS}')
+        print(f'    .equ    TAG_COLS, {TAG_COLS}')
+        print(f'    .equ    TAG_SCALE, {TAG_SCALE}')
+        print(f'    .equ    TAG_TOP, {TAG_TOP}')
+        print(f'    .equ    TAG_RIGHT, {TAG_RIGHT}')
+        nbytes = (TAG_ROWS * TAG_COLS + 3) // 4
+        print(f'    .equ    TAG_BYTES, {nbytes + 2}')
+        print(f'    .macro  TAG_DATA                      @ per palette: {nbytes} B of 2-bit cells'
+              ' (LSB first), dark offset, light offset')
+        for name, cols in pals.items():
+            flat = [v for row in tag_cells(name) for v in row]
+            packed = [sum(v << (2 * j) for j, v in enumerate(flat[i:i + 4])) for i in range(0, len(flat), 4)]
+            dark, light = tag_colours(cols)
+            print(f'    .byte ' + ', '.join(map(str, packed + [3 * dark, 3 * light])) + f'   @ {name} {TAG[name]}')
         print('    .endm')
         return
     for name, cols in pals.items():

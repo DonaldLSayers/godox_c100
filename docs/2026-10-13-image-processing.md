@@ -71,6 +71,8 @@ C in `decomp/c100.c`, string→function index in `decomp/strings.tsv`
   `v007_cycled_color_palettes_dithering.bin`,
   `v008_cycled_color_palettes_dithering_larger.bin` — the dithering steps up to
   v1 palettes at 640 wide.
+- `v009_more_palettes.bin` — v2: 8 palettes of 10–32 colours, lookup table,
+  random palette per photo (see [2026-10-14-palettes.md](2026-10-14-palettes.md)).
 
 ## The code cave
 

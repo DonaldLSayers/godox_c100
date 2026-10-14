@@ -68,7 +68,7 @@ def main():
         src = prepare(p, 640)
         tiles = [(src, 'original (camera size)')]
         for pname, cols in pals.items():
-            t = render(src, [c for c, _ in cols], wy=WY, lut=LUT)
+            t = render(src, [c for c, _ in cols], tag=(pname, cols), wy=WY, lut=LUT)
             t.save(os.path.join(out, name, f'{pname}.png'))
             tiles.append((t, f'{pname} ({len(cols)})'))
         sheet(tiles, os.path.join(out, name, 'sheet.png'), cols=5)

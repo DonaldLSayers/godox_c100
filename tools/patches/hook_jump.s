@@ -5,6 +5,6 @@
     .syntax unified
     .arm
 base:
-    .set    HOOK, base + 0xbab6c
+    .set    TARGET, base + HOOK           @ hook (address from build.sh)
     .org    0x15448
-    b       HOOK
+    b       TARGET

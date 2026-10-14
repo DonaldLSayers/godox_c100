@@ -99,8 +99,25 @@ def match(img, pal, wy=1, cdither=0, contrast=100, bright=0, sat=100, lut=None):
     return d.argmin(axis=-1)
 
 
-def render(img, pal, **kw):
-    out = np.array(pal)[match(img, pal, **kw)].astype(np.uint8)
+def add_tag(blocks, name, cols):
+    """Draw palette name's tag into a block-index array, as the camera does."""
+    from palettes import TAG_COLS, TAG_RIGHT, TAG_ROWS, TAG_SCALE, TAG_TOP, tag_cells, tag_colours
+    dark, light = tag_colours(cols)
+    c0 = blocks.shape[1] - TAG_RIGHT - TAG_COLS * TAG_SCALE
+    for r, row in enumerate(tag_cells(name)):
+        for c, v in enumerate(row):
+            if v:
+                y, x = TAG_TOP + r * TAG_SCALE, c0 + c * TAG_SCALE
+                blocks[y:y + TAG_SCALE, x:x + TAG_SCALE] = (dark, light)[v - 1]
+    return blocks
+
+
+def render(img, pal, tag=None, **kw):
+    """Camera output; tag = (palette name, expanded palette) draws its tag."""
+    blocks = match(img, pal, **kw)
+    if tag:
+        add_tag(blocks, *tag)
+    out = np.array(pal)[blocks].astype(np.uint8)
     out = out.repeat(2, axis=0).repeat(2, axis=1)
     return Image.fromarray(out, 'YCbCr').convert('RGB')
 
