@@ -13,3 +13,19 @@ I updated the startup and shutter sounds to the Coin and Kick sound from Super M
 ## Retro colorized pixelated dithering
 
 And then, I made the pictures pixelated, dithered, and colored -- like the Pixless Camera project (mine still hasn't arrived haha, but now I have my own!)
+
+<table>
+    <tr>
+        <td><img src="./example_images/IMG_0279.jpg" /></td>
+        <td><img src="./example_images/IMG_0274.jpg" /></td>
+        <td><img src="./example_images/IMG_0223.jpg" /></td>
+    </tr>
+    <tr>
+        <td><img src="./example_images/IMG_0260.jpg" /></td>
+        <td><img src="./example_images/IMG_0250.jpg" /></td>
+        <td><img src="./example_images/IMG_0228.jpg" /></td>
+    </tr>
+    <!--<tr>
+        <td><img src="./example_images/IMG_0267.jpg" /></td>
+    </tr>-->
+</table>
