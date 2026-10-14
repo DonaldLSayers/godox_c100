@@ -15,6 +15,7 @@
 base:
     .set    RESUME,      base + 0x1544c
     .set    PHOTO_PATH,  base + 0xf188
+    .set    VIDEO_PATH,  base + 0xf410
     .set    RESUME187,   base + 0x187c8
     .set    CACHE_INV,   base + 0x401ac
     .set    CACHE_CLEAN, base + 0x401b8
@@ -326,66 +327,56 @@ TAGS:
     TAG_DATA
     .align  2
 
+@ Size stubs, reached directly from the photo resolution jump table
+@ (ldrls pc,[pc,idx,lsl#2] @ 0xf3c8, table @ 0xf3d0) and the video one
+@ (@ 0xf098, table @ 0xf0a0). Each keeps the native crop (so the sensor is
+@ scaled, not cropped) and sets a small 640-wide final size at that aspect:
+@ r6/r7 = target, r0/r1 = crop. Photo: first scaler = crop, the final scaler
+@ shrinks. Video has no such final stage (IMG_0294: garbage), so there the
+@ first scaler = target, as in every stock video size (IMG_0295: works).
+@ r4 = size struct, r5 = APMode (0x101 video, 0x102 photo), r9 = 1080 at entry.
 photo43:                                @ 4:3  crop 1440x1080 -> 640x480
+vid43:
     mov     r6, #640
     mov     r7, #480
-    strh    r6, [r4, #14]
-    strh    r7, [r4, #16]
-    mov     r0, #1
-    strb    r0, [r4, #4]
     mov     r0, #1440
-    strh    r0, [r4, #6]
-    strh    r9, [r4, #8]
-    strh    r0, [r4, #10]
-    strh    r9, [r4, #12]
-    b       PHOTO_PATH
-    .ltorg
-
-@ Aspect-ratio shrink stubs, reached directly from the resolution jump table
-@ (ldrls pc,[pc,idx,lsl#2] @ 0xf3c8, table @ 0xf3d0). Each keeps the native crop
-@ and first-scaler size (so the sensor is scaled, not cropped) and sets a small
-@ 640-wide final size at that aspect. r4 = size struct, r9 = 1080 at entry.
+    mov     r1, r9
+    b       size_common
 stub169:                                @ 16:9  crop 1920x1080 -> 640x360
+vid169:
     mov     r6, #640
     mov     r7, #360
-    strh    r6, [r4, #14]
-    strh    r7, [r4, #16]
-    mov     r0, #1
-    strb    r0, [r4, #4]
     mov     r0, #1920
-    strh    r0, [r4, #6]
-    strh    r9, [r4, #8]
-    strh    r0, [r4, #10]
-    strh    r9, [r4, #12]
-    b       PHOTO_PATH
-
+    mov     r1, r9
+    b       size_common
 stub32:                                 @ 3:2  crop 1616x1080 -> 640x428
+vid32:
     mov     r6, #640
     mov     r7, #428
-    strh    r6, [r4, #14]
-    strh    r7, [r4, #16]
-    mov     r0, #1
-    strb    r0, [r4, #4]
     mov     r0, #1616
-    strh    r0, [r4, #6]
-    strh    r9, [r4, #8]
-    strh    r0, [r4, #10]
-    strh    r9, [r4, #12]
-    b       PHOTO_PATH
-
+    mov     r1, r9
+    b       size_common
 stub11:                                 @ 1:1  crop 1024x1024 -> 640x640
+vid11:
     mov     r6, #640
     mov     r7, #640
-    strh    r6, [r4, #14]
-    strh    r7, [r4, #16]
-    mov     r0, #1
-    strb    r0, [r4, #4]
     mov     r0, #1024
-    strh    r0, [r4, #6]
-    strh    r0, [r4, #8]
-    strh    r0, [r4, #10]
-    strh    r0, [r4, #12]
-    b       PHOTO_PATH
+    mov     r1, #1024
+size_common:
+    strh    r6, [r4, #14]                 @ target
+    strh    r7, [r4, #16]
+    strh    r0, [r4, #10]                 @ crop
+    strh    r1, [r4, #12]
+    tst     r5, #2                        @ photo (0x102) or video (0x101)?
+    strhne  r0, [r4, #6]                  @ photo: first scaler = crop
+    strhne  r1, [r4, #8]
+    strheq  r6, [r4, #6]                  @ video: first scaler = target
+    strheq  r7, [r4, #8]
+    movne   r0, #1                        @ photo mode byte
+    moveq   r0, #3                        @ video mode byte (stock video value)
+    strb    r0, [r4, #4]
+    bne     PHOTO_PATH                    @ photo: rejoin at 0xf188
+    b       VIDEO_PATH                    @ video: rejoin at 0xf410 (wants r6/r7)
 
 idx_stub:                               @ hooks FUN_000187c4 (once per photo)
     b       lut_build

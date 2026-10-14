@@ -95,6 +95,16 @@ CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8 --defsym=STUB=$(sym idx_stub))  # per-ph
 jt() {  # jt ENTRY OLDHEX LABEL -> ENTRY:OLDHEX:<label address, little-endian>
     printf '%s:%s:%s\n' "$1" "$2" "$(python3 -I -c "import sys; print(int(sys.argv[1], 0).to_bytes(4, 'little').hex())" "$(sym "$3")")"
 }
+# Video resolution jump table @0xf0a0 (ldrls pc,[pc,idx,lsl#2] @0xf098), same
+# scheme as the photo one; video follows the camera's aspect setting:
+# 0/1/9 = 16:9 1920, 2 = 3:2 1616, 3 = 4:3 1440, 4 = 1:1 1024, all -> 640 wide.
+# SMALLVID=0 keeps the stock full-size video.
+SMALLVID=${SMALLVID:-1}
+VID_PATCHES=""
+if [ "$SMALLVID" = "1" ]; then
+    VID_PATCHES="$(jt 0xf0a0 f8f50000 vid169) $(jt 0xf0a4 f8f50000 vid169) $(jt 0xf0c4 f8f50000 vid169)
+        $(jt 0xf0a8 a8f60000 vid32) $(jt 0xf0ac 88f60000 vid43) $(jt 0xf0b0 98f60000 vid11)"
+fi
 python3 tools/patch_code.py "$OUT" "$OUT" \
     "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
     "$(jt 0xf3d0 9cf70000 stub169)" \
@@ -104,4 +114,5 @@ python3 tools/patch_code.py "$OUT" "$OUT" \
     "$(jt 0xf3e0 d4f60000 stub11)" \
     "$(jt 0xf3fc 60f70000 photo43)" \
     "$(jt 0xf400 74f70000 photo43)" \
+    $VID_PATCHES \
     $SPK_PATCHES

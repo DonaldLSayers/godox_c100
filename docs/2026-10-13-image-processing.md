@@ -74,6 +74,8 @@ C in `decomp/c100.c`, string→function index in `decomp/strings.tsv`
   v1 palettes at 640 wide.
 - `v009_more_palettes.bin` — v2: 8 palettes of 10–32 colours, lookup table,
   random palette per photo (see [2026-10-14-palettes.md](2026-10-14-palettes.md)).
+- `v010_speaker_silenced.bin` — + speaker amp never switched on (`SILENT=1`).
+- `v011_small_video.bin` — + 640-wide video at every aspect ratio (`SMALLVID=1`).
 
 ## The code cave
 
@@ -117,6 +119,47 @@ was setting only the final size, which makes the firmware crop 1:1 instead of
 scaling — the crop and first scaler stage must be set too.) Outputs were 320-wide
 first; 640-wide is the current setting. Because every output is the same width,
 the colour pipeline is unchanged between sizes — only the height differs.
+
+## Smaller video (step 1 towards pixel-art video)
+
+Stock video: H.264 High@4.1, 1920×1080, ~28 fps, ~9 Mbit/s, 16 kHz mono PCM,
+in a QuickTime `.mov` named `IMG_xxxx.mov` (the `MOVA%04d.avi` strings are
+leftovers). The same `FUN_0000f004` sizes video (`APMode 0x101`, photo is
+`0x102`); the video setting (`FUN_00023888`) dispatches through its own jump
+table at `0xf0a0` (`ldrls` at `0xf098`) and **follows the camera's aspect
+setting**. Native entries: 0/1/9 = 1920×1080, 2 = 1616×1080, 3 = 1440×1080,
+4 = 1024², 5 = 1344×1080, 6 = 816×1080, 7 = 320×240, 11 = 3840×2160,
+12 = 2560×1440, 15 = 2592×1944, others 1280×720.
+
+Size struct fields (`r4`, as printed by `[R]Tw,Th, Sw,Sh, Cw,Ch`): crop C at
++10/+12, first scaler S at +6/+8, target T at +14/+16, mode byte at +4
+(photo 1, video 3). Every stock video size has C = S = T.
+
+**Video differs from photo:** photos need S = C (full size) with only T small
+(the final scaler shrinks); for video that gives garbage, and video needs
+S = T (the first scaler shrinks; there is no final downscale stage).
+
+`build.sh` (`SMALLVID=1`, default) points entries 0/1/9 (16:9), 2 (3:2),
+3 (4:3) and 4 (1:1) at cave stubs `vid169`/`vid32`/`vid43`/`vid11`: C = native
+crop for the aspect, S = T = 640 wide, mode 3, rejoining the video branch at
+`0xf410` (which expects T in r6/r7). They share `size_common` with the photo
+stubs, which tells photo/video apart by `APMode` bit 1; photo stubs were
+checked unchanged in Unicorn. `SMALLVID=0` keeps stock full-size video.
+
+Test log (all 3:2):
+
+- IMG_0293 — 1616×1080: only the 16:9 entries were patched, so the stub never ran.
+- IMG_0294 — S = C = 1616×1080, T = 640×428: H.264 accepts 640×428, but the
+  picture is garbage horizontal bands and frames come in bursts of 2–3 (1 ms
+  apart, every ~40 ms, ~68 "fps") — the encoder is fed data of another shape.
+- IMG_0295 — C = 1616×1080, S = T = 640×428, mode 3: **works**. Clean picture,
+  steady ~27 fps, ~1.5 Mbit/s. (One flash ran four independent experiments,
+  one per aspect setting; this was the 3:2 one. Field of view vs a photo of
+  the same scene still to be confirmed.)
+- IMG_0300–0303 — all four aspects (640×360/428/480/640), ~30 fps, valid.
+  Field of view matches photos of the same scene (IMG_0304–0307); the laptop
+  measures ~850 sensor px wide in all four, so each is its aspect's native crop
+  scaled down, not cropped further.
 
 ## The pixel hook
 
