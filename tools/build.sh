@@ -89,6 +89,16 @@ sym() {  # address of a label in the assembled cave
 }
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c --defsym=HOOK=$(sym hook))
 CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8 --defsym=STUB=$(sym idx_stub))  # per-photo palette + table
+# Video frame diagnostics (VIDDIAG=1): hook FUN_00018d14 (frame -> H.264
+# encoder) into a second cave in dead code at 0xbb774-0xbc744 (unreferenced
+# functions FUN_000bb774..FUN_000bc19c; see tools/patches/video_cave.s).
+VIDDIAG=${VIDDIAG:-0}
+VDIAG_PATCHES=""
+if [ "$VIDDIAG" = "1" ]; then
+    VCAVE=$(asm video_cave 0xbb774 0xbc744)
+    VHOOK=$(asm vhook_jump 0x18d14 0x18d18 --defsym=HOOK=$($LLVM/llvm-nm build/obj/video_cave.o | awk '$3 == "vhook" { print "0x" $1 }'))
+    VDIAG_PATCHES="$VCAVE $VHOOK"
+fi
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its
 # cave stub. 0/1=16:9 1920, 2=3:2 1616, 3=4:3 1440, 4=1:1 1024; b/c = hi-res.
@@ -106,7 +116,7 @@ if [ "$SMALLVID" = "1" ]; then
         $(jt 0xf0a8 a8f60000 vid32) $(jt 0xf0ac 88f60000 vid43) $(jt 0xf0b0 98f60000 vid11)"
 fi
 python3 tools/patch_code.py "$OUT" "$OUT" \
-    "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" \
+    "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" $VDIAG_PATCHES \
     "$(jt 0xf3d0 9cf70000 stub169)" \
     "$(jt 0xf3d4 9cf70000 stub169)" \
     "$(jt 0xf3d8 b0f70000 stub32)" \

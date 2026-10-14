@@ -161,6 +161,55 @@ Test log (all 3:2):
   measures ~850 sensor px wide in all four, so each is its aspect's native crop
   scaled down, not cropped further.
 
+## Video frame hook and format (step 2)
+
+- **Handoff:** `FUN_00018d14(venc, timestamp)` gives each video frame to the
+  H.264 encoder, from the camera task (`FUN_00019568`), not an interrupt.
+  `venc` = `0x131490`: `[0]` = 1 on the front-camera path, `+0x101` = format
+  (`'#'` = 0x23 for video), `[2]` = frame address tagged `| 0x30000000`
+  (`0x50000000` = none; `FUN_00047228` strips the tag with `& 0xcfffffff`),
+  `+0xdc`/`+0xe0` = width/height (from `FUN_00010090`).
+- **Date stamp:** just before the encoder call, `FUN_00010e90(frame, 0x21, …)`
+  → `FUN_00010544` draws the date stamp into the frame. Its `'#'` branch
+  addresses luma as `row × 1.5W + x` (even rows) and `+ W/2` (odd rows):
+  the photo strip layout (see "Buffer format" below) applied to a whole frame.
+- **Second code cave:** `0xbb774–0xbc744`, unreferenced functions
+  `FUN_000bb774…FUN_000bc19c` (no branch or pointer into the range; they only
+  call the libgcc division helpers). `FUN_000bb3f8` is avoided: a word in a
+  libm constant table happens to equal `0xbb679`.
+- **Diagnostic (`VIDDIAG=1`):** `vhook_jump.s` + `video_cave.s` draw a test
+  card in rows 0–191 of every 640-wide frame: luma gradient (rows 0–63),
+  chroma-only colour bars (64–127), full colour bars (128–191). Checked in
+  Unicorn (decodes to the expected card, nothing touched past row 192,
+  registers restored; a 1920-wide frame is left untouched).
+- **Test 1 result (IMG_0309–0312, all four aspects):** colours correct and in
+  order (Cb, Cr order right), gradient exact, so the per-row layout is right.
+  But **every row** of the output carries the gradient luma written to rows
+  0–63, and the chroma bars show up in 64-row-aligned blocks: the encoder
+  reads the frame as 64-row strips (`FUN_00010090`: strip = `W × 96` bytes,
+  `ceil(H/64)` strips) that all come from the first 64 rows we wrote.
+  Writing 192 rows may also have run past a 64-row buffer, so test 2 writes
+  only rows 0–63.
+- **Test 2 (barcode):** rows 0–63 carry 8 barcode lines (32 cells of 20 px,
+  MSB left, white = 1): marker `0xA5A5F00F`, call counter, `venc[2]`,
+  xTickCount, the timestamp argument, `venc+0xc8`, `+0xec`, `+0x164`.
+  Each output strip then shows which hook call wrote it, and from where.
+- **Test 2 result (IMG_0314–0317):** `FUN_00018d14` runs **once per 64-row
+  strip**, not per frame, and `venc[2]` is that strip's buffer: one of a pool
+  of 20 buffers `0x303e9a00 + k × 0xF000` (61440 = 640 × 64 × 1.5 bytes), used
+  in no fixed order. `venc+0xc8` = strips per frame (`ceil(H/64)`: 6, 7, 8,
+  10 for 360/428/480/640 rows), `venc+0xec` = that minus one; the last strip
+  is partial (40/44/32/64 valid rows) but still a full 64-row buffer. The
+  timestamp argument is constant within a frame (a new frame starts when it
+  changes). Within a strip the layout is the photo strip layout (stride
+  `1.5 × W`, even rows luma `[0, W)` + chroma pairs, odd rows chroma pairs +
+  luma `[W/2, 1.5W)`), so test 1's rows 64–191 landed in neighbouring pool
+  buffers.
+- **Timing:** strip calls come back to back; the (deliberately slow) barcode
+  drawing took ~7–8 ms per strip, and the encoder then repeats frames
+  (e.g. 15 unique of 44 at 1:1). For 30 fps the hook must stay under
+  ~33 ms per frame: ~5.5 ms per strip at 16:9, ~3.3 ms at 1:1.
+
 ## The pixel hook
 
 The hook modifies pixels after the ISP/scaler produces them but before JPEG.
