@@ -1,35 +1,50 @@
-@ Video frame diagnostics (VIDDIAG=1 build). Hooks FUN_00018d14, the call
-@ that hands each video frame to the H.264 encoder (camera task context, so
-@ not an interrupt). Its first instruction (ldr r3, [r0]) is replaced with a
-@ branch here; we re-run it and return to 0x18d18.
+@ Palette dithering for video (VIDFX=1 build). Hooks FUN_00018d14, which
+@ hands each 64-row video strip to the H.264 encoder (camera task context).
+@ Its first instruction (ldr r3, [r0]) is replaced with a branch here; we
+@ re-run it and return to 0x18d18.
 @
 @ r0 = video encode struct (0x131490): [0] = 1 on the front-camera path,
-@ +0x101 = pixel format ('#' = 0x23), [2] = frame address tagged with
-@ 0x30000000 (0x50000000 = no frame), +0xdc / +0xe0 = width / height.
-@ Test 1 (IMG_0309-0312) confirmed the photo strip layout per row (stride
-@ 1.5 * width, luma at [0, W) on even rows, [W/2, 1.5W) on odd rows), but
-@ every 64-row strip of the output showed the luma written to rows 0-63.
-@ Test 2 (this one) writes a barcode of runtime values into the luma of rows
-@ 0-63 only (one 64-row strip, 61440 bytes at 640 wide), to see per output
-@ strip which call wrote it and from where. 8 lines of 8 rows (7 + a grey
-@ gap), each a 32-bit value as 32 cells of 20 px, MSB left, white = 1:
-@   0  0xA5A5F00F (marker, to check the decoding)
-@   1  call counter          2  venc[2], frame address (tagged)
-@   3  xTickCount (ms)       4  r1, the timestamp argument
-@   5  venc+0xc8             6  venc+0xec      7  venc+0x164
-@ Chroma is left untouched.
-@ Writes nothing unless every check passes, so wrong guesses about the
-@ struct leave the video untouched rather than corrupting memory.
+@ +0x101 = pixel format ('#' = 0x23), [2] = this strip's buffer, tagged
+@ | 0x30000000 (0x50000000 = none), +0xdc = width. Each call gets one
+@ 64-row strip (640 x 64 x 1.5 bytes) from a pool of 20, laid out exactly
+@ like the photo strips (decoded with the barcode diagnostic in commit
+@ ebfafdd, IMG_0314-0317): stride = 1.5 * W; even rows: luma [0, W), chroma
+@ pairs 0..W/4-1 at [W, 1.5W); odd rows: chroma pairs W/4..W/2-1 at
+@ [0, W/2), luma [W/2, 1.5W). A frame's last strip is partial but still a
+@ full buffer.
+@
+@ The per-block work is the photo hook's (photo_cave.s): average the 2x2
+@ luma, CONTRAST/BRIGHT, 4x4 Bayer, look (Y, U, V) up in the shared table,
+@ paint the block. Strips start on 64-row boundaries, so the Bayer phase
+@ (band & 3) lines up across strips. The table and palette are the photo
+@ cave's (its VARS); a gap of >= 500 ms since the last strip means a new
+@ recording, and then lut_fill picks a new random palette and rebuilds the
+@ table first (costing that one strip some tens of ms). The timestamp
+@ argument (r1) is the same for every strip of a frame and strips come top
+@ to bottom, so a new timestamp means the frame's top strip: draw_tag (also
+@ from photo_cave.s) then puts the palette's tag in the top right corner.
+@
+@ VIDTIMING=1 also draws this strip's hook time in its top 4 rows: a black
+@ 16 ms scale (256 px), white for each elapsed ms (16 px per ms, xTickCount).
     .syntax unified
     .arm
 base:
     .set    RESUME,      base + 0x18d18
     .set    CACHE_INV,   base + 0x401ac
     .set    CACHE_CLEAN, base + 0x401b8
-    .equ    VW,          640              @ only 640-wide frames are touched
+    .set    LUT_FILL,    base + LUT_FILL_ADDR    @ photo_cave.s (from build.sh)
+    .set    DRAW_TAG,    base + DRAW_TAG_ADDR    @ photo_cave.s (from build.sh)
+    .equ    PVARS,       PVARS_ADDR              @ photo cave VARS (from build.sh)
+    .equ    LUT_PTR,     0                       @ offsets into PVARS
+    .equ    CUR_PAL,     4
+    .equ    TICK,        0x126b80                @ FreeRTOS xTickCount
+    .equ    VW,          640                     @ only 640-wide video is touched
     .equ    STRIDE,      VW * 3 / 2
-    .equ    ROWS,        64
-    .equ    TICK,        0x126b80         @ FreeRTOS xTickCount
+    .equ    THIRD,       VW / 2
+    .equ    NEWREC_MS,   500
+    .equ    V_LAST,      0                       @ offsets into VVARS
+    .equ    V_T0,        4
+    .equ    V_TS,        8
 
     .org    0xbb774
 vhook:
@@ -43,81 +58,159 @@ vhook:
     ldr     r1, [r0, #0xdc]
     cmp     r1, #VW
     bne     vdone
-    ldr     r1, [r0, #0xe0]
-    cmp     r1, #ROWS
-    blo     vdone
-    ldr     r5, [r0, #8]                  @ r5 = frame
-    cmp     r5, #0x50000000
-    cmpne   r5, #0
+    ldr     r11, [r0, #8]                 @ r11 = strip
+    cmp     r11, #0x50000000
+    cmpne   r11, #0
     beq     vdone
-    bic     r5, r5, #0x30000000           @ strip the tag (FUN_00047228)
-    ldr     r7, =VARS - base              @ VARS[i] = value for barcode line i
-    ldr     r1, [r7, #32]                 @ call counter (persists across calls)
-    add     r1, r1, #1
-    str     r1, [r7, #32]
-    str     r1, [r7, #4]                  @ 1: call counter
-    ldr     r1, =0xA5A5F00F
-    str     r1, [r7, #0]                  @ 0: marker
-    ldr     r1, [sp]                      @ saved r0 = venc
-    ldr     r2, [r1, #8]
-    str     r2, [r7, #8]                  @ 2: frame address, tagged
-    ldr     r2, =TICK
-    ldr     r2, [r2]
-    str     r2, [r7, #12]                 @ 3: xTickCount
-    ldr     r2, [sp, #4]                  @ saved r1 = timestamp argument
-    str     r2, [r7, #16]                 @ 4: timestamp
-    ldr     r2, [r1, #0xc8]
-    str     r2, [r7, #20]                 @ 5: venc+0xc8
-    ldr     r2, [r1, #0xec]
-    str     r2, [r7, #24]                 @ 6: venc+0xec
-    ldr     r2, [r1, #0x164]
-    str     r2, [r7, #28]                 @ 7: venc+0x164
-    mov     r0, r5
-    ldr     r1, =STRIDE * ROWS
+    bic     r11, r11, #0x30000000         @ strip the tag (FUN_00047228)
+    ldr     r4, =VVARS - base
+    ldr     r1, =TICK
+    ldr     r1, [r1]
+    str     r1, [r4, #V_T0]
+    ldr     r2, [r4, #V_LAST]
+    str     r1, [r4, #V_LAST]
+    sub     r2, r1, r2
+    cmp     r2, #NEWREC_MS                @ first strip of a new recording:
+    blo     1f
+    mov     lr, pc                        @  new palette, rebuild the table
+    b       LUT_FILL
+1:  ldr     r0, =PVARS
+    ldr     r12, [r0, #LUT_PTR]
+    ldr     r5, [r0, #CUR_PAL]
+    cmp     r12, #0
+    cmpne   r5, #0
+    beq     vdone                         @ no table (allocation failed)
+    mov     r0, r11
+    ldr     r1, =STRIDE * 64
     mov     lr, pc
     b       CACHE_INV
-    mov     r4, #0                        @ r4 = row
-rowloop:
-    ldr     r6, =STRIDE
-    mla     r8, r4, r6, r5                @ r8 = row start
-    tst     r4, #1
-    moveq   r9, r8                        @ r9 = luma
-    addne   r9, r8, #VW / 2
-    and     r0, r4, #7
-    cmp     r0, #7                        @ last row of each line: mid grey gap
-    moveq   r3, #128
-    beq     fill
-    ldr     r7, =VARS - base
-    mov     r0, r4, lsr #3                @ r0 = line 0..7
-    ldr     r10, [r7, r0, lsl #2]         @ r10 = VARS[line]
-    mov     r0, #0                        @ r0 = x
-1:  mov     r1, #0                        @ r1 = cell = x / 20
-    mov     r2, r0
-2:  subs    r2, r2, #20
-    addpl   r1, r1, #1
-    bpl     2b
-    rsb     r1, r1, #31
-    mov     r2, r10, lsr r1
-    tst     r2, #1
-    moveq   r3, #16                       @ 0 = black
-    movne   r3, #235                      @ 1 = white
-    strb    r3, [r9, r0]
-    add     r0, r0, #1
-    cmp     r0, #VW
-    blo     1b
-    b       nextrow
-fill:
-    mov     r0, #0
-3:  strb    r3, [r9, r0]
-    add     r0, r0, #1
-    cmp     r0, #VW
+    ldr     r0, =PVARS                    @ reload: the call may clobber r12
+    ldr     r12, [r0, #LUT_PTR]           @ r12 = table
+    ldr     r5, [r0, #CUR_PAL]            @ r5 = palette colours (Y,U,V each)
+    ldr     r7, =STRIDE                   @ r7 = stride
+    mov     r8, #THIRD                    @ r8 = third = width/2
+    mov     r10, #0                       @ r10 = band index b (0..31)
+bandloop:
+    mov     r9, #0                        @ r9 = block index c, x = 2c
+pixloop:
+    @ ---- representative luma = average of the 4 block pixels ----
+    add     r6, r11, r9, lsl #1           @ even luma addr (x, x+1)
+    ldrb    r0, [r6]
+    ldrb    r1, [r6, #1]
+    add     r0, r0, r1
+    add     r6, r11, r7                   @ odd_base
+    add     r6, r6, r8                    @ + third (odd luma starts there)
+    add     r6, r6, r9, lsl #1            @ + x
+    ldrb    r1, [r6]
+    ldrb    r2, [r6, #1]
+    add     r0, r0, r1
+    add     r0, r0, r2                    @ sum of 4 luma
+    mov     r0, r0, lsr #2                @ repY
+    @ ---- contrast / brightness pre-map (assemble-time constants) ----
+    sub     r0, r0, #128
+    mov     r1, #CONTRAST_FIX
+    mul     r0, r1, r0
+    mov     r0, r0, asr #7
+    add     r0, r0, #128
+    add     r0, r0, #BRIGHT_FIX
+    sub     r0, r0, #128
+    @ ---- Bayer dither: repY += (BAYER[b&3][c&3] - 8) * 4, clamped 0..255 ----
+    adr     lr, BAYER
+    and     r6, r10, #3
+    add     lr, lr, r6, lsl #2
+    and     r6, r9, #3
+    ldrb    r6, [lr, r6]
+    sub     r6, r6, #8
+    add     r0, r0, r6, lsl #2
+    cmp     r0, #0
+    movlt   r0, #0
+    cmp     r0, #255
+    movgt   r0, #255                      @ r0 = Yp
+    @ ---- chroma U,V of this block (split at third/2, even chroma at +2*third) ----
+    cmp     r9, r8, lsr #1
+    addlo   r6, r11, r8, lsl #1
+    addlo   r6, r6, r9, lsl #1
+    subhs   r1, r9, r8, lsr #1
+    addhs   r6, r11, r7
+    addhs   r6, r6, r1, lsl #1            @ r6 = chroma pair addr (kept for the write)
+    ldrb    r1, [r6]                      @ U
+    ldrb    r2, [r6, #1]                  @ V
+    @ ---- table lookup: ((yq*33 + uq)*33 + vq), q = (x + 4) >> 3 ----
+    add     r0, r0, #4
+    mov     r0, r0, lsr #3
+    add     r1, r1, #4
+    mov     r1, r1, lsr #3
+    add     r2, r2, #4
+    mov     r2, r2, lsr #3
+    add     r0, r0, r0, lsl #5            @ yq * 33
+    add     r0, r0, r1
+    add     r0, r0, r0, lsl #5            @ * 33
+    add     r0, r0, r2
+    ldrb    r3, [r12, r0]                 @ byte offset of the colour (3 * index)
+    add     r4, r5, r3
+    ldrb    r0, [r4]                      @ pY
+    ldrb    r1, [r4, #1]                  @ pU
+    ldrb    r2, [r4, #2]                  @ pV
+    @ ---- write the palette colour to the whole 2x2 block ----
+    strb    r1, [r6]                      @ chroma pair
+    strb    r2, [r6, #1]
+    add     r6, r11, r9, lsl #1           @ even luma (x, x+1)
+    strb    r0, [r6]
+    strb    r0, [r6, #1]
+    add     r6, r11, r7                   @ odd luma (x, x+1)
+    add     r6, r6, r8
+    add     r6, r6, r9, lsl #1
+    strb    r0, [r6]
+    strb    r0, [r6, #1]
+    add     r9, r9, #1
+    cmp     r9, r8                        @ third chroma pairs (= width/2) per band
+    blo     pixloop
+    add     r11, r11, r7, lsl #1          @ even_base += 2*stride
+    add     r10, r10, #1
+    cmp     r10, #32
+    blo     bandloop
+    sub     r11, r11, r7, lsl #6          @ r11 = strip base again
+    @ ---- first strip of a frame (new timestamp): palette tag, top right ----
+    ldr     r4, =VVARS - base
+    ldr     r1, [sp, #4]                  @ saved r1 = the frame's timestamp
+    ldr     r2, [r4, #V_TS]
+    str     r1, [r4, #V_TS]
+    cmp     r1, r2
+    movne   lr, pc
+    bne     DRAW_TAG                      @ wants r11, r7, r8, r5; keeps all
+
+    .ifdef  VIDTIMING
+    @ ---- timing bar: rows 0-3, x < 256 = 16 ms scale, white per elapsed ms ----
+    ldr     r4, =VVARS - base
+    ldr     r1, =TICK
+    ldr     r1, [r1]
+    ldr     r2, [r4, #V_T0]
+    sub     r2, r1, r2                    @ r2 = ms spent in this hook so far
+    mov     r2, r2, lsl #4                @ r2 = bar end x
+    mov     r10, #0                       @ band 0..1 (rows 0-3)
+2:  mul     r3, r10, r7
+    add     r6, r11, r3, lsl #1           @ r6 = even row start (strip + 2*band*stride)
+    add     r4, r6, r7
+    add     r4, r4, r8                    @ r4 = odd row luma start
+    add     r12, r6, r8, lsl #1           @ r12 = even-row chroma pairs (x < third)
+    mov     r9, #0                        @ x
+3:  cmp     r9, r2
+    movlo   r0, #235
+    movhs   r0, #16
+    strb    r0, [r6, r9]
+    strb    r0, [r4, r9]
+    mov     r0, #128
+    strb    r0, [r12, r9]                 @ pair x/2 = bytes x, x+1: neutral grey
+    add     r9, r9, #1
+    cmp     r9, #256
     blo     3b
-nextrow:
-    add     r4, r4, #1
-    cmp     r4, #ROWS
-    blo     rowloop
-    mov     r0, r5
-    ldr     r1, =STRIDE * ROWS
+    add     r10, r10, #1
+    cmp     r10, #2
+    blo     2b
+    .endif
+
+    mov     r0, r11
+    ldr     r1, =STRIDE * 64
     mov     lr, pc
     b       CACHE_CLEAN
 vdone:
@@ -126,5 +219,12 @@ vdone:
     b       RESUME
     .ltorg
     .align  2
-VARS:                                     @ [0..7] barcode line values, [8] counter
-    .space  36
+BAYER:
+    .byte   0, 8, 2, 10
+    .byte   12, 4, 14, 6
+    .byte   3, 11, 1, 9
+    .byte   15, 7, 13, 5
+VVARS:
+    .word   0                             @ V_LAST: tick of the last strip
+    .word   0                             @ V_T0: tick at this strip's start
+    .word   0                             @ V_TS: timestamp of the last strip's frame

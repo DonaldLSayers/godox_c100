@@ -6,7 +6,7 @@ Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
   1. runs idx_stub (the per-photo entry) with a given tick count, which picks
      the palette and fills the lookup table;
   2. packs 640x64 slices of a photo into strips in the camera's YUV 4:2:0
-     layout (see docs/2026-10-13-image-processing.md) and runs the strip hook
+     layout (see docs/c100-firmware.md) and runs the strip hook
      on two of them;
   3. unpacks each strip and checks that every 2x2 block is exactly the palette
      colour sim_palette.py picks (same palette, WY and table), including the
