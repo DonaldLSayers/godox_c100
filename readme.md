@@ -16,16 +16,18 @@ And then, I made the pictures and videos pixelated, dithered, and colored -- lik
 
 <table>
     <tr>
-        <td><img src="./example_images/IMG_0279.jpg" /></td>
-        <td><img src="./example_images/IMG_0274.jpg" /></td>
-        <td><img src="./example_images/IMG_0223.jpg" /></td>
+        <td><img src="./example_images/IMG_0526.jpg" /></td>
+        <td><img src="./example_images/IMG_0503.jpg" /></td>
+        <td><img src="./example_images/IMG_0443.jpg" /></td>
     </tr>
     <tr>
         <td><img src="./example_images/IMG_0260.jpg" /></td>
         <td><img src="./example_images/IMG_0250.jpg" /></td>
+        <td><img src="./example_images/IMG_0274.jpg" /></td>
+    </tr>
+    <tr>
+        <td><img src="./example_images/IMG_0223.jpg" /></td>
+        <td><img src="./example_images/IMG_0279.jpg" /></td>
         <td><img src="./example_images/IMG_0228.jpg" /></td>
     </tr>
-    <!--<tr>
-        <td><img src="./example_images/IMG_0267.jpg" /></td>
-    </tr>-->
 </table>
