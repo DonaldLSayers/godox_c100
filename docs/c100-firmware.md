@@ -1,6 +1,6 @@
 # Godox C100 firmware hacking
 
-_Started 2026-10-13, last updated 2026-10-14. This file merges the earlier
+_Started 2026-10-13, last updated 2026-10-15. This file merges the earlier
 `2026-10-13-image-processing.md` and `2026-10-14-palettes.md`._
 
 **All done and working on the camera:** pixel-art photos and videos at every
@@ -22,6 +22,7 @@ small resolution, a limited colour palette, and dithering.
 | 640-wide video at every aspect ratio | on the camera, working (IMG_0300–0303) |
 | Palette dithering on video (random palette per recording) | on the camera, working (IMG_0318–0321) |
 | Palette tag on video (every frame) | on the camera, working (IMG_0322–0325: `MC`, `HB`, `EG`, `DB`) |
+| Next palette's tag on the see-through display (`LCDTAG=1`) | built, passes the emulator test; **not yet tried on the camera** |
 
 Everything planned is done and working on the camera (2026-10-14, backup
 `v012_color_dithered_video.bin`). Open: [repeated frames](#timing-and-headroom) in
@@ -77,6 +78,7 @@ In `tools/`:
   | `SMALLVID` | 1 | 640-wide video at every aspect; 0 = stock full-size video |
   | `VIDFX` | 1 | palette dithering + tag on video; 0 = plain small video |
   | `VIDTIMING` | 0 | 1 = draw each video strip's hook time (test builds only) |
+  | `LCDTAG` | 1 | 1 = the [see-through display](#palette-tag-on-the-display) shows the next palette's tag in photo/video mode; 0 = stock blank |
   | `CONTRAST`, `BRIGHT` | 100, 0 | look knobs, see [below](#look-knobs-contrast--brightness) |
 
   e.g. `SILENT=1 sh tools/build.sh`. The UI/focus beep (`BEEP.wav`) is
@@ -100,6 +102,9 @@ In `tools/`:
   uv run --with unicorn,numpy,pillow tools/emu_cave.py images/IMG_0184.jpg
   uv run --with unicorn,numpy,pillow tools/emu_video.py images/IMG_0184.jpg   # add --timing for a VIDTIMING=1 build
   ```
+- `emu_seg.py` — runs the transparent display's segment code (HT1621) in the
+  emulator and decodes what it sends to the panel (see
+  [The transparent display](#the-transparent-display-a-segment-panel-ht1621)).
 - `gpzp.py` — decode/encode the GPZP UI images (see [UI graphics](#ui-graphics-gpzp-logos-and-the-osd-overlay)).
 
 Reverse engineering: Ghidra headless project under `build/ghidra/`, decompiled
@@ -141,6 +146,7 @@ at `0x18d14` and returns to `0x18d18`).
 | `FUN_00015448` | scaler "strip ready" callback, photo only, **interrupt** | `hook` | photo pixel effect |
 | `FUN_000187c4` | capture handler, once per photo, camera task | `idx_stub` → `lut_build` | pick palette, fill table |
 | `FUN_00018d14` | each 64-row video strip → H.264 encoder, camera task | `vhook` | video pixel effect |
+| `FUN_0001ff10` | ISO readout on the see-through display, every refresh tick, peripheral task | `lcd_hook` | palette tag on the display |
 | jump tables `0xf3d0`, `0xf0a0` | photo / video size setup | size stubs | 640-wide output |
 | `0x22b38`, `0x350f0`, `0x2ed50` | — | (NOPs) | speaker amp off |
 
@@ -153,22 +159,28 @@ B/BL targets and pointers, ARM and Thumb):
 | `0xbad6c` | `draw_tag` (subroutine, also called by the video hook) |
 | `0xbae98` | `lut_build` (per photo) |
 | `0xbaeb0` | `lut_fill` (subroutine, also called by the video hook) |
-| `0xbaff4` | `BAYER`, then `VARS` (`LUT_PTR`, `CUR_PAL`, `PAL_IDX`, `STRIP_N`) |
-| `0xbb014` | `PALETTES`, then `TAGS` |
-| `0xbb25c` | size stubs (`photo43`/`vid43`, `stub169`/`vid169`, `stub32`/`vid32`, `stub11`/`vid11`, `size_common`) |
-| `0xbb2e0` | `idx_stub`: `b lut_build` (cave ends `0xbb2e4`) |
+| `0xbafe4` | `pick` (random palette ≠ `PAL_IDX`; also called by the display hook) |
+| `0xbb020` | `BAYER`, then `VARS` (`LUT_PTR`, `CUR_PAL`, `PAL_IDX`, `STRIP_N`, `NEXT_IDX`) |
+| `0xbb044` | `PALETTES`, then `TAGS` |
+| `0xbb28c` | size stubs (`photo43`/`vid43`, `stub169`/`vid169`, `stub32`/`vid32`, `stub11`/`vid11`, `size_common`) |
+| `0xbb310` | `idx_stub`: `b lut_build` (cave ends `0xbb314`) |
 
-**Video cave** — `0xbb774–0xbc744`, the unreferenced functions
+**Video cave** — `0xbb774–0xbc400` (of the dead range `0xbb774–0xbc744`), the unreferenced functions
 `FUN_000bb774…FUN_000bc19c` (no branch or pointer into the range; they only
 call the libgcc division helpers). `FUN_000bb3f8` just before it is avoided: a
 word in a libm constant table happens to equal `0xbb679`, which looks like a
 pointer into it. Currently `vhook` at `0xbb774`, `BAYER` and `VVARS` after it;
 ends `0xbb9a0`.
 
+**Display cave** — `0xbc400–0xbc744`, the rest of that dead range (the only
+branches into it come from the dead `FUN_000bc19c` itself): `lcd_hook` at
+`0xbc400`, then `LCD_TAGS`; ends `0xbc4d4`.
+
 Only `hook` and `vhook` have fixed addresses. `build.sh` reads every other
 address from the object files (`llvm-nm`) and patches the jump tables and
-`cyc_jump.s` with them, and passes `lut_fill`, `draw_tag` and `VARS` to the
-video cave as `--defsym`s, so layouts can change freely.
+`cyc_jump.s` with them. It passes `lut_fill`, `draw_tag` and `VARS` to the
+video cave, and `pick` and `VARS` to the display cave, as `--defsym`s, so
+layouts can change freely.
 
 Assembly conventions:
 
@@ -353,7 +365,7 @@ areas collapse into a single colour and you can't make out much. Three causes:
 | Colours per palette | 6 slots (often 5 distinct) | **10 to 32** |
 | Match distance | `ΔY + ΔU + ΔV` | **`2·ΔY + ΔU + ΔV`** |
 | Colour search | 6 unrolled comparisons per block | **lookup table**, filled once per photo |
-| Palette per photo | next in the cycle (random start per boot) | **random**, never the same twice in a row |
+| Palette per photo | next in the cycle (random start per boot) | **random**, never the same twice in a row; picked one photo ahead so the display can show it |
 | Dither, block, `CONTRAST` / `BRIGHT`, size | 4×4 Bayer ±32, 2×2, 100 / 0, 640 wide | unchanged |
 
 ### The palette set
@@ -653,7 +665,9 @@ e.g. `CONTRAST=130 BRIGHT=10 SILENT=1 sh tools/build.sh`.
 
 ## UI graphics (GPZP, logos, and the OSD overlay)
 
-The firmware's on-screen graphics come from three different places.
+The firmware carries pixel graphics for a 320×240 TFT (below), but the C100's
+own see-through display is a segment panel; see
+[The transparent display](#the-transparent-display-a-segment-panel-ht1621).
 
 ### GPZP images (menu/status assets) — editable
 
@@ -681,32 +695,174 @@ Bye!"** — plain JPEGs, left over from the OEM/children's-camera software this
 firmware descends from (like `WIFI.xml`). They are standard JPEGs: replace with
 a 320×240 baseline JPEG that fits the slot via `patch_res.py`.
 
-### The live-view OSD overlay — code-drawn, not a file
+### The transparent display: a segment panel (HT1621)
 
-The mode icons (📷🎥), metering icon, **battery**, **corner framing/aspect
-brackets**, **centre reticle**, **ISO/F/SS** labels + digits, and the standby
-**"Godox" wordmark** are **not stored images**. They are rendered by the
-GeneralPlus bitmap-glyph/OSD engine:
+The see-through display is a **segment display**: a fixed set of printed
+shapes (the GODOX logo, the brackets, 7-segment digits, the icons), each
+switched dark or clear. Technically it is a segment LCD with no backlight or
+reflector, which is why you can see through it. It has no pixels. The code
+draws nothing; it switches segments on and off through an
+**HT1621**-compatible controller, bit-banged over GPIO.
 
-- Source data: `GPRS.pak`, a **nested** GeneralPlus archive (no RGB565/alpha-key
-  images inside — it is glyph/index tables; no audio either).
-- Loader/parser: `FUN_00028710` → `FUN_0002809c`.
-- Draw routines: `FUN_00027fbc` (glyph string), `FUN_00027ea4` (one glyph), and
-  the OSD callers `FUN_000242fc` / `FUN_000245f0` / `FUN_00029710` (these log
-  "Failed to draw char font"). Battery: `FUN_0001ed4c`, `FUN_0002602c`.
+Everything below was **confirmed in the emulator** (`tools/emu_seg.py` runs
+the factory code, hooks the GPIO writes and decodes the HT1621 bitstream; see
+the end of this section). Only the meaning of a few icon segments is still an
+inference.
 
-Pak format cracked so far: `GPRS` + version, a header whose pointers at offsets
-`0xb8/0xe8/0xec` reach **3 glyph groups × 12 descriptors**
-(`[advance, w, h, _, u32 dataOffset]`; bitmap = `w*h` bytes, 1 B/px alpha, at
-`groupBase + dataOffset`, `groupBase` = word 2 of the group's 0xC-byte
-subheader). Those 36 are small anti-aliased strip glyphs — a minor sub-set. The
-main icons sit behind a further index layer (e.g. the block at `0x9f07`, step
-`0x570`, begins with another table of counts/offsets, not pixels), not yet
-unwound.
+- **Pins:** GPIO `0x28` = CS, `0x29` = WR (clock), `0x2a` = DATA (`0x5f` is
+  switched on with them; probably the panel's supply).
+- **Protocol** (`FUN_00049dc0` sends n bits, MSB first):
+  - command: `100` + 8 bits + 1 (`FUN_0004a01c`)
+  - write: `101` + 6-bit address + 4 data bits (`0x49e34`, which Ghidra names
+    `switchD_0004a0b8::default`; it is really `seg_write(addr, nibble)`).
+- **Init** `FUN_0004ad68` (called by the display task at `0xe0dc`): commands
+  `01 18 24 03` (SYS EN, RC 256K, BIAS 1/2 with 3 COMs, LCD ON). Then it clears
+  all 25 addresses and calls `0x4a64c(1)` (logo on).
+- **RAM:** 25 addresses × 3 COMs = 75 segments. The firmware keeps a copy at
+  `0x1240e0` (one byte per address). Below, `AA.c` = address `AA`, COM `c`
+  (COM0 is nibble bit `8`, COM1 `4`, COM2 `2`; bit `1` is unused).
+- **Ghidra gets this code wrong:** `0x4a64c`, `0x4a6e0`, `0x4a700`,
+  `0x4a894`, `0x4a9fc` and `0x4aae0` are real entry points that Ghidra never
+  made into functions. It stitched them into their callers through tail
+  branches, so the decompiled `FUN_0001ff10`, `FUN_00020afc`,
+  `FUN_00021318` … contain code that is really in `0x4a6xx`–`0x4adxx`.
+  Re-run the analysis with functions defined there before trusting
+  decompiled code in this range.
 
-Practical takeaway: to change the overlay, **patching the draw calls** (e.g. NOP
-the "Godox" wordmark draw, or move/hide an element) is far more tractable than
-fully reverse-engineering and re-packing `GPRS.pak`.
+**Refresh:** `FUN_00021318`, called periodically from the peripheral task
+(`FUN_00021c9c`). After boot it returns early for its first 4 calls (counter
+`0x12170c`). From then on, every call redraws the ISO/F/SS readouts. Every
+other call (counter `0x1217b0`) also redraws the mode icons and logo
+(`FUN_0001fe58`), the brackets (`FUN_0004a7f4`) and the battery
+(`FUN_0002122c`).
+
+**UI state** `0x121706` (set by the mode keys/switch, `FUN_0001e4f8`,
+`FUN_0001e5a8`, `FUN_0001e658`) decides what is shown:
+
+| State | Shown | Probably |
+|---|---|---|
+| 0 | bracket for the current aspect, `16.0`, `16.2`, battery; readouts blank | photo |
+| 1 | bracket, `14.0` (blinks while recording, with the LED on GPIO `0x2b`), `16.2`, battery; readouts blank | video |
+| 2 | ISO/F/SS readouts, `16.2`, `18.0`, battery; **no bracket** | light-meter readout (your second photo) |
+
+**Boot, replayed in the emulator** (UI state 2, ISO 200, F5.6, SS 1/25),
+matching the startup photo:
+
+| Refresh call | Panel |
+|---|---|
+| (init) | logo only |
+| 1–4 | logo only (refresh returns early) |
+| 5 | logo + ISO 200 / F5.6 / SS 1/25 readouts, no icons or battery yet |
+| 6 on | logo off (`FUN_0001fe58` → `FUN_0004a670` clears `16.1`), icons and battery on |
+
+The logo stays on only if sensor preview init failed (flag `0xf187e`, set in
+`FUN_0001109c`): then `FUN_0004a670` puts the logo back instead of clearing
+it.
+
+**Segment map:**
+
+| Segment | What | How confirmed |
+|---|---|---|
+| `16.1` | **GODOX logo** | only segment lit by init; cleared on the 6th refresh call |
+| `06.0` | **16:9 bracket** | aspect setting 1 |
+| `15.0` | **3:2 bracket** | aspect setting 2 |
+| `15.1` | **4:3 bracket** | aspect setting 3 |
+| `15.2` | **1:1 bracket** | aspect setting 4 (0 and ≥5 light nothing; state 2 lights none) |
+| `00.1 00.2 01.0 01.1 01.2 02.1 02.2` | ISO digit 1 | 7-segment cell (`FUN_00049ea8`) |
+| `03.1 03.2 04.0 04.1 04.2 05.1 05.2` | ISO digit 2 | 7-segment cell |
+| `00.0`, `02.0` | ISO label / box | always on with the readout |
+| `05.0`, `03.0` | fixed "0"s: ISO 400 = `4` `0` + `05.0`, ISO 1600 = `1` `6` + `03.0` + `05.0` | readout values |
+| `07.0 07.1 07.2 08.0 08.1 08.2 09.1` | F digit 1 | 7-segment cell (`FUN_0004a4ec`) |
+| `09.0 0a.0 0a.1 0a.2 0b.0 0b.1 0b.2` | F digit 2 | 7-segment cell (`FUN_0004a074`) |
+| `06.1`, `06.2` | F label / box | always on with the readout |
+| `09.2` | F decimal point (5.6, 2.8; off for 11) | readout values |
+| `0d.0 0d.1 0d.2 0e.0 0e.1 0e.2 0f.2` | SS digit 1 | 7-segment cell (`FUN_0004a374`) |
+| `0f.0 0f.1 10.0 10.1 10.2 11.1 11.2` | SS digit 2 | 7-segment cell (`FUN_0004a1f0`) |
+| `11.0 12.0 12.1 12.2 13.0 13.1 13.2` | SS digit 3 | 7-segment cell (`FUN_0004a074`) |
+| `0c.0`, `0c.1`, `0c.2` | "SS", "1/", box | always on with the readout |
+| `14.2` | fixed trailing "0" for 1/1000 and faster (1/8000 = `8` `0` `0` + `14.2`) | readout values |
+| `14.1` | on when the SS value comes from the table (flag `0x12170b`) | meaning unknown |
+| `16.0` | camera icon (inferred) | state 0 only |
+| `14.0` | video icon (inferred) | state 1 only, blinks while recording |
+| `16.2`, `18.0` | metering icon and centre reticle, not yet told apart | `16.2` in every state, `18.0` in state 2 only |
+| `18.2`, `17.x` | battery outline and bars (inferred) | `FUN_0002122c`, blinks at level 0 |
+
+The readouts come from the light-meter tables: F 1.0–14 at `0xe327c`, SS 1 s–1/8000
+at `0xe31e4` (floats), indexed by config bytes `0x132160+0xeb` / `+0xea`; ISO
+from `+0xec`. `FUN_00020c44` rounds a metered shutter speed to that scale.
+
+**Patch points:**
+
+- **No logo at boot:** `0x4ae30` `mov r0,#1` → `mov r0,#0`.
+- **Keep the logo on:** `FUN_0004a670` clears `16.1` itself (`and r1,r3,#251`
+  at `0x4a694`, `biceq r1,r3,#12` at `0x4a698`), so set it back:
+  `orrne r1,r1,#10` at `0x4a69c` → `#14`, and `orreq r1,r1,#2` at
+  `0x4a6a0` → `#6`.
+- **Brackets:** jump table at `0x4a828` (`ldrls pc` at `0x4a820`, index
+  `aspect − 1`) → handlers `0x4a878` (16:9, `orr r3,r3,#8` on address 6),
+  `0x4a884` / `0x4a86c` / `0x4a838` (3:2 / 4:3 / 1:1, `mov r2,#8/#4/#2` into
+  address `0x15`). Each bracket set is a single segment, so brackets can be
+  combined (e.g. `mov r2,#0xe`) but not reshaped. They are hidden in state 2
+  by the `cmp r0,#0; bne` at `0x4a804`/`0x4a814`.
+- Anything else: write the segment through `seg_write` (`0x49e34`) and keep
+  the copy at `0x1240e0` in sync, since the firmware read-modify-writes from it.
+
+`tools/emu_seg.py` (`uv run --with unicorn tools/emu_seg.py`) prints the init
+commands, the logo and bracket segments, checks that every digit routine
+draws 7-segment digits (segment counts 6,2,5,5,4,5,6,3,7,6), decodes full
+refreshes back into ISO/F/SS readouts, and replays the boot sequence.
+
+### Palette tag on the display
+
+With `LCDTAG=1` (default) the display shows the **two-letter tag of the palette
+the next photo or video will get**. It uses the two ISO 7-segment cells, which
+are blank in photo and video mode. While recording it shows the palette in use.
+In the readout state (UI state 2) the stock ISO readout is unchanged.
+
+- **Picking ahead** (`photo_cave.s`): `VARS` gained `NEXT_IDX`. `lut_fill` (per
+  photo, and per recording via the video hook) now uses `NEXT_IDX` as the
+  palette, then calls `pick` for the following one. `pick` is the old random
+  choice: (ms tick & 0xff) mod NPAL, never the same as the current palette. If
+  nothing was shown yet (`NEXT_IDX` = 0xff), it picks one on the spot.
+- **Showing it** (`lcd_cave.s`, hooking `FUN_0001ff10`): in UI state 0/1 it
+  writes the tag's six nibbles to HT1621 addresses 0..5 through `seg_write`
+  (`0x49e34`), sending only the ones that changed. The first time, it picks
+  `NEXT_IDX` itself. If the recording bit (`0x132abb` bit 1) is set, it shows
+  `PAL_IDX` instead. In state 2 it redoes the replaced
+  `ldr r3, =0xe3279` and jumps back to `0x1ff14`.
+- **Letters** (`palettes.py`, `SEG7`/`lcd_nibbles`, emitted as `LCD_TAG_DATA`):
+  7-segment cells can't show every letter, so the display shows `r6`, `rF`,
+  `∩C` (M has no 7-segment shape; `abcef` is the usual stand-in), `Hb`, `db`,
+  `EG`, `56`, `n5`. The photo tag is unchanged. The ISO label and fixed-zero
+  segments stay off.
+- **Randomness at boot:** the first tag is picked at the first refresh after
+  boot, from the ms tick at that moment. If boot timing turns out to be very
+  repeatable, the first palette after power-on may often be the same one.
+  Later palettes depend on when you take each photo, as before.
+
+Verified in the emulator (`uv run --with unicorn tools/emu_seg.py
+build/GP_CARDVR_UPGRADE.BIN`):
+1. The first refresh in photo mode picks a palette and shows its tag.
+2. Over four captures, each uses exactly the shown palette, and the display
+   then shows a different next one.
+3. Video mode shows the next palette when idle and the current one while
+   recording.
+4. The readout state still shows ISO 400.
+
+`emu_cave.py` and `emu_video.py` still match the sim pixel for pixel.
+
+**What the old notes got wrong.** The 320×240 TFT driver
+(`tft_auo_a027dtn019_init`, panel descriptor at `0xd5c40`: 320×240, RGB565),
+the 108-icon OSD compositor (`FUN_0000adb4`, icon table loaded from
+`SP_ICON.GPZP` by `FUN_0005ee84`), the GPRS.pak glyph/string engine
+(`FUN_000242fc`, `FUN_000259c8` …) and the parking-guide line drawer
+(`FUN_0000d2e8`) are all generic OEM dashcam code. `SP_ICON` holds dashcam
+icons (battery, WDR, ISO, LDW, …), `GPRS.pak` holds dashcam menu strings
+("Loop recording", "Gsensor", "LDW" …), and none of it contains a Godox logo
+or aspect brackets. None of it can reach the see-through panel, which is
+driven only through the HT1621 pins. Whether the TFT code still runs at boot
+(with no TFT attached) has not been checked; it does not matter for the
+panel.
 
 ## History: the v1 effect
 
@@ -735,8 +891,9 @@ palettes, brightness-weighted matching and a random palette per photo (see
 - Persist the palette index across power cycles (needs a spot that survives
   reboot, e.g. a tiny file on the card).
 - Per-pixel (rather than per-2×2-block) luma dithering for finer gradients.
-- Fully unwind `GPRS.pak` to extract/edit the OSD icon bitmaps, or (easier)
-  patch specific overlay draw calls (e.g. remove the "Godox" wordmark).
+- Run a segment test on the transparent display to confirm the
+  [segment map](#the-transparent-display-a-segment-panel-ht1621), then play
+  with it (e.g. a custom startup animation from the logo and bracket segments).
 
 ## Appendix: palette colours
 

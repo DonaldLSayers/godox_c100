@@ -172,6 +172,35 @@ def tag_cells(name):
     return cells
 
 
+# The same tag on the camera's see-through display, on the two 7-segment
+# cells of the ISO readout (shown in photo and video mode, where the readout is
+# blank). Not every letter has a 7-segment shape, so some are shown lowercase
+# or approximated: R -> r, B -> b, D -> d, N -> n, S -> 5, M -> a "∩".
+SEG7 = {'A': 'abcefg', 'b': 'cdefg', 'C': 'adef', 'd': 'bcdeg', 'E': 'adefg', 'F': 'aefg',
+        'G': 'acdef', 'H': 'bcefg', 'n': 'ceg', 'r': 'eg', 'M': 'abcef',
+        '5': 'acdfg', '6': 'acdefg'}
+SEG7_LETTER = {'R': 'r', 'B': 'b', 'D': 'd', 'N': 'n', 'S': '5'}
+# Each cell is three HT1621 addresses (found by running the firmware's digit
+# routine in tools/emu_seg.py): f, e | a, g, d | b, c, as COM0 = 8, COM1 = 4,
+# COM2 = 2. The COM0 bits of the first and last address are the ISO label and
+# the fixed zeros; they stay off.
+SEG7_BITS = {'f': (0, 4), 'e': (0, 2), 'a': (1, 8), 'g': (1, 4), 'd': (1, 2), 'b': (2, 4), 'c': (2, 2)}
+
+
+def lcd_text(tag):
+    return ''.join(SEG7_LETTER.get(ch, ch) for ch in tag)
+
+
+def lcd_nibbles(tag):
+    """Nibbles for HT1621 addresses 0..5 that show `tag` on the ISO cells."""
+    nib = [0] * 6
+    for cell, ch in enumerate(lcd_text(tag)):
+        for seg in SEG7[ch]:
+            off, bit = SEG7_BITS[seg]
+            nib[3 * cell + off] |= bit
+    return nib
+
+
 def tag_colours(cols):
     """Indices of the darkest and lightest colour (by Y) of an expanded palette."""
     ys = [c[0] for c, _ in cols]
@@ -201,6 +230,10 @@ def main():
             packed = [sum(v << (2 * j) for j, v in enumerate(flat[i:i + 4])) for i in range(0, len(flat), 4)]
             dark, light = tag_colours(cols)
             print(f'    .byte ' + ', '.join(map(str, packed + [3 * dark, 3 * light])) + f'   @ {name} {TAG[name]}')
+        print('    .endm')
+        print('    .macro  LCD_TAG_DATA                  @ per palette: HT1621 nibbles for addresses 0..5')
+        for name in pals:
+            print('    .byte ' + ', '.join(map(str, lcd_nibbles(TAG[name]))) + f'   @ {name} {lcd_text(TAG[name])}')
         print('    .endm')
         return
     for name, cols in pals.items():

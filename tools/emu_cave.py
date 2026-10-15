@@ -14,7 +14,7 @@ Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
 
 Usage: uv run --with unicorn,numpy,pillow tools/emu_cave.py PHOTO.jpg [TICKS...]
 """
-import struct, subprocess, sys
+import os, struct, subprocess, sys
 import numpy as np
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_SP
@@ -31,7 +31,9 @@ W, ROWS = 640, 64
 
 
 def symbols(obj='build/obj/photo_cave.o'):
-    out = subprocess.run(['/opt/homebrew/opt/llvm/bin/llvm-nm', obj], capture_output=True, text=True,
+    nm = next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
+              if os.path.exists(p))
+    out = subprocess.run([nm, obj], capture_output=True, text=True,
                          check=True).stdout
     return {parts[2]: int(parts[0], 16) for parts in map(str.split, out.splitlines()) if len(parts) == 3}
 

@@ -4,6 +4,7 @@
 set -e
 cd "$(dirname "$0")/.."
 LLVM=/opt/homebrew/opt/llvm/bin
+[ -d "$LLVM" ] || LLVM=/opt/homebrew/opt/llvm@18/bin
 ORIG=c100_v1.1.6_20260929/GP_CARDVR_UPGRADE.BIN
 OUT=build/GP_CARDVR_UPGRADE.BIN
 mkdir -p build/obj
@@ -90,7 +91,7 @@ sym() {  # address of a label in the assembled cave
 HOOK_JUMP=$(asm hook_jump 0x15448 0x1544c --defsym=HOOK=$(sym hook))
 CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8 --defsym=STUB=$(sym idx_stub))  # per-photo palette + table
 # Video palette dithering (VIDFX=1, default; VIDFX=0 = plain video): hook FUN_00018d14 (one 64-row video
-# strip -> H.264 encoder) into a second cave in dead code at 0xbb774-0xbc744
+# strip -> H.264 encoder) into a second cave in dead code at 0xbb774-0xbc400
 # (unreferenced functions FUN_000bb774..FUN_000bc19c; see
 # tools/patches/video_cave.s). It shares the photo cave's palettes and table.
 # VIDTIMING=1 adds a per-strip timing bar (test builds only).
@@ -99,9 +100,21 @@ VIDTIMING=${VIDTIMING:-0}
 VFX_PATCHES=""
 if [ "$VIDFX" = "1" ]; then
     VT=""; [ "$VIDTIMING" = "1" ] && VT="--defsym=VIDTIMING=1"
-    VCAVE=$(asm video_cave 0xbb774 0xbc744 --defsym=LUT_FILL_ADDR=$(sym lut_fill) --defsym=PVARS_ADDR=$(sym VARS) --defsym=DRAW_TAG_ADDR=$(sym draw_tag) $VT)
+    VCAVE=$(asm video_cave 0xbb774 0xbc400 --defsym=LUT_FILL_ADDR=$(sym lut_fill) --defsym=PVARS_ADDR=$(sym VARS) --defsym=DRAW_TAG_ADDR=$(sym draw_tag) $VT)
     VHOOK=$(asm vhook_jump 0x18d14 0x18d18 --defsym=HOOK=$($LLVM/llvm-nm build/obj/video_cave.o | awk '$3 == "vhook" { print "0x" $1 }'))
     VFX_PATCHES="$VCAVE $VHOOK"
+fi
+# Palette tag on the see-through display (LCDTAG=1, default; LCDTAG=0 = stock
+# blank): in photo and video mode the display's ISO readout cells show the
+# two-letter tag of the palette the next photo/video gets (the one in use while
+# recording). Hooks FUN_0001ff10 (ISO readout) into a third cave in the same
+# dead code, 0xbc400-0xbc744. See tools/patches/lcd_cave.s.
+LCDTAG=${LCDTAG:-1}
+LCD_PATCHES=""
+if [ "$LCDTAG" = "1" ]; then
+    LCAVE=$(asm lcd_cave 0xbc400 0xbc744 --defsym=PICK_ADDR=$(sym pick) --defsym=PVARS_ADDR=$(sym VARS))
+    LJUMP=$(asm lcd_jump 0x1ff10 0x1ff14 --defsym=HOOK=$($LLVM/llvm-nm build/obj/lcd_cave.o | awk '$3 == "lcd_hook" { print "0x" $1 }'))
+    LCD_PATCHES="$LCAVE $LJUMP"
 fi
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its
@@ -120,7 +133,7 @@ if [ "$SMALLVID" = "1" ]; then
         $(jt 0xf0a8 a8f60000 vid32) $(jt 0xf0ac 88f60000 vid43) $(jt 0xf0b0 98f60000 vid11)"
 fi
 python3 tools/patch_code.py "$OUT" "$OUT" \
-    "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" $VFX_PATCHES \
+    "$HOOK_JUMP" "$CYC_JUMP" "$CAVE" $VFX_PATCHES $LCD_PATCHES \
     "$(jt 0xf3d0 9cf70000 stub169)" \
     "$(jt 0xf3d4 9cf70000 stub169)" \
     "$(jt 0xf3d8 b0f70000 stub32)" \
