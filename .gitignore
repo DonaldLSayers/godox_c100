@@ -1,5 +1,6 @@
 /ghidra
 /images
+/images_plain
 /build/ghidra
 /build/obj
 /build/*.bin
@@ -7,3 +8,6 @@
 /build/res
 
 .DS_Store
+/film_luts
+/previews/films
+/previews/films_v2

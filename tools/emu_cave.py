@@ -4,13 +4,14 @@
 Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
 (cache maintenance, pvPortMalloc), then:
   1. runs idx_stub (the per-photo entry) with a given tick count, which picks
-     the palette and fills the lookup table;
+     the preset and fills the lookup table;
   2. packs 640x64 slices of a photo into strips in the camera's YUV 4:2:0
      layout (see docs/c100-firmware.md) and runs the strip hook
      on two of them;
-  3. unpacks each strip and checks that every 2x2 block is exactly the palette
-     colour sim_palette.py picks (same palette, WY and table), including the
-     palette tag on the photo's first strip and not on the second.
+  3. unpacks each strip and checks that every 2x2 block is exactly the colour
+     the sim expects: sim_palette.py's pick in the preset's match palette (same
+     WY and table), painted with the preset's film colour; including the
+     preset tag on the photo's first strip and not on the second.
 
 Usage: uv run --with unicorn,numpy,pillow tools/emu_cave.py PHOTO.jpg [TICKS...]
 """
@@ -18,7 +19,7 @@ import os, struct, subprocess, sys
 import numpy as np
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_SP
-from palettes import LUT, WY, expanded
+from palettes import LUT, WY, presets
 from sim_palette import add_tag, match, prepare
 
 FW = 'build/GP_CARDVR_UPGRADE.BIN'
@@ -91,10 +92,16 @@ def unpack(buf):
     return Y, UV
 
 
+def differing(Y, UV, want):
+    """Per 2x2 block: not exactly the wanted (Y,U,V) (all 4 luma equal to it)."""
+    Yb = Y.reshape(ROWS // 2, 2, W // 2, 2).transpose(0, 2, 1, 3).reshape(ROWS // 2, W // 2, 4)
+    return ((Yb != want[..., :1]).any(-1) | (UV != want[..., 1:]).any(-1))
+
+
 def main():
     photo, ticks = sys.argv[1], [int(t) for t in sys.argv[2:]] or [0, 1, 2, 3, 4, 5, 6, 7, 7, 300]
     sym = symbols()
-    names, pals = zip(*expanded().items())
+    pre = presets()
     src = prepare(photo, W)
     uc, calls = machine()
     kinds = {CACHE_INV: 'inv', CACHE_CLEAN: 'clean', MALLOC: 'malloc'}
@@ -104,8 +111,7 @@ def main():
         calls.clear()
         assert run(uc, sym['idx_stub']) == RESUME187
         idx = struct.unpack('<I', uc.mem_read(sym['VARS'] + 8, 4))[0]
-        P = [c for c, _ in pals[idx]]
-        lookup = {c: i for i, c in enumerate(P)}
+        tag, P, D = pre[idx]
         diffs = []
         for strip, top in enumerate((0, 200)):       # the photo's 1st and 2nd strip
             crop = src.crop((0, top, W, top + ROWS))
@@ -117,16 +123,10 @@ def main():
             # every 2x2 block must be exactly one palette colour, the one the sim picks
             ref = match(crop, P, wy=WY, lut=LUT)
             if strip == 0:
-                add_tag(ref, names[idx], pals[idx])
-            got = np.full(ref.shape, -1)
-            for b in range(ROWS // 2):
-                for c in range(W // 2):
-                    ys = {Y[2 * b + dy, 2 * c + dx] for dy in (0, 1) for dx in (0, 1)}
-                    if len(ys) == 1:
-                        got[b, c] = lookup.get((ys.pop(), *UV[b, c]), -1)
-            diffs.append((got != ref).mean() * 100)
+                add_tag(ref, tag, D)
+            diffs.append(differing(Y, UV, np.array(D)[ref]).mean() * 100)
         worst = max(worst, *diffs)
-        print(f'tick {t:4}: palette {idx} {names[idx]} ({len(P)} colours), blocks differing from sim: '
+        print(f'tick {t:4}: preset {idx} {tag} ({len(P)} colours), blocks differing from sim: '
               f'strip 1 (tag) {diffs[0]:.2f}%, strip 2 {diffs[1]:.2f}%, '
               f'calls: {[kinds[a] for a, _, _ in calls]}')
     print('max difference', worst)

@@ -12,7 +12,7 @@ Usage: uv run --with numpy,pillow tools/palette_preview.py OUTDIR PHOTO.jpg...
 """
 import os, sys
 from PIL import Image, ImageDraw
-from palettes import LUT, WY, expanded, yuv_to_hex
+from palettes import LUT, TAG, WY, expanded, yuv_to_hex
 from sim_palette import prepare, render
 
 
@@ -68,7 +68,7 @@ def main():
         src = prepare(p, 640)
         tiles = [(src, 'original (camera size)')]
         for pname, cols in pals.items():
-            t = render(src, [c for c, _ in cols], tag=(pname, cols), wy=WY, lut=LUT)
+            t = render(src, [c for c, _ in cols], tag=(TAG[pname], [c for c, _ in cols]), wy=WY, lut=LUT)
             t.save(os.path.join(out, name, f'{pname}.png'))
             tiles.append((t, f'{pname} ({len(cols)})'))
         sheet(tiles, os.path.join(out, name, 'sheet.png'), cols=5)

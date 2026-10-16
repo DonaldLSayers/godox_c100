@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Sort the camera's photos and videos into one folder per palette.
 
-Reads the two-letter palette tag the camera draws top right (see palettes.py)
-and moves each file in DIR to DIR/<tag>/, e.g. images/IMG_0400.jpg ->
-images/eg/IMG_0400.jpg. Only files directly in DIR are looked at, so new ones
+Reads the tag the camera draws top right (see palettes.py: the old palettes'
+two letters, or a preset's three) and moves each file in DIR to DIR/<tag>/,
+e.g. images/IMG_0400.jpg -> images/eg/IMG_0400.jpg, or -> images/eav/. Only files directly in DIR are looked at, so new ones
 can be dumped there and the script rerun. Files whose tag can't be read
 confidently go to DIR/unknown/.
 
@@ -22,7 +22,7 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from palettes import TAG, TAG_COLS, TAG_RIGHT, TAG_ROWS, TAG_SCALE, TAG_TOP, expanded, tag_cells, tag_colours
+from palettes import TAG, TAG_RIGHT, TAG_ROWS, TAG_SCALE, TAG_TOP, expanded, presets, tag_cells, tag_colours
 
 EXTS = {'.jpg', '.jpeg', '.mov', '.mp4'}
 CELL = 2 * TAG_SCALE   # image pixels per tag cell (a block is 2x2 pixels)
@@ -31,15 +31,18 @@ MIN_MARGIN = 1.3       # runner-up must score at least this much worse
 
 
 def templates():
-    """{tag: (cells, yuv per cell)} for every palette."""
+    """{tag: (cells, yuv per cell)} for the old 2-letter palette tags and the
+    3-letter preset tags (painted in the preset's film colours)."""
+    tags = [(TAG[name], [c for c, _ in cols]) for name, cols in expanded().items()]
+    tags += [(tag, disp) for tag, _, disp in presets()]
     out = {}
-    for name, cols in expanded().items():
+    for text, cols in tags:
         dark, light = tag_colours(cols)
-        cells = np.array(tag_cells(name))
+        cells = np.array(tag_cells(text))
         want = np.zeros(cells.shape + (3,))
-        want[cells == 1] = cols[dark][0]
-        want[cells == 2] = cols[light][0]
-        out[TAG[name].lower()] = (cells > 0, want)
+        want[cells == 1] = cols[dark]
+        want[cells == 2] = cols[light]
+        out[text.lower()] = (cells > 0, want)
     return out
 
 
@@ -54,15 +57,16 @@ def load(path):
     return np.asarray(img.convert('RGB').convert('YCbCr'), dtype=float)
 
 
-def tag_region(yuv):
-    """Mean Y,U,V of the centre of each tag cell (the edges bleed in the JPEG)."""
+def tag_region(yuv, cols):
+    """Mean Y,U,V of the centre of each cell of a tag cols cells wide (the
+    edges bleed in the JPEG)."""
     w = yuv.shape[1]
-    x0 = w - 2 * TAG_RIGHT - TAG_COLS * CELL
+    x0 = w - 2 * TAG_RIGHT - cols * CELL
     y0 = 2 * TAG_TOP
     c = CELL // 4
-    out = np.zeros((TAG_ROWS, TAG_COLS, 3))
+    out = np.zeros((TAG_ROWS, cols, 3))
     for r in range(TAG_ROWS):
-        for k in range(TAG_COLS):
+        for k in range(cols):
             y, x = y0 + r * CELL, x0 + k * CELL
             out[r, k] = yuv[y + c:y + CELL - c, x + c:x + CELL - c].reshape(-1, 3).mean(0)
     return out
@@ -70,8 +74,9 @@ def tag_region(yuv):
 
 def classify(path, tmpl):
     """(tag or None, scores sorted best first)."""
-    got = tag_region(load(path))
-    scores = sorted((np.abs(got[mask] - want[mask]).sum(1).mean(), tag)
+    yuv = load(path)
+    got = {n: tag_region(yuv, n) for n in {m.shape[1] for m, _ in tmpl.values()}}
+    scores = sorted((np.abs(got[mask.shape[1]][mask] - want[mask]).sum(1).mean(), tag)
                     for tag, (mask, want) in tmpl.items())
     (best, tag), (second, _) = scores[0], scores[1]
     ok = best <= MAX_SCORE and second >= MIN_MARGIN * best

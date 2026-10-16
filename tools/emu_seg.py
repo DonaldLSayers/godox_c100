@@ -6,10 +6,11 @@ decodes what goes out on CS=0x28 / WR=0x29 / DATA=0x2a back into HT1621
 commands and RAM writes, so the segment map in docs/c100-firmware.md comes
 from the real code rather than from the decompiler.
 
-With a build that has the palette tag on the display (LCDTAG=1, e.g.
+With a build that has the preset code on the display (LCDTAG=1, e.g.
 build/GP_CARDVR_UPGRADE.BIN) it also runs that feature end to end: the
-display picks and shows a palette, a capture uses it and picks the next one,
-recording shows the palette in use, and the readout state still shows ISO.
+display picks and shows a preset on the SS cells, a capture uses it and picks
+the next one, recording shows the preset in use, everything outside the SS
+cells matches the factory refresh, and the readout state is fully stock.
 
 Usage: uv run --with unicorn tools/emu_seg.py [FIRMWARE.BIN]
 """
@@ -210,9 +211,9 @@ if __name__ == '__main__':
         print(f'boot: refresh {tick}: logo={"on " if (0x16, 1) in lit(lcd2.ram) else "off"} '
               f'digits [{dg}] other {fmt(rest - {(0x16, 1)})}')
 
-    # ---- Palette tag on the display (builds with LCDTAG=1) ----
-    word = struct.unpack('<I', open(FW, 'rb').read()[APP + 0x1ff10:APP + 0x1ff14])[0]
-    if word >> 24 == 0xea and 0xbc400 <= 0x1ff18 + ((word & 0xffffff) << 2) < 0xbc744:
+    # ---- Preset code on the display (builds with LCDTAG=1) ----
+    word = struct.unpack('<I', open(FW, 'rb').read()[APP + 0x21218:APP + 0x2121c])[0]
+    if word >> 24 == 0xea and 0xbc400 <= (0x21218 + 8 + (word & 0xffffff) * 4) & 0xffffffff < 0xbc744:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import palettes
         nm = next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
@@ -223,55 +224,63 @@ if __name__ == '__main__':
         VARS, LUT_FILL = syms['VARS'], syms['lut_fill']
         PAL_IDX, NEXT_IDX = VARS + 8, VARS + 16
         TICK, REC_FLAGS = 0x126b80, 0x132abb
-        tags = [palettes.lcd_text(palettes.TAG[n]) for n in palettes.expanded()]
-        com = {8: 0, 4: 1, 2: 2}
-        seg_at = {(off, com[bit]): seg for seg, (off, bit) in palettes.SEG7_BITS.items()}
+        tags = [palettes.lcd_text(t) for t, _, _ in palettes.presets()]
+        SS = set(range(palettes.SS_FIRST, palettes.SS_FIRST + palettes.SS_COUNT))
 
         def shown(segs):
-            """Two characters on the ISO cells, plus any other lit bit in addresses 0..5."""
-            text, extra = '', set()
-            for cell in (0, 1):
-                on = set()
-                for a, c in segs:
-                    if 3 * cell <= a < 3 * cell + 3:
-                        seg = seg_at.get((a - 3 * cell, c))
-                        (on.add(seg) if seg else extra.add((a, c)))
+            """The three characters on the SS cells."""
+            text = ''
+            for cell in palettes.SS_CELLS:
+                on = {seg for seg, ac in cell.items() if ac in segs}
                 text += next((ch for ch, ss in palettes.SEG7.items() if set(ss) == on), '?' if on else ' ')
-            return text, extra
+            return text
 
+        def run(fw_uc, lcd_, state, rec=0):
+            for addr, val in [(0x121706, state), (0x1217be, 1), (0x1217b0, 1), (REC_FLAGS, rec),
+                              (0xe3279, 1), (CFG + 0xeb, 15), (0x12170b, 1), (CFG + 0xea, 11)]:
+                fw_uc.mem_write(addr, bytes([val]))
+            fw_uc.mem_write(CFG + 0xec, struct.pack('<H', 400))
+            call(fw_uc, 0x21318)
+            return lit(lcd_.ram)
+
+        FW_STOCK = FW
+        FW = 'build_backups/v001_original.bin'
+        stock_uc, stock_lcd = machine()               # the factory refresh, for comparison
+        FW = FW_STOCK
         uc, lcd = machine()
         word32 = lambda a: struct.unpack('<I', uc.mem_read(a, 4))[0]
         def tick_refresh(state, rec=0):
-            for addr, val in [(0x121706, state), (0x1217be, 1), (0x1217b0, 1), (REC_FLAGS, rec),
-                              (0xe3279, 1), (CFG + 0xeb, 15), (0x12170b, 1), (CFG + 0xea, 11)]:
-                uc.mem_write(addr, bytes([val]))
-            uc.mem_write(CFG + 0xec, struct.pack('<H', 400))
-            call(uc, 0x21318)
-            return lit(lcd.ram)
+            segs = run(uc, lcd, state, rec)
+            stock = run(stock_uc, stock_lcd, state, rec)
+            outside = {sg for sg in segs ^ stock if sg[0] not in SS}
+            return segs, outside
 
         uc.mem_write(TICK, struct.pack('<I', 0x1234))
         ok = True
         def check(label, got, want):
             global ok
             ok &= got == want
-            print(f'tag: {label}: {got!r} (want {want!r}){"" if got == want else "  <-- FAIL"}')
+            print(f'code: {label}: {got!r} (want {want!r}){"" if got == want else "  <-- FAIL"}')
 
-        text, extra = shown(tick_refresh(0))
+        segs, outside = tick_refresh(0)
         nxt = word32(NEXT_IDX)
-        check('photo mode, first refresh shows NEXT', (text, extra), (tags[nxt], set()))
+        check('photo mode, first refresh shows NEXT', shown(segs), tags[nxt])
+        check('photo mode, everything outside the SS cells as stock', outside, set())
         for n in range(4):                           # four captures
             uc.mem_write(TICK, struct.pack('<I', 0x1234 + 37 * (n + 1)))
             before = word32(NEXT_IDX)
             call(uc, LUT_FILL, count=400_000_000)
             cur, nxt = word32(PAL_IDX), word32(NEXT_IDX)
-            check(f'capture {n + 1} uses the shown palette', cur, before)
+            check(f'capture {n + 1} uses the shown preset', cur, before)
             check(f'capture {n + 1} next differs from current', nxt != cur and nxt < len(tags), True)
-            check(f'capture {n + 1} display shows the next one', shown(tick_refresh(0))[0], tags[nxt])
-        check('video mode, idle shows NEXT', shown(tick_refresh(1))[0], tags[word32(NEXT_IDX)])
-        check('video mode, recording shows the palette in use', shown(tick_refresh(1, rec=2))[0],
-              tags[word32(PAL_IDX)])
-        segs = tick_refresh(2)
-        dg, rest = read(segs)
-        check('readout state still shows ISO 400 (stock)', dg[:2] + str(int((5, 0) in segs)), '401')
-        print('tag test', 'PASSED' if ok else 'FAILED')
+            check(f'capture {n + 1} display shows the next one', shown(tick_refresh(0)[0]), tags[nxt])
+        segs, outside = tick_refresh(1)
+        check('video mode, idle shows NEXT', shown(segs), tags[word32(NEXT_IDX)])
+        check('video mode, everything outside the SS cells as stock', outside, set())
+        segs, outside = tick_refresh(1, rec=2)
+        check('video mode, recording shows the preset in use', shown(segs), tags[word32(PAL_IDX)])
+        check('video mode recording, outside the SS cells as stock', outside, set())
+        segs = run(uc, lcd, 2)
+        check('readout state exactly as stock (ISO 400, F5.6, SS 1/25): differing', fmt(segs ^ run(stock_uc, stock_lcd, 2)), '-')
+        print('code test', 'PASSED' if ok else 'FAILED')
         sys.exit(0 if ok else 1)

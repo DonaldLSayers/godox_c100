@@ -9,10 +9,13 @@ parents (those muddy the look). A palette with more than NMAX is thin()ned by
 dropping near-duplicates. Colours are JPEG/JFIF YCbCr, which is what the
 camera's buffer holds.
 
-  palettes.py            print every palette (hex + Y,U,V)
-  palettes.py asm        print palettes.inc for photo_cave.s (palettes + tags)
+The camera uses presets (below): a match palette x a film simulation.
+
+  palettes.py            print every preset (match colour -> film colour)
+  palettes.py asm        print palettes.inc for the caves (presets, tags,
+                         display codes)
 """
-import sys
+import os, sys
 
 NMIN = 10   # small palettes are topped up to this many colours
 NMAX = 32   # big palettes are thinned to at most this many
@@ -136,55 +139,106 @@ def expanded():
     return pals
 
 
-# Palette tag: two letters in a 3x5 pixel font, drawn top right on every photo
-# so you can tell which palette it got. Letters in the palette's lightest
-# colour, with a one-pixel outline (8 neighbours) in its darkest.
+# ---- Presets (2026-10-16): 3 match palettes x 4 film simulations ----
+# Each block gets its nearest colour in the preset's match palette (as with the
+# plain palettes), and is painted with that colour as a film simulation would
+# render it: a G'MIC film LUT applied to the palette's colours by film.py, kept
+# in film_colours.py so the build doesn't need the LUTs. The match palettes:
+#   E  endesga32 + 3 greens (foliage landed on its browns), minus 3 colours
+#      that were used 0.0% on the plain photos, to stay at NMAX
+#   6  riso6, overprint-expanded to 16 instead of 10 (less funky)
+#   H  harbour + a dark (it had none; shadows went flat plum), expanded to 16
+# Tag = palette letter + film code, e.g. EAV, HP6. See docs/c100-firmware.md.
+EG_GREENS = ['2B5322', '4F7945', '77A36E']  # OKLCH L 0.40/0.53/0.67, C 0.09, hue 140
+EG_UNUSED = {'FF0044', 'FEE761', '2CE8F5'}
+HB_DARK = '011F2A'                          # harbour's blue at OKLCH L 0.22
+MATCH = {
+    'E': [hex_to_yuv(h) for h in BASE['endesga32'] if h not in EG_UNUSED]
+         + [hex_to_yuv(h) for h in EG_GREENS],
+    '6': [c for c, _ in expand(BASE['riso6'], 16)],
+    'H': [c for c, _ in expand(BASE['harbour'] + [HB_DARK], 16)],
+}
+FILMS = {'AV': 'agfa_vista_200', 'FP': 'fuji_provia_100_generic',
+         'FV': 'fuji_velvia_100_generic', 'P6': 'polaroid_690'}
+
+
+def presets():
+    """[(tag, match colours, display colours)] in firmware order, as (Y,U,V)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # build.sh runs python -I
+    from film_colours import DISPLAY, SOURCE
+    out = []
+    for p, cols in MATCH.items():
+        assert SOURCE.get(p) == [yuv_to_hex(c) for c in cols], \
+            f'film_colours.py is stale for palette {p}: run tools/film.py gen'
+        for f in FILMS:
+            out.append((p + f, cols, [hex_to_yuv(h) for h in DISPLAY[p + f]]))
+    assert all(len(m) <= NMAX for _, m, _ in out)
+    return out
+
+
+# Tag: the letters in a 3x5 pixel font, drawn top right on every photo so you
+# can tell which preset it got. Letters in the lightest colour, with a
+# one-pixel outline (8 neighbours) in the darkest. TAG names the old palettes
+# (palette_preview.py); the presets' tags are 3 letters.
 TAG = {'riso6': 'R6', 'refreshing': 'RF', 'mid_century': 'MC', 'harbour': 'HB',
        'db16': 'DB', 'endesga32': 'EG', 'sweetie16': 'S6', 'nes': 'NS'}
 FONT = {  # rows top to bottom, 3 pixels each
+    'A': ['010', '101', '111', '101', '101'],
     'B': ['110', '101', '110', '101', '110'], 'C': ['111', '100', '100', '100', '111'],
     'D': ['110', '101', '101', '101', '110'], 'E': ['111', '100', '110', '100', '111'],
     'F': ['111', '100', '110', '100', '100'], 'G': ['111', '100', '101', '101', '111'],
     'H': ['101', '101', '111', '101', '101'], 'M': ['101', '111', '111', '101', '101'],
-    'N': ['110', '101', '101', '101', '101'], 'R': ['110', '101', '110', '101', '101'],
-    'S': ['011', '100', '010', '001', '110'], '6': ['111', '100', '111', '101', '111'],
+    'N': ['110', '101', '101', '101', '101'], 'P': ['110', '101', '110', '100', '100'],
+    'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
+    'V': ['101', '101', '101', '101', '010'], '6': ['111', '100', '111', '101', '111'],
 }
-TAG_ROWS, TAG_COLS = 7, 9   # 5x7 text area (3 + 1 gap + 3) plus the outline
+TAG_LETTERS = 3
+TAG_ROWS, TAG_COLS = 7, 4 * TAG_LETTERS + 1  # 3 letters, 1-pixel gaps, plus the outline
 TAG_SCALE = 2               # blocks per font pixel (a block is 2x2 image pixels)
 TAG_TOP, TAG_RIGHT = 4, 4   # margins in blocks
 
 
-def tag_cells(name):
-    """TAG_ROWS x TAG_COLS grid: 0 = photo shows through, 1 = dark, 2 = light."""
-    text = [[0] * TAG_COLS for _ in range(TAG_ROWS)]
-    for k, ch in enumerate(TAG[name]):
+def tag_cells(text):
+    """7 x (4*len+1) grid: 0 = photo shows through, 1 = dark, 2 = light."""
+    cols = 4 * len(text) + 1
+    lit = [[0] * cols for _ in range(TAG_ROWS)]
+    for k, ch in enumerate(text):
         for r, row in enumerate(FONT[ch]):
             for c, bit in enumerate(row):
-                text[1 + r][1 + 4 * k + c] = int(bit)
-    cells = [[0] * TAG_COLS for _ in range(TAG_ROWS)]
+                lit[1 + r][1 + 4 * k + c] = int(bit)
+    cells = [[0] * cols for _ in range(TAG_ROWS)]
     for r in range(TAG_ROWS):
-        for c in range(TAG_COLS):
-            if text[r][c]:
+        for c in range(cols):
+            if lit[r][c]:
                 cells[r][c] = 2
-            elif any(text[rr][cc] for rr in range(max(r - 1, 0), min(r + 2, TAG_ROWS))
-                     for cc in range(max(c - 1, 0), min(c + 2, TAG_COLS))):
+            elif any(lit[rr][cc] for rr in range(max(r - 1, 0), min(r + 2, TAG_ROWS))
+                     for cc in range(max(c - 1, 0), min(c + 2, cols))):
                 cells[r][c] = 1
     return cells
 
 
-# The same tag on the camera's see-through display, on the two 7-segment
-# cells of the ISO readout (shown in photo and video mode, where the readout is
-# blank). Not every letter has a 7-segment shape, so some are shown lowercase
-# or approximated: R -> r, B -> b, D -> d, N -> n, S -> 5, M -> a "∩".
-SEG7 = {'A': 'abcefg', 'b': 'cdefg', 'C': 'adef', 'd': 'bcdeg', 'E': 'adefg', 'F': 'aefg',
-        'G': 'acdef', 'H': 'bcefg', 'n': 'ceg', 'r': 'eg', 'M': 'abcef',
-        '5': 'acdfg', '6': 'acdefg'}
-SEG7_LETTER = {'R': 'r', 'B': 'b', 'D': 'd', 'N': 'n', 'S': '5'}
-# Each cell is three HT1621 addresses (found by running the firmware's digit
-# routine in tools/emu_seg.py): f, e | a, g, d | b, c, as COM0 = 8, COM1 = 4,
-# COM2 = 2. The COM0 bits of the first and last address are the ISO label and
-# the fixed zeros; they stay off.
-SEG7_BITS = {'f': (0, 4), 'e': (0, 2), 'a': (1, 8), 'g': (1, 4), 'd': (1, 2), 'b': (2, 4), 'c': (2, 2)}
+def tag_colours(cols):
+    """Indices of the darkest and lightest colour (by Y) in a list of (Y,U,V)."""
+    ys = [c[0] for c in cols]
+    return ys.index(min(ys)), ys.index(max(ys))
+
+
+# The same tag on the camera's see-through display, on the three 7-segment
+# cells of the shutter-speed (SS) readout, blank in photo and video mode. V has
+# no 7-segment shape and shows as U; S as 5.
+SEG7 = {'A': 'abcefg', 'E': 'adefg', 'F': 'aefg', 'H': 'bcefg', 'P': 'abefg',
+        'U': 'bcdef', '5': 'acdfg', '6': 'acdefg'}
+SEG7_LETTER = {'V': 'U', 'S': '5'}
+# Segment -> (HT1621 address, COM) for each SS cell, left to right, found by
+# running the firmware's SS digit routines (FUN_0004a374, FUN_0004a1f0,
+# FUN_0004a074) for 0..9 in tools/emu_seg.py. Each cell is wired differently.
+# Addresses 0x0d..0x13 hold nothing but these 21 segments.
+SS_CELLS = [
+    {'a': (0x0d, 0), 'b': (0x0e, 0), 'c': (0x0f, 2), 'd': (0x0e, 2), 'e': (0x0d, 2), 'f': (0x0d, 1), 'g': (0x0e, 1)},
+    {'a': (0x0f, 0), 'b': (0x10, 0), 'c': (0x11, 1), 'd': (0x11, 2), 'e': (0x10, 2), 'f': (0x0f, 1), 'g': (0x10, 1)},
+    {'a': (0x12, 0), 'b': (0x13, 0), 'c': (0x13, 1), 'd': (0x13, 2), 'e': (0x12, 2), 'f': (0x11, 0), 'g': (0x12, 1)},
+]
+SS_FIRST, SS_COUNT = 0x0d, 7    # HT1621 addresses written
 
 
 def lcd_text(tag):
@@ -192,29 +246,36 @@ def lcd_text(tag):
 
 
 def lcd_nibbles(tag):
-    """Nibbles for HT1621 addresses 0..5 that show `tag` on the ISO cells."""
-    nib = [0] * 6
-    for cell, ch in enumerate(lcd_text(tag)):
+    """Nibbles for HT1621 addresses 0x0d..0x13 that show `tag` on the SS cells
+    (COM0 = nibble bit 8, COM1 = 4, COM2 = 2)."""
+    nib = [0] * SS_COUNT
+    for cell, ch in zip(SS_CELLS, lcd_text(tag)):
         for seg in SEG7[ch]:
-            off, bit = SEG7_BITS[seg]
-            nib[3 * cell + off] |= bit
+            addr, com = cell[seg]
+            nib[addr - SS_FIRST] |= 8 >> com
     return nib
 
 
-def tag_colours(cols):
-    """Indices of the darkest and lightest colour (by Y) of an expanded palette."""
-    ys = [c[0] for c, _ in cols]
-    return ys.index(min(ys)), ys.index(max(ys))
-
-
 def main():
-    pals = expanded()
     if sys.argv[1:] == ['asm']:
+        pre = presets()
         print('@ Generated by tools/palettes.py asm -- do not edit.')
-        print(f'    .equ    NPAL, {len(pals)}')
-        print('    .macro  PALETTE_DATA                  @ per palette: count, then count x (Y,U,V)')
-        for name, cols in pals.items():
-            print(f'    .byte {len(cols)}, ' + ', '.join('%d,%d,%d' % c for c, _ in cols) + f'   @ {name}')
+        print(f'    .equ    NPAL, {len(pre)}                      @ presets')
+        print('    .macro  MATCH_DATA                    @ per match palette: count, then count x (Y,U,V)')
+        for p, cols in MATCH.items():
+            print(f'    .byte {len(cols)}, ' + ', '.join('%d,%d,%d' % c for c in cols) + f'   @ {p}')
+        print('    .endm')
+        print('    .macro  PRESET_MATCH_DATA             @ per preset: index of its match palette')
+        print('    .byte ' + ', '.join(str(list(MATCH).index(t[0])) for t, _, _ in pre))
+        print('    .endm')
+        print('    .macro  DISPLAY_DATA                  @ per preset: count x (Y,U,V) film colours')
+        for i, (tag, _, disp) in enumerate(pre):
+            print(f'disp_{i}:')
+            print('    .byte ' + ', '.join('%d,%d,%d' % c for c in disp) + f'   @ {tag}')
+        print('    .endm')
+        print('    .macro  DISPLAY_PTR_DATA              @ per preset: address of its film colours')
+        for i in range(len(pre)):
+            print(f'    .word   disp_{i} - base')
         print('    .endm')
         print(f'    .equ    TAG_ROWS, {TAG_ROWS}')
         print(f'    .equ    TAG_COLS, {TAG_COLS}')
@@ -223,23 +284,27 @@ def main():
         print(f'    .equ    TAG_RIGHT, {TAG_RIGHT}')
         nbytes = (TAG_ROWS * TAG_COLS + 3) // 4
         print(f'    .equ    TAG_BYTES, {nbytes + 2}')
-        print(f'    .macro  TAG_DATA                      @ per palette: {nbytes} B of 2-bit cells'
+        print(f'    .macro  TAG_DATA                      @ per preset: {nbytes} B of 2-bit cells'
               ' (LSB first), dark offset, light offset')
-        for name, cols in pals.items():
-            flat = [v for row in tag_cells(name) for v in row]
+        for tag, _, disp in pre:
+            assert len(tag) == TAG_LETTERS
+            flat = [v for row in tag_cells(tag) for v in row]
             packed = [sum(v << (2 * j) for j, v in enumerate(flat[i:i + 4])) for i in range(0, len(flat), 4)]
-            dark, light = tag_colours(cols)
-            print(f'    .byte ' + ', '.join(map(str, packed + [3 * dark, 3 * light])) + f'   @ {name} {TAG[name]}')
+            dark, light = tag_colours(disp)
+            print(f'    .byte ' + ', '.join(map(str, packed + [3 * dark, 3 * light])) + f'   @ {tag}')
         print('    .endm')
-        print('    .macro  LCD_TAG_DATA                  @ per palette: HT1621 nibbles for addresses 0..5')
-        for name in pals:
-            print('    .byte ' + ', '.join(map(str, lcd_nibbles(TAG[name]))) + f'   @ {name} {lcd_text(TAG[name])}')
+        print(f'    .equ    SS_FIRST, {SS_FIRST:#x}')
+        print(f'    .equ    SS_COUNT, {SS_COUNT}')
+        print(f'    .macro  LCD_TAG_DATA                  @ per preset: HT1621 nibbles for addresses'
+              f' {SS_FIRST:#x}..{SS_FIRST + SS_COUNT - 1:#x}')
+        for tag, _, _ in pre:
+            print('    .byte ' + ', '.join(map(str, lcd_nibbles(tag))) + f'   @ {tag} {lcd_text(tag)}')
         print('    .endm')
         return
-    for name, cols in pals.items():
-        print(f'{name} ({len(cols)})')
-        for c, par in cols:
-            print(f'  #{yuv_to_hex(c)}  Y,U,V = {c[0]:3},{c[1]:3},{c[2]:3}  {source(name, par)}')
+    for tag, cols, disp in presets():
+        print(f'{tag} ({len(cols)})')
+        for c, d in zip(cols, disp):
+            print(f'  #{yuv_to_hex(c)} -> #{yuv_to_hex(d)}  Y,U,V = {d[0]:3},{d[1]:3},{d[2]:3}')
 
 
 if __name__ == '__main__':

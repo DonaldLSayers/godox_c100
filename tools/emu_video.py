@@ -22,8 +22,9 @@ import numpy as np
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
 from unicorn.arm_const import *
 from emu_cave import FW, APP, CACHE_INV, CACHE_CLEAN, MALLOC, TICK, W, ROWS, pack, symbols, unpack
-from palettes import LUT, WY, expanded
+from palettes import LUT, WY, presets
 from sim_palette import add_tag, match, prepare
+from emu_cave import differing
 
 RESUME = 0x18d18
 VENC, STRIP, HEAP, STACK = 0x131490, 0x3e9a00, 0x800000, 0xf00000   # STRIP: a pool buffer, untagged
@@ -74,7 +75,7 @@ def run_strip(uc, entry, tick, ts=0x1004):
 def main():
     photo, timing = sys.argv[1], '--timing' in sys.argv[2:]
     psym, vsym = symbols(), symbols('build/obj/video_cave.o')
-    names, pals = zip(*expanded().items())
+    pre = presets()
     src = prepare(photo, W)
     uc, calls = machine()
     worst, last_idx = 0, None
@@ -88,30 +89,23 @@ def main():
         calls.clear()
         run_strip(uc, vsym['vhook'], tick, ts)
         idx = struct.unpack('<I', uc.mem_read(psym['VARS'] + 8, 4))[0]
-        P = [c for c, _ in pals[idx]]
-        lookup = {c: i for i, c in enumerate(P)}
+        tag, P, D = pre[idx]
         Y, UV = unpack(bytes(uc.mem_read(STRIP, STRIDE * ROWS)))
         ref = match(crop, P, wy=WY, lut=LUT)
         if tagged:
-            add_tag(ref, names[idx], pals[idx])
-        got = np.full(ref.shape, -1)
-        for b in range(ROWS // 2):
-            for c in range(W // 2):
-                ys = {Y[2 * b + dy, 2 * c + dx] for dy in (0, 1) for dx in (0, 1)}
-                if len(ys) == 1:
-                    got[b, c] = lookup.get((ys.pop(), *UV[b, c]), -1)
+            add_tag(ref, tag, D)
         bar = np.zeros(ref.shape, bool)
         if timing:
             bar[:2, :128] = True
             assert (Y[:4, :256] == 16).all() and (UV[:2, :128] == 128).all(), 'timing bar wrong'
-        diff = (got != ref)[~bar].mean() * 100
+        diff = differing(Y, UV, np.array(D)[ref])[~bar].mean() * 100
         worst = max(worst, diff)
         if label == 'new recording':
-            assert last_idx is None or idx != last_idx, 'new recording kept the palette'
+            assert last_idx is None or idx != last_idx, 'new recording kept the preset'
         else:
             assert idx == last_idx and 'malloc' not in calls, 'table rebuilt mid-recording'
         last_idx = idx
-        print(f'tick {tick:5} {label:13}: palette {idx} {names[idx]} ({len(P)} colours), '
+        print(f'tick {tick:5} {label:13}: preset {idx} {tag} ({len(P)} colours), '
               f'{"tag, " if tagged else ""}blocks differing from sim {diff:.2f}%, calls {calls}'
               f'{", timing bar ok" if timing else ""}')
     print('max difference', worst)
