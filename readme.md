@@ -4,34 +4,28 @@ I'm not that much of a hardware tinkerer, but AI is getting so good, that it had
 
 <table>
     <tr>
-        <td><img src="./example_images/IMG_0683.jpg" /></td>
-        <td><img src="./example_images/IMG_0737.jpg" /></td>
-        <td><img src="./example_images/IMG_0700.jpg" /></td>
-        <td><img src="./example_images/IMG_0745.jpg" /></td>
+        <td><img src="./site/img/IMG_0683.jpg" /></td>
+        <td><img src="./site/img/IMG_0737.jpg" /></td>
+        <td><img src="./site/img/IMG_0700.jpg" /></td>
+        <td><img src="./site/img/IMG_0745.jpg" /></td>
     </tr>
     <tr>
-        <td><img src="./example_images/IMG_0622.jpg" /></td>
-        <td><img src="./example_images/IMG_0639.jpg" /></td>
-        <td><img src="./example_images/IMG_0519.jpg" /></td>
-        <td><img src="./example_images/IMG_0545.jpg" /></td>
+        <td><img src="./site/img/IMG_0622.jpg" /></td>
+        <td><img src="./site/img/IMG_0639.jpg" /></td>
+        <td><img src="./site/img/IMG_0519.jpg" /></td>
+        <td><img src="./site/img/IMG_0545.jpg" /></td>
     </tr>
     <tr>
-        <td><img src="./example_images/IMG_0604.jpg" /></td>
-        <td><img src="./example_images/IMG_0704.jpg" /></td>
-        <td><img src="./example_images/IMG_0612.jpg" /></td>
-        <td><img src="./example_images/IMG_0614.jpg" /></td>
+        <td><img src="./site/img/IMG_0704.jpg" /></td>
+        <td><img src="./site/img/IMG_0612.jpg" /></td>
+        <td><img src="./site/img/IMG_0614.jpg" /></td>
+        <td><img src="./site/img/IMG_0629.jpg" /></td>
     </tr>
     <tr>
-        <td><img src="./example_images/IMG_0645.jpg" /></td>
-        <td><img src="./example_images/IMG_0260.jpg" /></td>
-        <td><img src="./example_images/IMG_0279.jpg" /></td>
-        <td><img src="./example_images/IMG_0250.jpg" /></td>
-    </tr>
-    <tr>
-        <td><img src="./example_images/IMG_0695.jpg" /></td>
-        <td><img src="./example_images/IMG_0443.jpg" /></td>
-        <td><img src="./example_images/IMG_0610.jpg" /></td>
-        <td><img src="./example_images/IMG_0629.jpg" /></td>
+        <td><img src="./site/img/IMG_0645.jpg" /></td>
+        <td><img src="./site/img/IMG_0260.jpg" /></td>
+        <td><img src="./site/img/IMG_0279.jpg" /></td>
+        <td><img src="./site/img/IMG_0250.jpg" /></td>
     </tr>
 </table>
 

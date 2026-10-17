@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Godox C100, dithered</title>
+    <meta
+      name="description"
+      content="A patched firmware for the Godox C100 toy camera that takes pixelated, dithered, colour-graded retro pictures."
+    />
+    <meta property="og:title" content="Godox C100, dithered" />
+    <meta
+      property="og:description"
+      content="A patched firmware for the Godox C100 that takes pixelated, dithered, colour-graded retro pictures."
+    />
+    <meta property="og:image" content="https://godox.klve.nl/img/IMG_0683.jpg" />
+    <meta property="og:url" content="https://godox.klve.nl/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 4' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h1v1H0zM2 0h1v1H2zM1 1h1v1H1zM3 1h1v1H3zM0 2h1v1H0zM2 2h1v1H2zM1 3h1v1H1zM3 3h1v1H3z'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=Silkscreen&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="bg" aria-hidden="true"></canvas>
+
+    <main>
+      <header class="card intro">
+        <!--<p class="kicker">Godox C100 &middot; patched firmware</p>-->
+        <h1>Patching the C100's firmware to take retro dithered pics</h1>
+        <p>
+          I bought the Godox C100 because it seemed like a fun toy camera. But when it arrived,
+          I found the shutter sound was so annoying that I wanted to hack the speaker out.
+          Halfway the process of opening the camera though, I realized that although I'm not that
+          much of a firmware tinkerer myself, AI could probably do this way easier, programmatically...
+        </p>
+        <p>
+            Before I knew it, some hours later, we had patched the firmware to not only remove the
+            annoying audio (with a brief intermezzo of playing Super Mario sounds instead, until my roommate told me to please stop making the sounds so she could go to sleep) ... the camera was now also taking pixelated, dithered black and white pictures instead!
+            Next came the retro color palettes, video recording, and cycling through the settings, now also displayed on screen.
+        </p>
+        <p class="actions">
+          <a class="button" href="#install">Put it on your camera too</a>
+          <a href="https://github.com/kelleyvanevert/godox_c100">Source on GitHub</a>
+        </p>
+      </header>
+
+      <section class="gallery" aria-label="Photos taken with the patched camera">
+        <a href="img/IMG_0683.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0683.jpg" width="640" height="428" alt="" /></a>
+        <a href="img/IMG_0737.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0737.jpg" width="640" height="428" alt="" /></a>
+        <a href="img/IMG_0700.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0700.jpg" width="640" height="428" alt="" /></a>
+        <a href="img/kelley.png" style="--w: 640; --h: 480"><img src="img/kelley.png" width="640" height="480" alt="" /></a>
+        <a href="img/IMG_0745.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0745.jpg" width="640" height="428" alt="" /></a>
+        <a href="img/IMG_0622.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0622.jpg" width="640" height="360" alt="" /></a>
+        <a href="img/IMG_0639.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0639.jpg" width="640" height="360" alt="" /></a>
+        <a href="img/IMG_0519.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0519.jpg" width="640" height="360" alt="" /></a>
+        <a href="img/IMG_0545.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0545.jpg" width="640" height="360" alt="" /></a>
+        <a href="img/IMG_0577.png" style="--w: 608; --h: 456"><img src="img/IMG_0577.png" width="608" height="456" alt="" /></a>
+        <a href="img/IMG_0704.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0704.jpg" width="640" height="428" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0612.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0612.jpg" width="640" height="360" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0614.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0614.jpg" width="640" height="360" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0645.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0645.jpg" width="640" height="360" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0260.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0260.jpg" width="640" height="428" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0279.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0279.jpg" width="640" height="428" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0250.jpg" style="--w: 640; --h: 428"><img src="img/IMG_0250.jpg" width="640" height="428" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0443.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0443.jpg" width="640" height="360" alt="" loading="lazy" /></a>
+        <a href="img/IMG_0629.jpg" style="--w: 640; --h: 360"><img src="img/IMG_0629.jpg" width="640" height="360" alt="" loading="lazy" /></a>
+      </section>
+
+      <section class="card">
+        <h2>What it does</h2>
+        <p>
+          Every photo and video is shrunk to about 274k pixels (640&times;428 for 3:2), matched against
+          a small colour palette with ordered dithering, then painted with a film
+          simulation applied. The chosen look is stamped in the top right corner.
+          Presssing the <strong>center button</strong> switches between the presets;
+          the camera remembers your choice when you turn it off.
+        </p>
+        <ul class="presets">
+          <li>
+            <span class="tag">EP6</span>
+            <span>The <a href="https://lospec.com/palette-list/endesga-32">Endesga&nbsp;32</a> palette, graded like Polaroid&nbsp;690. Realistic, nice greens for outside, but a funky</span>
+          </li>
+          <li>
+            <span class="tag">6FP</span>
+            <span>A six-ink risograph palette through Fuji Provia&nbsp;100. Less realistic, more retro. I find it works better at night, inside</span>
+          </li>
+          <li>
+            <span class="tag">BW</span>
+            <span>Not actually black and white but grayscale..</span>
+          </li>
+          <li>
+            <span class="tag" role="img" aria-label="rnd"
+              ><svg viewBox="0 0 25 12" shape-rendering="crispEdges" aria-hidden="true">
+                <path d="M0 5h2v7H0zM2 5h3v2H2zM9 5h2v7H9zM11 5h3v2h-3zM14 5h2v7h-2zM18 5h2v7h-2zM20 5h3v2h-3zM20 10h3v2h-3zM23 0h2v12h-2z" /></svg
+            ></span>
+            <span>Chooses a random look for every shot</span>
+          </li>
+        </ul>
+        <p>Oh, and the beeps are gone: the camera is completely silent now (also no hissing sound)</p>
+      </section>
+
+      <section class="card" id="install">
+        <h2>How to put it on your camera</h2>
+        <p class="note" style="position:relative; top: -1em;">
+            Note: you'll be fine, but I'm not liable for bricking your camera!
+        </p>
+
+        <ol class="steps">
+          <li>
+            <h3>Put the firmware to the SD</h3>
+            <p class="download">
+              <a
+                class="button"
+                href="https://github.com/kelleyvanevert/godox_c100/raw/main/build_backups/v020_video_274k.bin"
+                >Download firmware</a
+              >
+              <span>v020 &middot; 1.8&nbsp;MB</span>
+            </p>
+            <p>
+              Download the firmware and put it in the root of the camera's SD card, then make sure to rename it to exactly:
+              <code>GP_CARDVR_UPGRADE.BIN</code>
+            </p>
+            <p class="note">
+                You can either connect the camera over USB-C while it's on,
+                copy the file, eject, and turn the camera off; or put the SD card in your computer and
+                then back into the camera while it's off.
+            </p>
+          </li>
+          <li>
+            <h3>Flash</h3>
+            <p>
+              Turn the camera on and wait about 10 seconds while the light flashes. Afterwards it will restart by
+              itself, now running the new firmware.
+            </p>
+            <p class="note">
+              Nothing happening after 10 seconds? Then the file probably ended up in a subfolder, or
+              isn't named quite right (watch out for a hidden <code>.bin</code> extension).
+            </p>
+          </li>
+          <li>
+            <h3>Have fun!</h3>
+            <p>
+              Want the stock camera back? Flash the
+              <a href="https://www.godox.com/product-e/C100.html">official firmware from Godox</a> the
+              same way.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>Technical details</h2>
+        <p>
+          Godox publishes the <a href="https://www.godox.com/product-e/C100.html">firmware and flashing instructions</a> for the C100, so that meant an easy start.
+          The camera runs on a GeneralPlus GP22B, an ARM chip running FreeRTOS. This turns out to be a popular choice
+          for things like dashcams, kids' cameras, etc. I let Claude Code do the heavy lifting: unpacking the
+          image, finding the place where photos and video frames pass by, and hooking in a palette
+          lookup table and a Bayer dither. You can <a href="https://github.com/kelleyvanevert/godox_c100/blob/main/docs/c100-firmware.md"
+          >read Claude's full write-up here</a>, or browse the <a href="https://github.com/kelleyvanevert/godox_c100">code and tools</a>.
+        </p>
+      </section>
+
+      <footer>
+        <p>Made by <a href="https://klve.nl">Kelley van Evert</a></p>
+      </footer>
+    </main>
+
+    <dialog id="viewer" aria-label="Photo">
+      <form method="dialog"><button aria-label="Close">&times;</button></form>
+      <img alt="" />
+    </dialog>
+
+    <script src="main.js"></script>
+  </body>
+</html>
