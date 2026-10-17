@@ -22,6 +22,29 @@ NMAX = 32   # big palettes are thinned to at most this many
 WY = 2      # luma weight in the match distance: WY*|dY| + |dU| + |dV|
 LUT = (3, 3)  # camera lookup-table steps: Y and U/V in bins of 2^3 (photo_cave.s)
 
+# Photo sizes per aspect setting: (crop, output), about the same pixel count
+# for every aspect: ~274k, the old 3:2 640x428 (2026-10-17; v018 had ~420k,
+# 864x484 .. 640x640, which worked but was more than wanted). Widths are
+# multiples of 16 (like every stock size; the scaler and the JPEG blocks),
+# heights multiples of 4 (2x2 blocks, 4:2:0 chroma; 428 is known to work).
+# Each crop has the output's aspect, so the scaler doesn't stretch: 16:9 is
+# exactly 0.3667 of the full 1920x1080, 4:3 0.4222 of 1440x1080, 1:1 0.5156
+# of 1024x1024, 3:2 0.396 of 1616x1080 (0.07% off, as before). The crop is
+# only two numbers in the size struct; 1616 is the stock 3:2 crop (the
+# multiple of 16 nearest 1620). Video stays 640 wide (photo_cave.s size stubs).
+PHOTO_SIZES = {
+    '16:9': ((1920, 1080), (704, 396)),
+    '3:2':  ((1616, 1080), (640, 428)),
+    '4:3':  ((1440, 1080), (608, 456)),
+    '1:1':  ((1024, 1024), (528, 528)),
+}
+
+
+def camera_size(w, h):
+    """(crop aspect, output size) of the aspect setting nearest w x h."""
+    name = min(PHOTO_SIZES, key=lambda k: abs(PHOTO_SIZES[k][1][0] / PHOTO_SIZES[k][1][1] - w / h))
+    return PHOTO_SIZES[name]
+
 GREYS = {'000000', '7C7C7C', 'BCBCBC', 'FCFCFC'}   # NES greys thin() must keep
 
 # The full NES (2C02) palette. The source screenshot showed the first 32; the
@@ -304,6 +327,11 @@ def main():
         for i in range(len(pre)):
             print(f'    .word   disp_{i} - base')
         print('    .endm')
+        for name, ((cw, ch), (ow, oh)) in PHOTO_SIZES.items():
+            k = name.replace(':', '')
+            assert ow % 16 == 0 and oh % 4 == 0 and cw % 16 == 0
+            print(f'    .equ    P{k}_W, {ow}\n    .equ    P{k}_H, {oh}\n'
+                  f'    .equ    P{k}_CW, {cw}\n    .equ    P{k}_CH, {ch}      @ photo {name}: output, crop')
         print(f'    .equ    TAG_ROWS, {TAG_ROWS}')
         print(f'    .equ    TAG_COLS, {TAG_COLS}')
         print(f'    .equ    TAG_SCALE, {TAG_SCALE}')

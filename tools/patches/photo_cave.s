@@ -386,39 +386,62 @@ VARS:
 
 @ Size stubs, reached directly from the photo resolution jump table
 @ (ldrls pc,[pc,idx,lsl#2] @ 0xf3c8, table @ 0xf3d0) and the video one
-@ (@ 0xf098, table @ 0xf0a0). Each keeps the native crop (so the sensor is
-@ scaled, not cropped) and sets a small 640-wide final size at that aspect:
+@ (@ 0xf098, table @ 0xf0a0). Each sets a crop of the sensor (scaled, not
+@ cropped, apart from a few edge rows/columns) and a small final size:
 @ r6/r7 = target, r0/r1 = crop. Photo: first scaler = crop, the final scaler
-@ shrinks. Video has no such final stage (IMG_0294: garbage), so there the
-@ first scaler = target, as in every stock video size (IMG_0295: works).
+@ shrinks; sizes from tools/palettes.py PHOTO_SIZES (~420k pixels each, the
+@ crop at the output's aspect so nothing is stretched). Video (640 wide) has
+@ no such final stage (IMG_0294: garbage), so there the first scaler =
+@ target, as in every stock video size (IMG_0295: works).
 @ r4 = size struct, r5 = APMode (0x101 video, 0x102 photo), r9 = 1080 at entry.
-photo43:                                @ 4:3  crop 1440x1080 -> 640x480
-vid43:
+photo43:                                @ 4:3  photo
+    ldr     r6, =P43_W
+    ldr     r7, =P43_H
+    ldr     r0, =P43_CW
+    ldr     r1, =P43_CH
+    b       size_common
+stub169:                                @ 16:9  photo
+    ldr     r6, =P169_W
+    ldr     r7, =P169_H
+    ldr     r0, =P169_CW
+    ldr     r1, =P169_CH
+    b       size_common
+stub32:                                 @ 3:2  photo
+    ldr     r6, =P32_W
+    ldr     r7, =P32_H
+    ldr     r0, =P32_CW
+    ldr     r1, =P32_CH
+    b       size_common
+stub11:                                 @ 1:1  photo
+    ldr     r6, =P11_W
+    ldr     r7, =P11_H
+    ldr     r0, =P11_CW
+    ldr     r1, =P11_CH
+    b       size_common
+vid43:                                  @ 4:3  video: crop 1440x1080 -> 640x480
     mov     r6, #640
     mov     r7, #480
     mov     r0, #1440
     mov     r1, r9
     b       size_common
-stub169:                                @ 16:9  crop 1920x1080 -> 640x360
-vid169:
+vid169:                                 @ 16:9  video: crop 1920x1080 -> 640x360
     mov     r6, #640
     mov     r7, #360
     mov     r0, #1920
     mov     r1, r9
     b       size_common
-stub32:                                 @ 3:2  crop 1616x1080 -> 640x428
-vid32:
+vid32:                                  @ 3:2  video: crop 1616x1080 -> 640x428
     mov     r6, #640
     mov     r7, #428
     mov     r0, #1616
     mov     r1, r9
     b       size_common
-stub11:                                 @ 1:1  crop 1024x1024 -> 640x640
-vid11:
+vid11:                                  @ 1:1  video: crop 1024x1024 -> 640x640
     mov     r6, #640
     mov     r7, #640
     mov     r0, #1024
     mov     r1, #1024
+    b       size_common
 size_common:
     strh    r6, [r4, #14]                 @ target
     strh    r7, [r4, #16]
@@ -437,3 +460,4 @@ size_common:
 
 idx_stub:                               @ hooks FUN_000187c4 (once per photo)
     b       lut_build
+    .ltorg

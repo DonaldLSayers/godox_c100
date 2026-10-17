@@ -16,13 +16,18 @@ Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
      WY and table), painted with the preset's film colour; including the
      preset tag on the photo's first strip and not on the second.
 
+It does this at every photo output width (palettes.py PHOTO_SIZES; all modes
+at the first, one pass over the presets at the others), and reports the
+hook's instructions per 64-row strip (at the measured ~310 M instructions/s,
+roughly its time in the interrupt).
+
 Usage: uv run --with unicorn,numpy,pillow tools/emu_cave.py PHOTO.jpg
 """
 import os, struct, subprocess, sys
 import numpy as np
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
+from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_BLOCK, UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_SP
-from palettes import LUT, WY, presets
+from palettes import LUT, PHOTO_SIZES, WY, presets
 from sim_palette import add_tag, match, prepare
 
 FW = 'build/GP_CARDVR_UPGRADE.BIN'
@@ -103,18 +108,25 @@ def differing(Y, UV, want):
 
 
 def main():
+    global W
     photo = sys.argv[1]
     sym = symbols()
     pre = presets()
     rnd = len(pre)                                    # MODE value for random
-    src = prepare(photo, W)
     uc, calls = machine()
-    fill = [0]
+    fill, steps = [0], [0]
     uc.hook_add(UC_HOOK_CODE, lambda *_: fill.__setitem__(0, fill[0] + 1), begin=sym['sl'], end=sym['sl'])
+    uc.hook_add(UC_HOOK_BLOCK, lambda uc_, addr, size, _: steps.__setitem__(0, steps[0] + size // 4))
     kinds = {CACHE_INV: 'inv', CACHE_CLEAN: 'clean', MALLOC: 'malloc'}
-    worst, last, ok = 0, None, True
-    modes = list(range(rnd)) + [0, 0, 2, 2] + [rnd] * 4 + [1, 0x37]   # 0x37: not a mode = the first
-    for n, mode in enumerate(modes):
+    worst, last, ok, n = 0, None, True, 0
+    widths = sorted({o[0] for _, o in PHOTO_SIZES.values()}, reverse=True)
+    all_modes = list(range(rnd)) + [0, 0, 2, 2] + [rnd] * 4 + [1, 0x37]   # 0x37: not a mode = the first
+    for W in widths:
+      src = prepare(photo, W)
+      per_strip = []
+      print(f'-- photo width {W}')
+      for mode in (all_modes if W == widths[0] else list(range(rnd))):
+        n += 1
         uc.mem_write(TICK, struct.pack('<I', 100 + 37 * n))
         uc.mem_write(CFG_MODE, bytes([mode]))
         calls.clear()
@@ -132,7 +144,9 @@ def main():
             uc.mem_write(STRIP_A, pack(np.asarray(crop.convert('YCbCr'))))
             uc.mem_write(PHOTO + 0x18, struct.pack('<I', STRIP_A))
             uc.mem_write(STRIP_BYTES, struct.pack('<I', W * 32 * 3 // 2))
+            steps[0] = 0
             assert run(uc, sym['hook'], r0=0x300000, r1=STRIP_A) == RESUME
+            per_strip.append(steps[0])
             Y, UV = unpack(bytes(uc.mem_read(STRIP_A, W * 3 // 2 * ROWS)))
             # every 2x2 block must be exactly one palette colour, the one the sim picks
             ref = match(crop, P, wy=WY, lut=LUT)
@@ -146,6 +160,8 @@ def main():
               f'{"" if refilled == want_fill else " (WRONG)"}, blocks differing from sim: '
               f'strip 1 (tag) {diffs[0]:.2f}%, strip 2 {diffs[1]:.2f}%, '
               f'calls: {[kinds[a] for a, _, _ in calls]}')
+      most = max(per_strip)
+      print(f'   hook: up to {most / 1e6:.2f} M instructions per strip, ~{most / 310e3:.1f} ms at 310 MIPS')
     print('max difference', worst)
     print('preset selection and table reuse', 'PASSED' if ok else 'FAILED')
     sys.exit(0 if ok and worst == 0 else 1)

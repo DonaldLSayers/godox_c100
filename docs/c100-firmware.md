@@ -6,8 +6,8 @@ _Started 2026-10-13, last updated 2026-10-17. This file merges the earlier
 **Working on the camera:** pixel-art photos and videos at every aspect ratio,
 palette presets with film simulations and a tag on both, the preset's code on
 the see-through display, and a silent camera. **Built, not yet tried on the
-camera (`v017`):** the chosen preset mode is remembered across power-off,
-and BW's W on the display has mirrored halves.
+camera (`v019`):** photos at about 274k pixels at every aspect (704×396,
+640×428, 608×456, 528×528); video stays 640 wide.
 
 Goal: make the C100 produce pixel-art photos and videos in the spirit of the
 [Pixless camera](https://petapixel.com/2025/01/09/0-03-megapixel-pixless-camera-captures-charming-pixel-art-photos/):
@@ -30,7 +30,9 @@ small resolution, a limited colour palette, and dithering.
 | Next preset's code on the display's shutter-speed cells | on the camera, working (`v014`) |
 | [3 presets](#presets) EP6, 6FP, BW (S-curved dithered greyscale) + rnd mode | built (`v015`), passes the emulator tests; **not yet tried on the camera** |
 | Center button cycles the preset mode in photo/video mode, display shows it | on the camera, working (`v016`; `v015` hooked an arrow) |
-| Preset mode remembered across power-off (byte `0xf1` of the saved settings) | built (`v017`), emulator; **not yet tried on the camera** |
+| Preset mode remembered across power-off (byte `0xf1` of the saved settings) | on the camera, working (`v017`) |
+| [Larger photos](#size-and-aspect-ratios): ~420k pixels per aspect, video unchanged | on the camera, working (`v018`; more than wanted) |
+| Photos at ~274k pixels per aspect (the old 3:2 count), video unchanged | built (`v019`), emulator (pixel-exact at every width); **not yet tried on the camera** |
 | Table kept when the preset doesn't change (no ~60 ms fill before the capture) | built (`v015`), emulator |
 
 Open: [repeated frames](#timing-and-headroom) in some dithered videos.
@@ -162,8 +164,12 @@ which shifts every address after them).
 - `v016_center_button.bin` — v015 with the hook on the real center key
   (`F_key`, `0x1ddf8`). Works on the camera.
 - `v017_mode_saved.bin` — + the mode kept in the camera's saved settings
-  (survives power-off), W on the display with mirrored halves. The current
-  build, not yet tried on the camera.
+  (survives power-off), W on the display with mirrored halves. Works on the
+  camera.
+- `v018_larger_photos.bin` — photos at ~420k pixels (864×484, 800×536,
+  752×564, 640×640), video unchanged. Works on the camera.
+- `v019_photos_274k.bin` — photos at ~274k pixels (704×396, 640×428, 608×456,
+  528×528), video unchanged. The current build, not yet tried on the camera.
 
 ## Code caves and hooks
 
@@ -250,20 +256,42 @@ video). The photo resolution switch dispatches through a jump table at
 handler addresses**, so each aspect ratio can be pointed straight at a cave
 stub:
 
-| case | native | routed to | output |
-|---|---|---|---|
-| 0, 1 | 1920×1080 (16:9) | `stub169` | 640×360 |
-| 2 | 1616×1080 (3:2) | `stub32` | 640×428 |
-| 3, 11, 12 | 1440×1080 (4:3) | `photo43` | 640×480 |
-| 4 | 1024×1024 (1:1) | `stub11` | 640×640 |
+| case | native | routed to | crop → photo (since `v019`) | video |
+|---|---|---|---|---|
+| 0, 1 | 1920×1080 (16:9) | `stub169` | 1920×1080 → 704×396 | 640×360 |
+| 2 | 1616×1080 (3:2) | `stub32` | 1616×1080 → 640×428 | 640×428 |
+| 3, 11, 12 | 1440×1080 (4:3) | `photo43` | 1440×1080 → 608×456 | 640×480 |
+| 4 | 1024×1024 (1:1) | `stub11` | 1024×1024 → 528×528 | 640×640 |
+
+The native sizes are just constants in the stock handlers (`mov r3, #1616`
+at `0xf7bc`; height 1080 from a literal): 1616 is the multiple of 16 nearest
+an exact 3:2 crop of 1080 rows (1620), not a sensor limit. Every stock width
+is a multiple of 16 (scaler, JPEG blocks); heights needn't be (1080 isn't;
+the encoder pads the last block row). Our heights are multiples of 4 (2×2
+blocks, 4:2:0 chroma; 428 is known to work), widths multiples of 16. The
+photo sizes (`palettes.py PHOTO_SIZES`, emitted into `palettes.inc`) give
+every aspect about the same pixel count, ~274k (the old 3:2 640×428), and each
+crop has its output's aspect, because the scaler scales x and y
+independently (stock 1616×1080 into 800×528 would have stretched the image
+1.3% wide): 16:9 is exactly 0.3667 of the full 1920×1080, 4:3 0.4222 of
+1440×1080, 1:1 0.5156 of 1024×1024, 3:2 0.396 of 1616×1080 (0.07% off).
+Until `v017` all photos were 640 wide (640×360, 640×428, 640×480, 640×640);
+`v018` had ~420k (1920×1076 → 864×484, 1600×1072 → 800×536, 1440×1080 →
+752×564, 640×640), which worked on the camera (so non-1080 crop heights are
+fine) but was more than wanted.
+
+Since `v018` photo and video have separate stubs (`stub169`/`stub32`/
+`photo43`/`stub11` and `vid169`/`vid32`/`vid43`/`vid11`), so video stays at
+640: its hook runs per frame in the camera task, and at 1:1 already takes 65%
+of the frame time.
 
 The size struct (`r4`, printed by the firmware as `[R]Tw,Th, Sw,Sh, Cw,Ch`):
 crop C at +10/+12, first scaler S at +6/+8, target T at +14/+16, mode byte at
-+4 (photo 1, video 3). The photo stubs set C = S = the native size and only T
-small, then rejoin the photo path at `0xf188`. (The first attempt set only T,
-which makes the firmware crop instead of scale; the crop and first scaler must
-be set too.) All outputs are 640 wide, so the effect is the same for every
-aspect; only the height differs.
++4 (photo 1, video 3). The photo stubs set C = S = the crop and T small,
+then rejoin the photo path at `0xf188`. (The first attempt set only T, which
+makes the firmware crop instead of scale; the crop and first scaler must be
+set too.) The effect reads the width from the strip size, so it works at any
+of these widths; the tag is placed from the right edge.
 
 ### Strip buffer format
 
@@ -388,6 +416,12 @@ and `draw_tag` were split out into subroutines for video (2026-10-14): still
 - The strip hook runs in an interrupt with a per-strip deadline. If a size
   ever outruns it, it shows as the **lower part of each photo turning to noise
   while the top is correct**: the cue to optimise or shrink.
+- Per 64-row strip (`emu_cave.py` counts the instructions; ms at the measured
+  ~310 M instructions/s): 640 wide 0.68 M (~2.2 ms, matching the video hook's
+  measured 2.17 ms), 752 wide 0.80 M (~2.6 ms), 800 wide 0.85 M (~2.7 ms), 864
+  wide 0.92 M (~3.0 ms; worked on the camera in `v018`). At the `v019` sizes:
+  704 wide 0.75 M (~2.4 ms), 608 wide 0.65 M (~2.1 ms), 528 wide 0.56 M
+  (~1.8 ms).
 - Table fill: 15.8M instructions for a 24-colour palette, 21M for 32 (counted
   in the emulator). At the measured ~310 M instructions/s that is roughly
   **50–70 ms** before each capture.

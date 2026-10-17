@@ -2,7 +2,8 @@
 """Preview every camera preset (palettes.py presets()) on photos, the way the
 camera would.
 
-Each photo is resized to the camera's output size (640 wide, aspect kept) and
+Each photo is brought to the camera's output size for its aspect
+(sim_palette.prepare_camera, palettes.py PHOTO_SIZES) and
 run through the sim_palette.py replica of the hook: nearest colour in the
 preset's match palette (luma weight WY, the camera's lookup-table
 quantisation LUT), painted with the preset's film colour, with its
@@ -17,7 +18,7 @@ import os, sys
 import numpy as np
 from PIL import Image, ImageDraw
 from palettes import LUT, PRESETS, WY, presets, yuv_to_hex
-from sim_palette import add_tag, match, prepare
+from sim_palette import add_tag, match, prepare_camera
 
 
 def rgb(c):
@@ -71,7 +72,7 @@ def main():
     for p in photos:
         name = os.path.splitext(os.path.basename(p))[0]
         os.makedirs(os.path.join(out, name), exist_ok=True)
-        src = prepare(p, 640)
+        src = prepare_camera(p)
         tiles = [(src, 'original (camera size)')]
         for (tag, P, D), (_, _, film) in zip(pre, PRESETS):
             t = render(src, tag, P, D)

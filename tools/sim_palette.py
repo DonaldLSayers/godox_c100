@@ -129,6 +129,23 @@ def prepare(path, width):
     return img.resize((width, round(img.height * width / img.width / 2) * 2), Image.BOX)
 
 
+def prepare_camera(path):
+    """The photo at the camera's output size for the nearest aspect setting
+    (palettes.py PHOTO_SIZES): centre-cropped to that crop's aspect, then
+    scaled down."""
+    from palettes import camera_size
+    img = Image.open(path).convert('RGB')
+    (cw, ch), size = camera_size(*img.size)
+    w, h = img.size
+    if w * ch > h * cw:                       # too wide: trim the sides
+        nw = round(h * cw / ch)
+        img = img.crop(((w - nw) // 2, 0, (w - nw) // 2 + nw, h))
+    else:                                     # too tall: trim top and bottom
+        nh = round(w * ch / cw)
+        img = img.crop((0, (h - nh) // 2, w, (h - nh) // 2 + nh))
+    return img.resize(size, Image.BOX)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('src'); ap.add_argument('dst'); ap.add_argument('palette')
