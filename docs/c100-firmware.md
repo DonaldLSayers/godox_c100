@@ -1,7 +1,6 @@
 # Godox C100 firmware hacking
 
-_Started 2026-10-13, last updated 2026-10-17. This file merges the earlier
-`2026-10-13-image-processing.md` and `2026-10-14-palettes.md`._
+_Last updated 2026-10-17_
 
 **Working on the camera (`v020`):** pixel-art photos and videos at ~274k
 pixels for every aspect ratio, three presets (EP6, 6FP, BW) plus rnd chosen
