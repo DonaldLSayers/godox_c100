@@ -5,8 +5,10 @@
 @
 @ r0 = video encode struct (0x131490): [0] = 1 on the front-camera path,
 @ +0x101 = pixel format ('#' = 0x23), [2] = this strip's buffer, tagged
-@ | 0x30000000 (0x50000000 = none), +0xdc = width. Each call gets one
-@ 64-row strip (640 x 64 x 1.5 bytes) from a pool of 20, laid out exactly
+@ | 0x30000000 (0x50000000 = none), +0xdc = width W (one of palettes.py
+@ SIZES since v020; 640 before; the hook takes any multiple of 16 up to
+@ MAX_W and leaves other video alone). Each call gets one 64-row strip
+@ (W x 64 x 1.5 bytes) from a pool of 20, laid out exactly
 @ like the photo strips (decoded with the barcode diagnostic in commit
 @ ebfafdd, IMG_0314-0317): stride = 1.5 * W; even rows: luma [0, W), chroma
 @ pairs 0..W/4-1 at [W, 1.5W); odd rows: chroma pairs W/4..W/2-1 at
@@ -18,8 +20,9 @@
 @ paint the block. Strips start on 64-row boundaries, so the Bayer phase
 @ (band & 3) lines up across strips. The table and palette are the photo
 @ cave's (its VARS); a gap of >= 500 ms since the last strip means a new
-@ recording, and then lut_fill picks a new random palette and rebuilds the
-@ table first (costing that one strip some tens of ms). The timestamp
+@ recording, and then lut_fill takes the preset (the mode, or a random one
+@ in rnd) and rebuilds the table if it changed (costing that one strip some
+@ tens of ms). The timestamp
 @ argument (r1) is the same for every strip of a frame and strips come top
 @ to bottom, so a new timestamp means the frame's top strip: draw_tag (also
 @ from photo_cave.s) then puts the palette's tag in the top right corner.
@@ -28,6 +31,7 @@
 @ 16 ms scale (256 px), white for each elapsed ms (16 px per ms, xTickCount).
     .syntax unified
     .arm
+    .include "palettes.inc"                      @ MAX_W
 base:
     .set    RESUME,      base + 0x18d18
     .set    CACHE_INV,   base + 0x401ac
@@ -38,9 +42,6 @@ base:
     .equ    LUT_PTR,     0                       @ offsets into PVARS
     .equ    CUR_PAL,     4
     .equ    TICK,        0x126b80                @ FreeRTOS xTickCount
-    .equ    VW,          640                     @ only 640-wide video is touched
-    .equ    STRIDE,      VW * 3 / 2
-    .equ    THIRD,       VW / 2
     .equ    NEWREC_MS,   500
     .equ    V_LAST,      0                       @ offsets into VVARS
     .equ    V_T0,        4
@@ -55,9 +56,15 @@ vhook:
     ldrb    r1, [r0, #0x101]
     cmp     r1, #0x23                     @ '#'
     bne     vdone
-    ldr     r1, [r0, #0xdc]
-    cmp     r1, #VW
+    ldr     r1, [r0, #0xdc]                @ width: one of ours (palettes.py SIZES),
+    tst     r1, #15                       @  so a multiple of 16
     bne     vdone
+    cmp     r1, #MAX_W                    @  and no wider than the widest
+    bhi     vdone
+    cmp     r1, #0
+    beq     vdone
+    add     r7, r1, r1, lsr #1            @ r7 = stride = width * 3/2 (kept across the calls)
+    mov     r8, r1, lsr #1                @ r8 = third = width/2
     ldr     r11, [r0, #8]                 @ r11 = strip
     cmp     r11, #0x50000000
     cmpne   r11, #0
@@ -81,14 +88,12 @@ vhook:
     cmpne   r5, #0
     beq     vdone                         @ no table (allocation failed)
     mov     r0, r11
-    ldr     r1, =STRIDE * 64
+    mov     r1, r7, lsl #6                @ the 64-row strip
     mov     lr, pc
     b       CACHE_INV
     ldr     r0, =PVARS                    @ reload: the call may clobber r12
     ldr     r12, [r0, #LUT_PTR]           @ r12 = table
     ldr     r5, [r0, #CUR_PAL]            @ r5 = palette colours (Y,U,V each)
-    ldr     r7, =STRIDE                   @ r7 = stride
-    mov     r8, #THIRD                    @ r8 = third = width/2
     mov     r10, #0                       @ r10 = band index b (0..31)
 bandloop:
     mov     r9, #0                        @ r9 = block index c, x = 2c
@@ -210,7 +215,7 @@ pixloop:
     .endif
 
     mov     r0, r11
-    ldr     r1, =STRIDE * 64
+    mov     r1, r7, lsl #6
     mov     lr, pc
     b       CACHE_CLEAN
 vdone:

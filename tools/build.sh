@@ -137,7 +137,8 @@ jt() {  # jt ENTRY OLDHEX LABEL -> ENTRY:OLDHEX:<label address, little-endian>
 }
 # Video resolution jump table @0xf0a0 (ldrls pc,[pc,idx,lsl#2] @0xf098), same
 # scheme as the photo one; video follows the camera's aspect setting:
-# 0/1/9 = 16:9 1920, 2 = 3:2 1616, 3 = 4:3 1440, 4 = 1:1 1024, all -> 640 wide.
+# 0/1/9 = 16:9 1920, 2 = 3:2 1616, 3 = 4:3 1440, 4 = 1:1 1024, each to the
+# photo's size (palettes.py SIZES, ~274k pixels; 640 wide until v019).
 # SMALLVID=0 keeps the stock full-size video.
 SMALLVID=${SMALLVID:-1}
 VID_PATCHES=""

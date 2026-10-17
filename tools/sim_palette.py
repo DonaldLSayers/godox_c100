@@ -131,7 +131,7 @@ def prepare(path, width):
 
 def prepare_camera(path):
     """The photo at the camera's output size for the nearest aspect setting
-    (palettes.py PHOTO_SIZES): centre-cropped to that crop's aspect, then
+    (palettes.py SIZES): centre-cropped to that crop's aspect, then
     scaled down."""
     from palettes import camera_size
     img = Image.open(path).convert('RGB')

@@ -12,29 +12,33 @@ FUN_00018d14 gets one 64-row strip in the photo strip layout. Checks that
   3. a strip after a 1 s gap starts a new recording with a different palette;
   4. with VIDTIMING=1, the top 4 rows x < 256 are the timing bar (all black
      here: the emulated clock does not advance during the hook);
-  5. the hook restores r0-r12/lr and resumes at 0x18d18 with r3 = venc[0].
+  5. the hook restores r0-r12/lr and resumes at 0x18d18 with r3 = venc[0];
+  6. video of a width that isn't one of ours (1920, stock size) is left alone.
+It does this at every output width (palettes.py SIZES) and estimates the
+hook's share of each 33.3 ms frame from its instructions per strip (~310 M
+instructions/s, measured) and the strips per frame (height / 64, rounded up:
+a frame's last strip is a full buffer).
 
 Usage: uv run --with unicorn,numpy,pillow tools/emu_video.py PHOTO.jpg [--timing]
   (--timing for a VIDTIMING=1 build)
 """
-import struct, sys
+import math, struct, sys
 import numpy as np
-from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_CODE
+from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_BLOCK, UC_HOOK_CODE
 from unicorn.arm_const import *
-from emu_cave import FW, APP, CACHE_INV, CACHE_CLEAN, MALLOC, TICK, W, ROWS, pack, symbols, unpack
-from palettes import LUT, WY, presets
+import emu_cave
+from emu_cave import FW, APP, CACHE_INV, CACHE_CLEAN, MALLOC, TICK, ROWS, pack, symbols, unpack, differing
+from palettes import LUT, SIZES, WY, presets
 from sim_palette import add_tag, match, prepare
-from emu_cave import differing
 
 RESUME = 0x18d18
 VENC, STRIP, HEAP, STACK = 0x131490, 0x3e9a00, 0x800000, 0xf00000   # STRIP: a pool buffer, untagged
-STRIDE = W * 3 // 2
 SAVED = [UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R4, UC_ARM_REG_R5, UC_ARM_REG_R6,
          UC_ARM_REG_R7, UC_ARM_REG_R8, UC_ARM_REG_R9, UC_ARM_REG_R10, UC_ARM_REG_R11, UC_ARM_REG_R12,
          UC_ARM_REG_LR]
 
 
-def machine():
+def machine(width):
     uc = Uc(UC_ARCH_ARM, UC_MODE_ARM)
     uc.mem_map(0, 0x1000000)
     uc.mem_write(0, open(FW, 'rb').read()[APP:APP + 0x200000])
@@ -42,7 +46,7 @@ def machine():
     struct.pack_into('<I', venc, 0, 1)
     venc[0x101] = 0x23
     struct.pack_into('<I', venc, 8, STRIP | 0x30000000)
-    struct.pack_into('<I', venc, 0xdc, W)
+    struct.pack_into('<I', venc, 0xdc, width)
     uc.mem_write(VENC, bytes(venc))
     calls = []
 
@@ -55,7 +59,9 @@ def machine():
         elif addr == RESUME:
             uc.emu_stop()
     uc.hook_add(UC_HOOK_CODE, on_code)
-    return uc, calls
+    count = [0]
+    uc.hook_add(UC_HOOK_BLOCK, lambda uc_, addr, size, _: count.__setitem__(0, count[0] + size // 4))
+    return uc, calls, count
 
 
 def run_strip(uc, entry, tick, ts=0x1004):
@@ -76,10 +82,35 @@ def main():
     photo, timing = sys.argv[1], '--timing' in sys.argv[2:]
     psym, vsym = symbols(), symbols('build/obj/video_cave.o')
     pre = presets()
+    worst = 0
+    for aspect, (_, (W, H)) in SIZES.items():
+        emu_cave.W = W                                    # pack/unpack/differing use it
+        print(f'-- {aspect} video, {W}x{H}')
+        per_strip = run_width(photo, W, timing, psym, vsym, pre)
+        worst = max(worst, per_strip[0])
+        strips = math.ceil(H / ROWS)
+        ms = strips * per_strip[1] / 310e3
+        print(f'   hook: {per_strip[1] / 1e6:.2f} M instructions per strip, x {strips} strips = '
+              f'~{ms:.1f} ms per frame, {100 * ms / 33.3:.0f}% of 33.3 ms')
+    # a width that isn't one of ours (stock full-size video): untouched
+    emu_cave.W = 640
+    uc, calls, _ = machine(1920)
+    before = pack(np.asarray(prepare(photo, 640).crop((0, 0, 640, ROWS)).convert('YCbCr')))
+    uc.mem_write(STRIP, before)
+    run_strip(uc, vsym['vhook'], 5000, 0x900)
+    untouched = bytes(uc.mem_read(STRIP, len(before))) == before and not calls
+    print('1920-wide video left alone:', untouched)
+    print('max difference', worst)
+    sys.exit(0 if worst == 0 and untouched else 1)
+
+
+def run_width(photo, W, timing, psym, vsym, pre):
+    """(worst % differing, most instructions per strip) at one width."""
+    STRIDE = W * 3 // 2
     src = prepare(photo, W)
-    uc, calls = machine()
+    uc, calls, count = machine(W)
     uc.mem_write(0x132160 + 0xf1, bytes([len(pre)]))   # mode byte = rnd: a new preset per recording
-    worst, last_idx = 0, None
+    worst, last_idx, most = 0, None, 0
     #        label           tick  timestamp  photo row  tag expected
     steps = (('new recording', 1000, 0x100, 0, True), ('next strip', 1008, 0x100, 64, False),
              ('next frame', 1016, 0x121, 200, True), ('next strip', 1024, 0x121, 264, False),
@@ -88,7 +119,9 @@ def main():
         crop = src.crop((0, top, W, top + ROWS))
         uc.mem_write(STRIP, pack(np.asarray(crop.convert('YCbCr'))))
         calls.clear()
+        count[0] = 0
         run_strip(uc, vsym['vhook'], tick, ts)
+        most = max(most, count[0]) if label != 'new recording' else most   # without the table fill
         idx = struct.unpack('<I', uc.mem_read(psym['VARS'] + 8, 4))[0]
         tag, P, D = pre[idx]
         Y, UV = unpack(bytes(uc.mem_read(STRIP, STRIDE * ROWS)))
@@ -109,7 +142,7 @@ def main():
         print(f'tick {tick:5} {label:13}: preset {idx} {tag} ({len(P)} colours), '
               f'{"tag, " if tagged else ""}blocks differing from sim {diff:.2f}%, calls {calls}'
               f'{", timing bar ok" if timing else ""}')
-    print('max difference', worst)
+    return worst, most
 
 
 if __name__ == '__main__':

@@ -3,11 +3,11 @@
 _Started 2026-10-13, last updated 2026-10-17. This file merges the earlier
 `2026-10-13-image-processing.md` and `2026-10-14-palettes.md`._
 
-**Working on the camera:** pixel-art photos and videos at every aspect ratio,
-palette presets with film simulations and a tag on both, the preset's code on
-the see-through display, and a silent camera. **Built, not yet tried on the
-camera (`v019`):** photos at about 274k pixels at every aspect (704×396,
-640×428, 608×456, 528×528); video stays 640 wide.
+**Working on the camera (`v020`):** pixel-art photos and videos at ~274k
+pixels for every aspect ratio, three presets (EP6, 6FP, BW) plus rnd chosen
+with the center button and remembered across power-off, the preset's tag on
+photos and video and its code on the see-through display, and a silent
+camera.
 
 Goal: make the C100 produce pixel-art photos and videos in the spirit of the
 [Pixless camera](https://petapixel.com/2025/01/09/0-03-megapixel-pixless-camera-captures-charming-pixel-art-photos/):
@@ -32,7 +32,8 @@ small resolution, a limited colour palette, and dithering.
 | Center button cycles the preset mode in photo/video mode, display shows it | on the camera, working (`v016`; `v015` hooked an arrow) |
 | Preset mode remembered across power-off (byte `0xf1` of the saved settings) | on the camera, working (`v017`) |
 | [Larger photos](#size-and-aspect-ratios): ~420k pixels per aspect, video unchanged | on the camera, working (`v018`; more than wanted) |
-| Photos at ~274k pixels per aspect (the old 3:2 count), video unchanged | built (`v019`), emulator (pixel-exact at every width); **not yet tried on the camera** |
+| Photos at ~274k pixels per aspect (the old 3:2 count), video unchanged | on the camera, working (`v019`) |
+| Video at the photo sizes (hook takes any width up to `MAX_W`) | on the camera, working (`v020`) |
 | Table kept when the preset doesn't change (no ~60 ms fill before the capture) | built (`v015`), emulator |
 
 Open: [repeated frames](#timing-and-headroom) in some dithered videos.
@@ -169,7 +170,9 @@ which shifts every address after them).
 - `v018_larger_photos.bin` — photos at ~420k pixels (864×484, 800×536,
   752×564, 640×640), video unchanged. Works on the camera.
 - `v019_photos_274k.bin` — photos at ~274k pixels (704×396, 640×428, 608×456,
-  528×528), video unchanged. The current build, not yet tried on the camera.
+  528×528), video unchanged. Works on the camera.
+- `v020_video_274k.bin` — video at the same sizes as photos. The current
+  build, works on the camera.
 
 ## Code caves and hooks
 
@@ -256,7 +259,7 @@ video). The photo resolution switch dispatches through a jump table at
 handler addresses**, so each aspect ratio can be pointed straight at a cave
 stub:
 
-| case | native | routed to | crop → photo (since `v019`) | video |
+| case | native | routed to | crop → photo (since `v019`) | video (until `v019`; since `v020` = photo) |
 |---|---|---|---|---|
 | 0, 1 | 1920×1080 (16:9) | `stub169` | 1920×1080 → 704×396 | 640×360 |
 | 2 | 1616×1080 (3:2) | `stub32` | 1616×1080 → 640×428 | 640×428 |
@@ -269,7 +272,7 @@ an exact 3:2 crop of 1080 rows (1620), not a sensor limit. Every stock width
 is a multiple of 16 (scaler, JPEG blocks); heights needn't be (1080 isn't;
 the encoder pads the last block row). Our heights are multiples of 4 (2×2
 blocks, 4:2:0 chroma; 428 is known to work), widths multiples of 16. The
-photo sizes (`palettes.py PHOTO_SIZES`, emitted into `palettes.inc`) give
+photo sizes (`palettes.py SIZES`, emitted into `palettes.inc`) give
 every aspect about the same pixel count, ~274k (the old 3:2 640×428), and each
 crop has its output's aspect, because the scaler scales x and y
 independently (stock 1616×1080 into 800×528 would have stretched the image
@@ -280,10 +283,16 @@ Until `v017` all photos were 640 wide (640×360, 640×428, 640×480, 640×640);
 752×564, 640×640), which worked on the camera (so non-1080 crop heights are
 fine) but was more than wanted.
 
-Since `v018` photo and video have separate stubs (`stub169`/`stub32`/
-`photo43`/`stub11` and `vid169`/`vid32`/`vid43`/`vid11`), so video stays at
-640: its hook runs per frame in the camera task, and at 1:1 already takes 65%
-of the frame time.
+Since `v020` video uses the same sizes (the `vid169`/`vid32`/`vid43`/`vid11`
+labels are on the photo stubs again; `size_common` sets the first scaler to
+the target for video). `v018`/`v019` kept video at 640 in separate stubs:
+its hook runs per frame in the camera task, and at 1:1/640 it took 65% of
+the frame, and an earlier try at larger video sizes went over budget and
+starved the camera (video broke, buttons stopped responding). At the
+`v020` sizes every aspect needs about the same: see
+[Timing and headroom](#timing-and-headroom). The video hook reads the width
+from the encoder struct (`+0xdc`) and touches any multiple of 16 up to
+`MAX_W` (704); `v017` and before only touched exactly 640.
 
 The size struct (`r4`, printed by the firmware as `[R]Tw,Th, Sw,Sh, Cw,Ch`):
 crop C at +10/+12, first scaler S at +6/+8, target T at +14/+16, mode byte at
@@ -806,7 +815,19 @@ hook time as a bar, 16 px per ms of xTickCount, over a 16 ms scale):
   counts. All four clips record at ~30 fps.
 - The emulator counts **~681k instructions per strip** (~66 per block); the
   camera does that in ~2.2 ms, so **~310 M instructions/s**.
-- **Headroom:** the per-strip work could roughly **double at 16:9** and still
+- **At the `v020` sizes** (estimated: `emu_video.py` counts instructions per
+  strip at each width, ~310 M instructions/s, strips per frame = height / 64
+  rounded up; it gives 46% for the unchanged 3:2, against 45% measured):
+
+  | aspect | size | strips | per strip | per frame | of the frame |
+  |---|---|---|---|---|---|
+  | 16:9 | 704×396 | 7 | 0.75 M (~2.4 ms) | ~16.9 ms | 51% |
+  | 3:2 | 640×428 | 7 | 0.68 M (~2.2 ms) | ~15.4 ms | 46% |
+  | 4:3 | 608×456 | 8 | 0.65 M (~2.1 ms) | ~16.7 ms | 50% |
+  | 1:1 | 528×528 | 9 | 0.56 M (~1.8 ms) | ~16.3 ms | 49% |
+
+  All below 1:1 at 640×640 (65%), which works.
+- **Headroom (640 wide):** the per-strip work could roughly **double at 16:9** and still
   fit 30 fps, and grow by **~50% at 1:1**. The loop is still the
   straightforward byte-by-byte version (byte loads/stores, a branchy chroma
   address), so there is more to gain by optimising if needed.

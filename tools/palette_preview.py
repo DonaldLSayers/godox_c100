@@ -3,7 +3,7 @@
 camera would.
 
 Each photo is brought to the camera's output size for its aspect
-(sim_palette.prepare_camera, palettes.py PHOTO_SIZES) and
+(sim_palette.prepare_camera, palettes.py SIZES) and
 run through the sim_palette.py replica of the hook: nearest colour in the
 preset's match palette (luma weight WY, the camera's lookup-table
 quantisation LUT), painted with the preset's film colour, with its
