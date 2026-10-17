@@ -1,4 +1,4 @@
-# Tinkering with the Godox C100 firmware
+# Patching the C100's firmware to take retro dithered pics
 
 I'm not that much of a hardware tinkerer, but AI is getting so good, that it had no problem disassembling and patching the firmware of this toy camera, so that I could get it to take cool retro pictures. Pixelated, dithered, and color graded:
 
