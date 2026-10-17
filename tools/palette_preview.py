@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Preview every palette in palettes.py on photos, the way the camera would.
+"""Preview every camera preset (palettes.py presets()) on photos, the way the
+camera would.
 
 Each photo is resized to the camera's output size (640 wide, aspect kept) and
-run through the sim_palette.py replica of the hook with the expanded palettes,
-luma weight WY and the camera's lookup-table quantisation LUT. Writes, under OUTDIR:
-  swatches.png                every palette, base colours big, mixes small
-  <photo>/<palette>.png       one full-size result per palette
-  <photo>/sheet.png           original + all palettes, labelled
+run through the sim_palette.py replica of the hook: nearest colour in the
+preset's match palette (luma weight WY, the camera's lookup-table
+quantisation LUT), painted with the preset's film colour, with its
+three-letter tag top right. Writes, under OUTDIR:
+  swatches.png                every preset: match colours above, film colours below
+  <photo>/<tag>.png           one full-size result per preset
+  <photo>/sheet.png           original + all presets, one row per match palette
 
-Usage: uv run --with numpy,pillow tools/palette_preview.py OUTDIR PHOTO.jpg...
+Usage: uv run --with numpy,pillow tools/palette_preview.py OUTDIR PHOTO...
 """
 import os, sys
+import numpy as np
 from PIL import Image, ImageDraw
-from palettes import LUT, TAG, WY, expanded, yuv_to_hex
-from sim_palette import prepare, render
+from palettes import FILMS, LUT, WY, presets, yuv_to_hex
+from sim_palette import add_tag, match, prepare
 
 
 def rgb(c):
@@ -27,27 +31,29 @@ def label(img, text):
     d.text((5, 4), text, fill=(255, 255, 255))
 
 
-def swatches(pals, path):
-    """Big swatches = base colours, small = mixes."""
-    S, gap, left, per = 44, 4, 120, 16
-    lines = {name: (len(cols) + per - 1) // per for name, cols in pals.items()}
-    img = Image.new('RGB', (left + per * (S + gap), sum(lines.values()) * (S + 22) + 10 * len(pals) + 10),
-                    'white')
+def swatches(pre, path):
+    """Per preset: match colours (top row), film colours (bottom row)."""
+    S, gap, left = 22, 2, 70
+    img = Image.new('RGB', (left + 32 * (S + gap), len(pre) * (2 * S + 12) + 8), 'white')
     d = ImageDraw.Draw(img)
-    y0 = 10
-    for name, cols in pals.items():
-        d.text((8, y0 + S // 2 - 6), f'{name} ({len(cols)})', fill=(0, 0, 0))
-        for i, (c, par) in enumerate(cols):
-            x, y = left + (i % per) * (S + gap), y0 + (i // per) * (S + 22)
-            inset = 0 if par is None else 9       # mixes drawn smaller
-            d.rectangle([x + inset, y + inset, x + S - inset, y + S - inset], fill=rgb(c),
-                        outline=(200, 200, 200))
-            d.text((x + 2, y + S + 7), yuv_to_hex(c), fill=(0, 0, 0) if par is None else (120, 120, 120))
-        y0 += lines[name] * (S + 22) + 10
+    for j, (tag, P, D) in enumerate(pre):
+        y = 6 + j * (2 * S + 12)
+        d.text((8, y + S - 6), tag, fill=(0, 0, 0))
+        for i, (p, q) in enumerate(zip(P, D)):
+            x = left + i * (S + gap)
+            d.rectangle([x, y, x + S - 1, y + S - 1], fill=rgb(p))
+            d.rectangle([x, y + S, x + S - 1, y + 2 * S - 1], fill=rgb(q))
     img.save(path)
 
 
-def sheet(tiles, path, cols=3):
+def render(src, tag, P, D):
+    """Camera output for one preset, tag included."""
+    blocks = add_tag(match(src, P, wy=WY, lut=LUT), tag, D)
+    out = np.array(D, dtype=np.uint8)[blocks].repeat(2, axis=0).repeat(2, axis=1)
+    return Image.fromarray(out, 'YCbCr').convert('RGB')
+
+
+def sheet(tiles, path, cols):
     w, h = tiles[0][0].size
     img = Image.new('RGB', (cols * w, (len(tiles) + cols - 1) // cols * h), 'white')
     for i, (t, text) in enumerate(tiles):
@@ -59,19 +65,22 @@ def sheet(tiles, path, cols=3):
 
 def main():
     out, photos = sys.argv[1], sys.argv[2:]
-    pals = expanded()
+    pre = presets()
     os.makedirs(out, exist_ok=True)
-    swatches(pals, os.path.join(out, 'swatches.png'))
+    swatches(pre, os.path.join(out, 'swatches.png'))
     for p in photos:
         name = os.path.splitext(os.path.basename(p))[0]
         os.makedirs(os.path.join(out, name), exist_ok=True)
         src = prepare(p, 640)
-        tiles = [(src, 'original (camera size)')]
-        for pname, cols in pals.items():
-            t = render(src, [c for c, _ in cols], tag=(TAG[pname], [c for c, _ in cols]), wy=WY, lut=LUT)
-            t.save(os.path.join(out, name, f'{pname}.png'))
-            tiles.append((t, f'{pname} ({len(cols)})'))
-        sheet(tiles, os.path.join(out, name, 'sheet.png'), cols=5)
+        tiles = []
+        for tag, P, D in pre:
+            t = render(src, tag, P, D)
+            t.save(os.path.join(out, name, f'{tag}.png'))
+            tiles.append((t, f'{tag} ({FILMS[tag[1:]]})'))
+        # the original at the start of each row, then that palette's 4 films
+        rows = [tiles[i:i + len(FILMS)] for i in range(0, len(tiles), len(FILMS))]
+        sheet([t for row in rows for t in [(src, 'original (camera size)')] + row],
+              os.path.join(out, name, 'sheet.png'), cols=len(FILMS) + 1)
         print(name, src.size)
 
 
