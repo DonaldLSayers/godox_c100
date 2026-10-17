@@ -6,11 +6,13 @@ decodes what goes out on CS=0x28 / WR=0x29 / DATA=0x2a back into HT1621
 commands and RAM writes, so the segment map in docs/c100-firmware.md comes
 from the real code rather than from the decompiler.
 
-With a build that has the preset code on the display (LCDTAG=1, e.g.
-build/GP_CARDVR_UPGRADE.BIN) it also runs that feature end to end: the
-display picks and shows a preset on the SS cells, a capture uses it and picks
-the next one, recording shows the preset in use, everything outside the SS
-cells matches the factory refresh, and the readout state is fully stock.
+With a build that has the preset mode (LCDTAG=1, e.g.
+build/GP_CARDVR_UPGRADE.BIN) it also runs that feature end to end: center
+button presses through the stock key handler cycle the presets and rnd in
+photo and video mode (and still post the stock messages), the SS cells show
+the mode, captures use it, presses while recording or in the readout state
+change nothing, everything outside the SS cells matches the factory refresh,
+and the readout state is fully stock.
 
 Usage: uv run --with unicorn tools/emu_seg.py [FIRMWARE.BIN]
 """
@@ -211,7 +213,7 @@ if __name__ == '__main__':
         print(f'boot: refresh {tick}: logo={"on " if (0x16, 1) in lit(lcd2.ram) else "off"} '
               f'digits [{dg}] other {fmt(rest - {(0x16, 1)})}')
 
-    # ---- Preset code on the display (builds with LCDTAG=1) ----
+    # ---- Preset mode: center button + code on the display (builds with LCDTAG=1) ----
     word = struct.unpack('<I', open(FW, 'rb').read()[APP + 0x21218:APP + 0x2121c])[0]
     if word >> 24 == 0xea and 0xbc400 <= (0x21218 + 8 + (word & 0xffffff) * 4) & 0xffffffff < 0xbc744:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -222,17 +224,24 @@ if __name__ == '__main__':
             [nm, 'build/obj/photo_cave.o'], capture_output=True, text=True, check=True).stdout.splitlines())
             if len(f) == 3}
         VARS, LUT_FILL = syms['VARS'], syms['lut_fill']
-        PAL_IDX, NEXT_IDX = VARS + 8, VARS + 16
+        PAL_IDX = VARS + 8
+        MODE, DIRTY = CFG + 0xf1, CFG + 0xa0           # mode byte, settings dirty flag
         TICK, REC_FLAGS = 0x126b80, 0x132abb
-        tags = [palettes.lcd_text(t) for t, _, _ in palettes.presets()]
+        CENTER_KEY, KEY_LATCH, MSG_POST, PRESS = 0x1dd6c, 0x1217bc, 0x42c, 0x700000   # F key handler
+        # The center button is the key whose message the readout state cycles
+        # ISO/F/SS on: `*0x372bc + 1` in FUN_000362b8 (the arrows are -1/+1 there).
+        CYCLE_MSG = struct.unpack('<I', open(FW, 'rb').read()[APP + 0x372bc:APP + 0x372c0])[0] + 1
+        STOCK_POSTS = ['0x7018', hex(CYCLE_MSG)]
+        codes = [t for t, _, _ in palettes.presets()] + [palettes.RND]
         SS = set(range(palettes.SS_FIRST, palettes.SS_FIRST + palettes.SS_COUNT))
+        glyph = {frozenset(segs): name for name, segs in palettes.SEG7.items()}
 
         def shown(segs):
-            """The three characters on the SS cells."""
+            """The glyphs on the three SS cells, e.g. 'EP6' or '8W<W>'."""
             text = ''
             for cell in palettes.SS_CELLS:
-                on = {seg for seg, ac in cell.items() if ac in segs}
-                text += next((ch for ch, ss in palettes.SEG7.items() if set(ss) == on), '?' if on else ' ')
+                on = frozenset(seg for seg, ac in cell.items() if ac in segs)
+                text += glyph.get(on, '?' if on else ' ')
             return text
 
         def run(fw_uc, lcd_, state, rec=0):
@@ -248,39 +257,66 @@ if __name__ == '__main__':
         stock_uc, stock_lcd = machine()               # the factory refresh, for comparison
         FW = FW_STOCK
         uc, lcd = machine()
+        posts = []
+        def on_post(uc_, addr, size, _):
+            posts.append(uc_.reg_read(UC_ARM_REG_R1))
+            uc_.reg_write(UC_ARM_REG_PC, uc_.reg_read(UC_ARM_REG_LR))
+        uc.hook_add(UC_HOOK_CODE, on_post, begin=MSG_POST, end=MSG_POST)
         word32 = lambda a: struct.unpack('<I', uc.mem_read(a, 4))[0]
+
         def tick_refresh(state, rec=0):
             segs = run(uc, lcd, state, rec)
             stock = run(stock_uc, stock_lcd, state, rec)
-            outside = {sg for sg in segs ^ stock if sg[0] not in SS}
-            return segs, outside
+            return segs, {sg for sg in segs ^ stock if sg[0] not in SS}
+
+        def press(state, rec=0):
+            """A short press of the center button, through the stock key handler."""
+            uc.mem_write(0x121706, bytes([state]))
+            uc.mem_write(REC_FLAGS, bytes([rec]))
+            uc.mem_write(KEY_LATCH, b'\0')           # released since the last press
+            uc.mem_write(PRESS, struct.pack('<H', 5))
+            posts.clear()
+            call(uc, CENTER_KEY, PRESS)
+            return [hex(m) for m in posts]
 
         uc.mem_write(TICK, struct.pack('<I', 0x1234))
         ok = True
         def check(label, got, want):
             global ok
             ok &= got == want
-            print(f'code: {label}: {got!r} (want {want!r}){"" if got == want else "  <-- FAIL"}')
+            print(f'mode: {label}: {got!r} (want {want!r}){"" if got == want else "  <-- FAIL"}')
 
         segs, outside = tick_refresh(0)
-        nxt = word32(NEXT_IDX)
-        check('photo mode, first refresh shows NEXT', shown(segs), tags[nxt])
+        check('fresh settings: mode 0', uc.mem_read(MODE, 1)[0], 0)
+        check('photo mode shows it', shown(segs), palettes.lcd_text(codes[0]))
         check('photo mode, everything outside the SS cells as stock', outside, set())
-        for n in range(4):                           # four captures
-            uc.mem_write(TICK, struct.pack('<I', 0x1234 + 37 * (n + 1)))
-            before = word32(NEXT_IDX)
+        for n in range(1, len(codes) + 1):             # cycle through every mode and back
+            state = n % 2                              # alternate photo and video mode
+            check(f'press {n} ({"video" if state else "photo"} mode) posts the cycle message', press(state),
+                  STOCK_POSTS)
+            m = n % len(codes)
+            check(f'press {n} steps the mode', uc.mem_read(MODE, 1)[0], m)
+            check(f'press {n} marks the settings to be saved', uc.mem_read(DIRTY, 1)[0], 1)
+            uc.mem_write(DIRTY, b'\0')
+            segs, outside = tick_refresh(state)
+            check(f'press {n} display shows {codes[m]}', shown(segs), palettes.lcd_text(codes[m]))
+            check(f'press {n} outside the SS cells as stock', outside, set())
+        uc.mem_write(DIRTY, b'\0')
+        uc.mem_write(MODE, b'\x37')                     # settings from before: not a mode
+        check('mode byte 0x37 shows as the first', shown(tick_refresh(0)[0]), palettes.lcd_text(codes[0]))
+        check('mode byte 0x37: a press goes to the second', (press(0), uc.mem_read(MODE, 1)[0]), (STOCK_POSTS, 1))
+        for n in range(2):
             call(uc, LUT_FILL, count=400_000_000)
-            cur, nxt = word32(PAL_IDX), word32(NEXT_IDX)
-            check(f'capture {n + 1} uses the shown preset', cur, before)
-            check(f'capture {n + 1} next differs from current', nxt != cur and nxt < len(tags), True)
-            check(f'capture {n + 1} display shows the next one', shown(tick_refresh(0)[0]), tags[nxt])
-        segs, outside = tick_refresh(1)
-        check('video mode, idle shows NEXT', shown(segs), tags[word32(NEXT_IDX)])
-        check('video mode, everything outside the SS cells as stock', outside, set())
+            check(f'fixed mode, capture {n + 1} uses it', word32(PAL_IDX), 1)
+        uc.mem_write(DIRTY, b'\0')
+        check('recording: press posts as stock', press(1, rec=2), STOCK_POSTS)
+        check('recording: mode unchanged, not marked', (uc.mem_read(MODE, 1)[0], uc.mem_read(DIRTY, 1)[0]), (1, 0))
         segs, outside = tick_refresh(1, rec=2)
-        check('video mode, recording shows the preset in use', shown(segs), tags[word32(PAL_IDX)])
-        check('video mode recording, outside the SS cells as stock', outside, set())
+        check('recording: display shows the mode', shown(segs), palettes.lcd_text(codes[1]))
+        check('readout state: press posts as stock', press(2), STOCK_POSTS)
+        check('readout state: mode unchanged', uc.mem_read(MODE, 1)[0], 1)
         segs = run(uc, lcd, 2)
-        check('readout state exactly as stock (ISO 400, F5.6, SS 1/25): differing', fmt(segs ^ run(stock_uc, stock_lcd, 2)), '-')
-        print('code test', 'PASSED' if ok else 'FAILED')
+        check('readout state exactly as stock (ISO 400, F5.6, SS 1/25): differing',
+              fmt(segs ^ run(stock_uc, stock_lcd, 2)), '-')
+        print('mode test', 'PASSED' if ok else 'FAILED')
         sys.exit(0 if ok else 1)

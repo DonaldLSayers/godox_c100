@@ -9,14 +9,14 @@ quantisation LUT), painted with the preset's film colour, with its
 three-letter tag top right. Writes, under OUTDIR:
   swatches.png                every preset: match colours above, film colours below
   <photo>/<tag>.png           one full-size result per preset
-  <photo>/sheet.png           original + all presets, one row per match palette
+  <photo>/sheet.png           original + all presets, labelled
 
 Usage: uv run --with numpy,pillow tools/palette_preview.py OUTDIR PHOTO...
 """
 import os, sys
 import numpy as np
 from PIL import Image, ImageDraw
-from palettes import FILMS, LUT, WY, presets, yuv_to_hex
+from palettes import LUT, PRESETS, WY, presets, yuv_to_hex
 from sim_palette import add_tag, match, prepare
 
 
@@ -72,15 +72,12 @@ def main():
         name = os.path.splitext(os.path.basename(p))[0]
         os.makedirs(os.path.join(out, name), exist_ok=True)
         src = prepare(p, 640)
-        tiles = []
-        for tag, P, D in pre:
+        tiles = [(src, 'original (camera size)')]
+        for (tag, P, D), (_, _, film) in zip(pre, PRESETS):
             t = render(src, tag, P, D)
             t.save(os.path.join(out, name, f'{tag}.png'))
-            tiles.append((t, f'{tag} ({FILMS[tag[1:]]})'))
-        # the original at the start of each row, then that palette's 4 films
-        rows = [tiles[i:i + len(FILMS)] for i in range(0, len(tiles), len(FILMS))]
-        sheet([t for row in rows for t in [(src, 'original (camera size)')] + row],
-              os.path.join(out, name, 'sheet.png'), cols=len(FILMS) + 1)
+            tiles.append((t, f'{tag} ({film or "no film"})'))
+        sheet(tiles, os.path.join(out, name, 'sheet.png'), cols=len(tiles))
         print(name, src.size)
 
 

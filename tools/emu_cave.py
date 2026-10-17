@@ -3,8 +3,11 @@
 
 Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
 (cache maintenance, pvPortMalloc), then:
-  1. runs idx_stub (the per-photo entry) with a given tick count, which picks
-     the preset and fills the lookup table;
+  1. sets the preset mode byte (each fixed preset, a repeat, rnd, and an
+     out-of-range value, which must act as the first preset), then runs
+     idx_stub (the per-photo entry), which picks the preset and fills the
+     lookup table, or keeps it when the preset didn't change (checked by
+     counting the fill's inner loop);
   2. packs 640x64 slices of a photo into strips in the camera's YUV 4:2:0
      layout (see docs/c100-firmware.md) and runs the strip hook
      on two of them;
@@ -13,7 +16,7 @@ Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
      WY and table), painted with the preset's film colour; including the
      preset tag on the photo's first strip and not on the second.
 
-Usage: uv run --with unicorn,numpy,pillow tools/emu_cave.py PHOTO.jpg [TICKS...]
+Usage: uv run --with unicorn,numpy,pillow tools/emu_cave.py PHOTO.jpg
 """
 import os, struct, subprocess, sys
 import numpy as np
@@ -27,6 +30,7 @@ APP = 0x10200                       # file offset of RAM address 0
 RESUME, RESUME187 = 0x1544c, 0x187c8
 CACHE_INV, CACHE_CLEAN, MALLOC = 0x401ac, 0x401b8, 0x5374c
 PHOTO, STRIP_BYTES, TICK = 0x1317ac, 0x13155c, 0x126b80
+CFG_MODE = 0x132160 + 0xf1          # the preset mode byte in the camera's saved settings
 STRIP_A, HEAP, STACK = 0x400000, 0x800000, 0xf00000
 W, ROWS = 640, 64
 
@@ -99,19 +103,29 @@ def differing(Y, UV, want):
 
 
 def main():
-    photo, ticks = sys.argv[1], [int(t) for t in sys.argv[2:]] or [0, 1, 2, 3, 4, 5, 6, 7, 7, 300]
+    photo = sys.argv[1]
     sym = symbols()
     pre = presets()
+    rnd = len(pre)                                    # MODE value for random
     src = prepare(photo, W)
     uc, calls = machine()
+    fill = [0]
+    uc.hook_add(UC_HOOK_CODE, lambda *_: fill.__setitem__(0, fill[0] + 1), begin=sym['sl'], end=sym['sl'])
     kinds = {CACHE_INV: 'inv', CACHE_CLEAN: 'clean', MALLOC: 'malloc'}
-    worst = 0
-    for t in ticks:
-        uc.mem_write(TICK, struct.pack('<I', t))
+    worst, last, ok = 0, None, True
+    modes = list(range(rnd)) + [0, 0, 2, 2] + [rnd] * 4 + [1, 0x37]   # 0x37: not a mode = the first
+    for n, mode in enumerate(modes):
+        uc.mem_write(TICK, struct.pack('<I', 100 + 37 * n))
+        uc.mem_write(CFG_MODE, bytes([mode]))
         calls.clear()
+        fill[0] = 0
         assert run(uc, sym['idx_stub']) == RESUME187
         idx = struct.unpack('<I', uc.mem_read(sym['VARS'] + 8, 4))[0]
         tag, P, D = pre[idx]
+        want = (idx == mode) if mode < rnd else (idx != last and idx < rnd) if mode == rnd else idx == 0
+        refilled = fill[0] > 0
+        want_fill = idx != last
+        ok &= want and refilled == want_fill
         diffs = []
         for strip, top in enumerate((0, 200)):       # the photo's 1st and 2nd strip
             crop = src.crop((0, top, W, top + ROWS))
@@ -126,10 +140,15 @@ def main():
                 add_tag(ref, tag, D)
             diffs.append(differing(Y, UV, np.array(D)[ref]).mean() * 100)
         worst = max(worst, *diffs)
-        print(f'tick {t:4}: preset {idx} {tag} ({len(P)} colours), blocks differing from sim: '
+        last = idx
+        print(f'mode {"rnd" if mode == rnd else hex(mode)}: preset {idx} {tag} ({len(P)} colours)'
+              f'{"" if want else " WRONG PRESET"}, table {"filled" if refilled else "kept"}'
+              f'{"" if refilled == want_fill else " (WRONG)"}, blocks differing from sim: '
               f'strip 1 (tag) {diffs[0]:.2f}%, strip 2 {diffs[1]:.2f}%, '
               f'calls: {[kinds[a] for a, _, _ in calls]}')
     print('max difference', worst)
+    print('preset selection and table reuse', 'PASSED' if ok else 'FAILED')
+    sys.exit(0 if ok and worst == 0 else 1)
 
 
 if __name__ == '__main__':

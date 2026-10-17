@@ -8,9 +8,9 @@ a 32-colour display table per film; the matching table doesn't change.
   uv run --with numpy,pillow tools/film_sheet.py OUTDIR PHOTO... [--films NAME...]
 
 Writes, under OUTDIR:
-  <film>.png      one row per photo: original | film alone | EG+ | R6+ | HB+ |
-                  EG+ -> film | R6+ -> film | HB+ -> film
-  palettes.png    one row per photo: original | EG | EG+ | R6 | R6+ | HB | HB+
+  <film>.png      one row per photo: original | film alone | EG+ | R6+ |
+                  EG+ -> film | R6+ -> film
+  palettes.png    one row per photo: original | EG | EG+ | R6 | R6+
                   (the current camera palettes next to the candidates, no film)
 Films are read from film_luts/*/*.png; --films picks some by exact name
 (without .png), default FILMS below.
@@ -25,7 +25,7 @@ from sim_palette import match, prepare
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'film_luts')
 FILMS = ['polaroid_690', 'fuji_velvia_100_generic', 'fuji_provia_100_generic', 'agfa_vista_200']
-CANDIDATES = {name: [yuv_to_hex(c) for c in MATCH[k]] for name, k in (('eg+', 'E'), ('r6+', '6'), ('hb+', 'H'))}
+CANDIDATES = {name: [yuv_to_hex(c) for c in MATCH[k]] for name, k in (('eg+', 'E'), ('r6+', '6'))}
 
 
 def paint(src, match_hex, show_hex):
@@ -53,7 +53,7 @@ def main():
     plain = {name: [tile(paint(s, hx, hx), name, hx) for s in srcs] for name, hx in CANDIDATES.items()}
     originals = [tile(s, os.path.basename(p), []) for s, p in zip(srcs, args.photos)]
 
-    old = {'eg': 'endesga32', 'r6': 'riso6', 'hb': 'harbour'}
+    old = {'eg': 'endesga32', 'r6': 'riso6'}
     rows = []
     for i, src in enumerate(srcs):
         row = [originals[i]]

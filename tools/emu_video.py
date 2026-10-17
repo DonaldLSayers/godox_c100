@@ -78,6 +78,7 @@ def main():
     pre = presets()
     src = prepare(photo, W)
     uc, calls = machine()
+    uc.mem_write(0x132160 + 0xf1, bytes([len(pre)]))   # mode byte = rnd: a new preset per recording
     worst, last_idx = 0, None
     #        label           tick  timestamp  photo row  tag expected
     steps = (('new recording', 1000, 0x100, 0, True), ('next strip', 1008, 0x100, 64, False),

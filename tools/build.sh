@@ -113,18 +113,21 @@ if [ "$VIDFX" = "1" ]; then
     VHOOK=$(asm vhook_jump 0x18d14 0x18d18 --defsym=HOOK=$($LLVM/llvm-nm build/obj/video_cave.o | awk '$3 == "vhook" { print "0x" $1 }'))
     VFX_PATCHES="$VCAVE $VHOOK"
 fi
-# Preset code on the see-through display (LCDTAG=1, default; LCDTAG=0 = stock
-# blank): in photo and video mode the display's shutter-speed readout cells
-# show the three-letter code of the preset the next photo/video gets (the one
-# in use while recording). Redirects the refresh's tail call to 0x20fd0 (SS
-# readout) at 0x21218 into a third cave in the same dead code,
+# Preset mode on the see-through display and the center button (LCDTAG=1,
+# default; LCDTAG=0 = stock blank display, center button does nothing, always
+# the first preset): in photo and video mode the center button cycles the
+# presets and rnd (a random preset per photo/recording), and the display's
+# shutter-speed readout cells show the current one. Redirects the refresh's
+# tail call to 0x20fd0 (SS readout) at 0x21218 and the center key handler's
+# message post at 0x1ddf8 into a third cave in the same dead code,
 # 0xbc400-0xbc744. See tools/patches/lcd_cave.s.
 LCDTAG=${LCDTAG:-1}
 LCD_PATCHES=""
 if [ "$LCDTAG" = "1" ]; then
-    LCAVE=$(asm lcd_cave 0xbc400 0xbc744 --defsym=PICK_ADDR=$(sym pick) --defsym=PVARS_ADDR=$(sym VARS))
-    LJUMP=$(asm lcd_jump 0x21218 0x2121c --defsym=HOOK=$($LLVM/llvm-nm build/obj/lcd_cave.o | awk '$3 == "lcd_hook" { print "0x" $1 }'))
-    LCD_PATCHES="$LCAVE $LJUMP"
+    LCAVE=$(asm lcd_cave 0xbc400 0xbc744)
+    LJUMP=$(asm lcd_jump 0x21218 0x2121c --defsym=HOOK=$(nmsym lcd_cave lcd_hook))
+    KJUMP=$(asm key_jump 0x1ddf8 0x1ddfc --defsym=HOOK=$(nmsym lcd_cave center_hook))
+    LCD_PATCHES="$LCAVE $LJUMP $KJUMP"
 fi
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its
