@@ -691,18 +691,19 @@ async function photoEvents(e) {
   save();
 }
 
-// The page's photo viewer (main.js), with the photo as the preset renders it.
+// The page's photo viewer (main.js), with the photos as the preset renders
+// them; the arrow keys step through all of them.
 function showLarge(canvas) {
-  const dialog = $("#viewer");
-  if (!canvas._out || !dialog.showModal) return;
-  const c = document.createElement("canvas");
-  c.width = canvas._out.width;
-  c.height = canvas._out.height;
-  c.getContext("2d").putImageData(canvas._out, 0, 0);
-  const img = dialog.querySelector("img");
-  img.src = c.toDataURL();
-  img.style.setProperty("--ar", c.width / c.height);
-  dialog.showModal();
+  if (!window.viewer) return;
+  const canvases = [...document.querySelectorAll(".ed-photo canvas")].filter((c) => c._out);
+  const photos = canvases.map((cv) => () => {
+    const c = document.createElement("canvas");
+    c.width = cv._out.width;
+    c.height = cv._out.height;
+    c.getContext("2d").putImageData(cv._out, 0, 0);
+    return { src: c.toDataURL(), ar: c.width / c.height };
+  });
+  window.viewer.open(photos, Math.max(0, canvases.indexOf(canvas)));
 }
 
 function hoverPhoto(e) {

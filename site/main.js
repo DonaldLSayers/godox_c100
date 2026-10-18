@@ -80,18 +80,46 @@
   resize();
   if (!reduceMotion) requestAnimationFrame(loop);
 
-  // Click a photo to see it larger.
+  // The photo viewer: viewer.open(photos, i) shows photos[i] large, and the
+  // left and right arrow keys step through the rest. A photo is a function
+  // returning { src, ar } (ar: its aspect ratio), so the editor can hand in
+  // its previews without rendering them all up front.
   const gallery = document.querySelector(".gallery");
   const dialog = document.getElementById("viewer");
   if (dialog.showModal) {
     const big = dialog.querySelector("img");
+    let photos = [];
+    let at = 0;
+    const show = (i) => {
+      at = (i + photos.length) % photos.length;
+      const { src, ar } = photos[at]();
+      big.src = src;
+      big.style.setProperty("--ar", ar);
+    };
+    window.viewer = {
+      open(list, i) {
+        photos = list;
+        show(i);
+        if (!dialog.open) dialog.showModal();
+      },
+    };
+    dialog.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      show(at + (e.key === "ArrowLeft" ? -1 : 1));
+    });
+
+    // Click a photo in the gallery to see it larger.
+    const links = [...gallery.querySelectorAll("a")];
+    const items = links.map((a) => () => ({
+      src: a.href,
+      ar: a.style.getPropertyValue("--w") / a.style.getPropertyValue("--h"),
+    }));
     gallery.addEventListener("click", (e) => {
       const a = e.target.closest("a");
       if (!a) return;
       e.preventDefault();
-      big.src = a.href;
-      big.style.setProperty("--ar", a.style.getPropertyValue("--w") / a.style.getPropertyValue("--h"));
-      dialog.showModal();
+      window.viewer.open(items, links.indexOf(a));
     });
     dialog.addEventListener("click", (e) => {
       if (e.target === dialog) dialog.close();
