@@ -200,7 +200,7 @@ function renderList() {
           data-id="${p.id}" tabindex="0" aria-current="${p.id === state.selected}">
         <input type="checkbox" class="ed-on" ${p.on ? "checked" : ""} aria-label="Put ${esc(p.tag)} on the camera" />
         <span class="ed-pick">
-          <canvas class="ed-tagc" role="img" aria-label="${esc(p.tag)}"></canvas>
+          ${tagCanvas("ed-tagc", p.tag, 3, true)}
           <span class="ed-name">${esc(p.name)}</span>
           <span class="ed-strip"></span>
         </span>
@@ -318,6 +318,17 @@ function drawTag(canvas, tag, paint, scale, field) {
   );
 }
 
+// A tag's canvas at its final size: it's drawn once the preset's paint
+// colours are known, which can take a moment (a film to download), and an
+// unsized canvas is 300x150 until then.
+function tagCanvas(cls, tag, scale, field) {
+  const drawable = tag && [...tag].every((ch) => m.font[ch]) && tagWidth(m, tag) <= m.tag.cols;
+  const w = field ? m.tag.cols : drawable ? tagWidth(m, tag) : 1;
+  const h = m.tag.rows;
+  return `<canvas class="${cls}" role="img" aria-label="${esc(tag)}" width="${w}" height="${h}"
+    style="width:${w * scale}px;height:${h * scale}px"></canvas>`;
+}
+
 async function renderTagShown() {
   const p = current();
   const paint = await paintOf(p);
@@ -329,7 +340,7 @@ async function renderHead() {
   const p = current();
   const f = film(p);
   $("#ed-work-head").innerHTML = `
-    <canvas class="ed-tagc" role="img" aria-label="${esc(p.tag)}"></canvas>
+    ${tagCanvas("ed-tagc", p.tag, 3, false)}
     <span><strong>Preview and edit this preset</strong> &middot; ${esc(p.name)}${p.curve ? " &middot; S-curve" : ""}${f ? ` &middot; ${esc(f.name)}` : ""}</span>`;
   const paint = await paintOf(p);
   const canvas = $("#ed-work-head .ed-tagc");
@@ -369,7 +380,7 @@ function renderPalette() {
     <div class="ed-row ed-tagrow">
       <label for="ed-tag">Tag</label>
       <input id="ed-tag" value="${esc(p.tag)}" maxlength="3" autocomplete="off" spellcheck="false" />
-      <canvas id="ed-tag-shown" class="ed-tag-shown" aria-hidden="true" title="The tag as the camera draws it"></canvas>
+      ${tagCanvas("ed-tag-shown", p.tag, 5, false).replace("<canvas", '<canvas id="ed-tag-shown" title="The tag as the camera draws it"')}
       <span class="ed-problem" id="ed-tag-problem">${esc(tagProblem(p))}</span>
     </div>
     <div class="ed-row">
@@ -642,7 +653,7 @@ function renderPhotos() {
   $("#ed-photos").innerHTML = PHOTOS.map(
     (_, i) => `
     <figure class="ed-photo" data-i="${i}">
-      <canvas></canvas>
+      <canvas width="608" height="456"></canvas>
       <figcaption>
         <label class="ed-upload">Your photo&hellip;<input type="file" accept="image/*" /></label>
         ${state.photos[i] ? `<button type="button" class="ed-reset">Reset</button>` : ""}
