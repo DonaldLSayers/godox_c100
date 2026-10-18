@@ -37,6 +37,8 @@ function autoLcd(tag) {
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 const uid = () => Math.random().toString(36).slice(2, 9);
+// PostHog (loaded in index.html), if it's there
+const track = (event, props) => window.posthog?.capture(`editor_${event}`, props);
 
 let m; // template.json
 let library; // library.json: { palettes, films }
@@ -218,6 +220,7 @@ function select(id) {
   if (state.selected === id) return;
   state.selected = id;
   changed({ palette: true });
+  track("select_palette", { tag: current().tag, name: current().name });
 }
 
 function move(id, to) {
@@ -266,8 +269,10 @@ function listPointerUp(e) {
   const { id, moved } = drag;
   drag = null;
   $("#ed-list").classList.remove("dragging");
-  if (moved) changed();
-  else if (e.type === "pointerup") select(id);
+  if (moved) {
+    changed();
+    track("reorder_palette", { via: "drag" });
+  } else if (e.type === "pointerup") select(id);
   else renderList();
 }
 
@@ -276,6 +281,7 @@ function listChange(e) {
   const p = state.slots.find((q) => q.id === e.target.closest("li").dataset.id);
   p.on = e.target.checked;
   changed();
+  track("toggle_palette", { tag: p.tag, on: p.on, palettes: enabled().length });
 }
 
 function listKey(e) {
@@ -290,6 +296,7 @@ function listKey(e) {
     if (move(li.dataset.id, i + (e.key === "ArrowUp" ? -1 : 1))) {
       changed();
       $(`#ed-list li[data-id="${li.dataset.id}"]`).focus();
+      track("reorder_palette", { via: "keyboard" });
     }
   }
 }
@@ -512,6 +519,7 @@ function pickerPointer(e) {
     area.setPointerCapture(e.pointerId);
     e.preventDefault();
   } else if (e.type === "pointerup" || e.type === "pointercancel") {
+    if (picking) track("pick_colour", { via: picking === "ed-sv" ? "field" : "hue", hex: $("#ed-hex").value });
     picking = null;
     return;
   }
@@ -557,11 +565,17 @@ function paletteChange(e) {
     const fresh = slotFrom(item, p.on);
     Object.assign(p, { name: item.name, colours: fresh.colours, curve: fresh.curve, film: item.film, sel: 0 });
     if (!enabled().some((q) => q !== p && q.tag === item.tag)) Object.assign(p, { tag: item.tag, lcd: fresh.lcd, lcdAuto: fresh.lcdAuto });
+    track("choose_preset", { preset: item.name });
     return changed({ palette: true });
   }
   if (e.target.id === "ed-film" || e.target.id === "ed-curve") {
-    if (e.target.id === "ed-film") p.film = e.target.value || null;
-    else p.curve = e.target.checked;
+    if (e.target.id === "ed-film") {
+      p.film = e.target.value || null;
+      track("choose_film", { film: film(p)?.name ?? "none" });
+    } else {
+      p.curve = e.target.checked;
+      track("toggle_curve", { on: p.curve });
+    }
     renderTagShown();
     renderStrips();
     return changed({ list: false });
@@ -569,9 +583,15 @@ function paletteChange(e) {
   if (e.target.id === "ed-lcd-auto") {
     p.lcdAuto = e.target.checked;
     if (p.lcdAuto) p.lcd = autoLcd(p.tag);
+    track("toggle_display_follows_tag", { on: p.lcdAuto });
     return changed({ palette: true, preview: false });
   }
-  if (e.target.id === "ed-hex") pickerFromColour();
+  // typing is tracked once it's done (the input loses focus)
+  if (e.target.id === "ed-tag") track("change_tag", { tag: p.tag, problem: tagProblem(p) || null });
+  if (e.target.id === "ed-hex") {
+    track("pick_colour", { via: "hex", hex: yuvToHex(p.colours[p.sel]).toUpperCase() });
+    pickerFromColour();
+  }
 }
 
 function paletteClick(e) {
@@ -584,11 +604,13 @@ function paletteClick(e) {
     $("#ed-lcd").innerHTML = p.lcd.map((s, i) => segSvg(s, i)).join("");
     $("#ed-lcd-auto").checked = false;
     hoverSeg(e);
+    track("edit_display", { cell: at.cell, segment: at.seg });
     return changed({ list: false, preview: false });
   }
   const sw = e.target.closest(".sw[data-i]");
   if (sw) {
     p.sel = +sw.dataset.i;
+    track("select_colour", { colour: p.sel + 1 });
     renderSwatches();
     pickerFromColour();
     return save();
@@ -601,6 +623,7 @@ function paletteClick(e) {
       p.colours.splice(p.sel, 1);
       p.sel = Math.min(p.sel, p.colours.length - 1);
     }
+    track(e.target.closest("#ed-dupcol") ? "duplicate_colour" : "remove_colour", { colours: p.colours.length });
     renderSwatches();
     pickerFromColour();
     renderStrips();
@@ -685,15 +708,19 @@ async function photoEvents(e) {
   const i = +fig.dataset.i;
   if (e.type === "change" && e.target.files?.[0]) {
     state.photos[i] = await shrinkImage(e.target.files[0]);
+    track("upload_photo", { via: "picker" });
   } else if (e.type === "drop") {
     e.preventDefault();
     fig.classList.remove("drop");
     const file = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
     if (!file) return;
     state.photos[i] = await shrinkImage(file);
+    track("upload_photo", { via: "drop" });
   } else if (e.type === "click" && e.target.closest(".ed-reset")) {
     state.photos[i] = null;
+    track("reset_photo");
   } else if (e.type === "click" && e.target.matches("canvas")) {
+    track("open_photo", { photo: i, own: !!state.photos[i] });
     return showLarge(e.target);
   } else return;
   await loadPhoto(i);
@@ -794,7 +821,9 @@ function renderSounds() {
 
 async function soundEvents(e) {
   if (e.target.id === "ed-sound-on") {
+    if (e.type !== "change") return;
     state.sounds.on = e.target.checked;
+    track("toggle_sounds", { on: state.sounds.on });
     renderSounds();
     return changed({ list: false, preview: false });
   }
@@ -809,6 +838,7 @@ async function soundEvents(e) {
       return;
     }
     s.src = e.target.value;
+    track("choose_sound", { slot, src: s.src });
   } else if (e.type === "change" && e.target.files?.[0]) {
     const file = e.target.files[0];
     try {
@@ -819,12 +849,15 @@ async function soundEvents(e) {
         wav: btoa(String.fromCharCode(...wav)),
         note: cut ? "Cut to fit:" : "",
       });
+      track("upload_sound", { slot, ok: true, cut });
     } catch {
+      track("upload_sound", { slot, ok: false });
       alert(`Couldn't read ${file.name} as audio.`);
     }
   } else if (e.type === "click" && e.target.closest(".ed-play")) {
     const audio = new Audio(URL.createObjectURL(new Blob([await soundBytes(slot)], { type: "audio/wav" })));
     audio.play();
+    track("play_sound", { slot, src: s.src });
     return;
   } else return;
   renderSounds();
@@ -846,6 +879,20 @@ function renderDownload() {
     `${rnd ? " + rnd" : ""} · ${state.sounds.on ? "sounds on" : "silent"}`;
   $("#ed-errors").innerHTML = errors.map((e) => `<li>${esc(e)}</li>`).join("");
   $("#ed-download").disabled = errors.length > 0;
+}
+
+// What the downloaded firmware is made of.
+function downloadProps() {
+  const on = enabled();
+  return {
+    palettes: on.length,
+    tags: on.map((p) => p.tag),
+    films: on.map((p) => film(p)?.name ?? "none"),
+    rnd: state.rnd && on.length > 1,
+    sounds: state.sounds.on,
+    shutter: state.sounds.on ? state.sounds.shutter.src : null,
+    poweron: state.sounds.on ? state.sounds.poweron.src : null,
+  };
 }
 
 let template;
@@ -871,7 +918,9 @@ async function download() {
     a.download = "GP_CARDVR_UPGRADE.BIN";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+    track("download_firmware", downloadProps());
   } catch (err) {
+    track("download_firmware_failed", { ...downloadProps(), error: err.message });
     alert(`Couldn't build the firmware: ${err.message}`);
   } finally {
     button.textContent = "Download GP_CARDVR_UPGRADE.BIN";
@@ -897,6 +946,7 @@ async function main() {
   $("#ed-rnd").addEventListener("change", (e) => {
     state.rnd = e.target.checked;
     changed({ preview: false });
+    track("toggle_rnd", { on: state.rnd });
   });
   const panel = $("#ed-palette");
   panel.addEventListener("input", paletteInput);
@@ -927,7 +977,9 @@ async function main() {
   sounds.addEventListener("click", soundEvents);
   $("#ed-download").addEventListener("click", download);
   $("#ed-reset-all").addEventListener("click", async () => {
-    if (!confirm("Start over? This forgets your palettes, sounds and photos.")) return;
+    const sure = confirm("Start over? This forgets your palettes, sounds and photos.");
+    track("start_over", { confirmed: sure });
+    if (!sure) return;
     state = defaultState();
     renderPhotos();
     renderSounds();

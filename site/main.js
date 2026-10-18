@@ -79,6 +79,36 @@
   addEventListener("resize", resize);
   resize();
   if (!reduceMotion) requestAnimationFrame(loop);
+})();
+
+// Analytics: PostHog (loaded in index.html) events for the page's links and sections.
+(() => {
+  const track = (event, props) => window.posthog?.capture(event, props);
+
+  // Every link but the gallery's (the viewer tracks those) and the firmware
+  // download (tracked inline).
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a || a.closest(".gallery") || a.hasAttribute("download")) return;
+    track("click_link", { href: a.getAttribute("href"), text: a.textContent.trim() });
+  });
+
+  // Scrolled far enough to see the install steps or the editor, once each.
+  const seen = new IntersectionObserver(
+    (entries) => {
+      for (const { isIntersecting, target } of entries) {
+        if (!isIntersecting) continue;
+        track(`view_${target.id}`);
+        seen.unobserve(target);
+      }
+    },
+    { threshold: 0.25 },
+  );
+  for (const id of ["install", "editor"]) seen.observe(document.getElementById(id));
+})();
+
+(() => {
+  const track = (event, props) => window.posthog?.capture(event, props);
 
   // The photo viewer: viewer.open(photos, i) shows photos[i] large, and the
   // left and right arrow keys step through the rest. A photo is a function
@@ -107,6 +137,7 @@
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
       show(at + (e.key === "ArrowLeft" ? -1 : 1));
+      track("viewer_step", { direction: e.key === "ArrowLeft" ? "previous" : "next" });
     });
 
     // Click a photo in the gallery to see it larger.
@@ -120,6 +151,7 @@
       if (!a) return;
       e.preventDefault();
       window.viewer.open(items, links.indexOf(a));
+      track("open_gallery_photo", { photo: a.getAttribute("href") });
     });
     dialog.addEventListener("click", (e) => {
       if (e.target === dialog) dialog.close();
