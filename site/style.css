@@ -263,7 +263,9 @@ code {
 .gallery a {
   display: block;
   flex-grow: calc(var(--w) / var(--h));
-  flex-basis: calc(var(--w) / var(--h) * 200px);
+  /* Rows 200px high, but low enough that two 16:9 photos always fit side
+     by side, so none ends up alone at full width. */
+  flex-basis: calc(var(--w) / var(--h) * min(200px, (100% - 12px) / 3.6));
   background: none;
   transition: transform 80ms steps(2), box-shadow 80ms steps(2);
 }
@@ -287,7 +289,7 @@ code {
     gap: 8px;
   }
   .gallery a {
-    flex-basis: calc(var(--w) / var(--h) * 110px);
+    flex-basis: calc(var(--w) / var(--h) * min(110px, (100% - 8px) / 3.6));
   }
 }
 
