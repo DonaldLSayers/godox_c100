@@ -138,7 +138,7 @@ def manifest(fw):
 
 def library():
     assert {f for _, _, f in P.PRESETS if f} <= {f for f, _ in FILMS}
-    palettes = [{'name': f'{p["tag"]} (current preset)', 'tag': p['tag'], 'colours': p['match'],
+    palettes = [{'name': f'{p["tag"]}', 'tag': p['tag'], 'colours': p['match'],
                  'film': PRESET_FILMS[p['tag']], 'curve': p['tag'] in PRESET_CURVE, 'lcd': p['lcd']}
                 for p in P.builtin_config()['presets']]
     expanded = P.expanded()

@@ -12,7 +12,7 @@ const PHOTOS = [
 ].map((f) => `editor/photos/${f}.jpg`);
 const noPhotos = () => PHOTOS.map(() => null);
 const DEFAULT_SLOTS = [
-  "EP6 (current preset)", "6FP (current preset)", "BW (current preset)", "endesga32 (32)",
+  "EP6", "6FP", "BW", "endesga32 (32)",
   "db16 + mixes (24)", "sweetie16 (16)", "riso6 + mixes (10)", "nes (32)",
 ];
 const SOUND_PRESETS = { stock: "Stock", mario: "Super Mario" };
