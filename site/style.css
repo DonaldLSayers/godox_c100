@@ -423,6 +423,26 @@ dialog button {
   }
 }
 
+/* On small screens the editor is too cramped to use: just say so. */
+.ed-small-note {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .ed-small-note {
+    display: block;
+  }
+  .editor-head {
+    margin-bottom: 0;
+  }
+  .editor .ed-intro,
+  .editor .editor-grid,
+  .editor .ed-sounds,
+  .editor .ed-build {
+    display: none;
+  }
+}
+
 .ed-check {
   display: flex;
   align-items: center;
