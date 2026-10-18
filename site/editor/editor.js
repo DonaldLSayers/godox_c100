@@ -341,7 +341,7 @@ async function renderHead() {
   const f = film(p);
   $("#ed-work-head").innerHTML = `
     ${tagCanvas("ed-tagc", p.tag, 3, false)}
-    <span><strong>Preview and edit this preset</strong> &middot; ${esc(p.name)}${p.curve ? " &middot; S-curve" : ""}${f ? ` &middot; ${esc(f.name)}` : ""}</span>`;
+    <span><strong>Preview and edit this palette</strong> &middot; ${esc(p.name)}${p.curve ? " &middot; S-curve" : ""}${f ? ` &middot; ${esc(f.name)}` : ""}</span>`;
   const paint = await paintOf(p);
   const canvas = $("#ed-work-head .ed-tagc");
   if (canvas && current() === p) drawTag(canvas, p.tag, paint, 3, false);
@@ -352,7 +352,7 @@ function tagProblem(p) {
   const bad = [...p.tag].find((ch) => !m.font[ch]);
   if (bad) return `No "${bad}" in the camera's tag font.`;
   if (tagWidth(m, p.tag) > m.tag.cols) return "Too wide for the photo tag (its W is extra wide).";
-  if (p.on && enabled().some((q) => q !== p && q.tag === p.tag)) return "Another preset already has this tag.";
+  if (p.on && enabled().some((q) => q !== p && q.tag === p.tag)) return "Another palette already has this tag.";
   return "";
 }
 
@@ -360,7 +360,7 @@ function renderPalette() {
   const p = current();
   $("#ed-palette").innerHTML = `
     <div class="ed-row">
-      <label for="ed-from">Palette</label>
+      <label for="ed-from">Preset</label>
       <select id="ed-from">
         <option value="">Start from&hellip;</option>
         ${library.palettes.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join("")}
@@ -842,7 +842,7 @@ function renderDownload() {
   });
   const rnd = state.rnd && on.length > 1;
   $("#ed-summary").textContent =
-    `${on.length} preset${on.length === 1 ? "" : "s"} (${on.map((p) => p.tag || "?").join(", ")})` +
+    `${on.length} palette${on.length === 1 ? "" : "s"} (${on.map((p) => p.tag || "?").join(", ")})` +
     `${rnd ? " + rnd" : ""} · ${state.sounds.on ? "sounds on" : "silent"}`;
   $("#ed-errors").innerHTML = errors.map((e) => `<li>${esc(e)}</li>`).join("");
   $("#ed-download").disabled = errors.length > 0;
@@ -927,7 +927,7 @@ async function main() {
   sounds.addEventListener("click", soundEvents);
   $("#ed-download").addEventListener("click", download);
   $("#ed-reset-all").addEventListener("click", async () => {
-    if (!confirm("Start over? This forgets your presets, sounds and photos.")) return;
+    if (!confirm("Start over? This forgets your palettes, sounds and photos.")) return;
     state = defaultState();
     renderPhotos();
     renderSounds();

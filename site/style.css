@@ -361,7 +361,7 @@ dialog button {
 }
 
 .editor h3 {
-  font: 15px/1.2 var(--pixel);
+  font: 20px/1.2 var(--pixel);
   text-transform: uppercase;
   margin: 0 0 10px;
 }
@@ -922,7 +922,6 @@ dialog button {
 }
 
 .editor .ed-sounds-head h3 {
-  font-size: 20px;
   margin: 0;
 }
 
