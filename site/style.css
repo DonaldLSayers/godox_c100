@@ -170,10 +170,18 @@ code {
 }
 
 .presets li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 39px 1fr; /* a 3-letter tag, 3 px per font cell */
   gap: 14px;
-  align-items: baseline;
+  align-items: start;
   padding: 6px 0;
+}
+
+/* the presets' tags as the camera draws them (tools/editor_data.py) */
+.cam-tag {
+  image-rendering: pixelated;
+  margin-top: 3px;
+  justify-self: end;
 }
 
 .steps {
@@ -309,7 +317,7 @@ dialog::backdrop {
 
 dialog img {
   display: block;
-  width: min(1280px, calc(100vw - 36px), calc((100vh - 64px) * 1.5));
+  width: min(1280px, calc(100vw - 36px), calc((100vh - 64px) * var(--ar, 1.5)));
   height: auto;
   image-rendering: pixelated;
 }
@@ -334,4 +342,666 @@ dialog button {
   .gallery a {
     transition: none;
   }
+}
+
+/* ---- the firmware editor ---- */
+
+.editor {
+  max-width: 1720px;
+  margin: 0 auto 40px;
+  padding: 28px 32px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.editor-head {
+  max-width: 680px;
+  margin-bottom: 24px;
+}
+
+.editor h3 {
+  font: 15px/1.2 var(--pixel);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.editor .note {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.editor button,
+.editor select,
+.editor input:not([type]) {
+  font: 14px var(--mono);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 4px 8px;
+  border-radius: 0;
+}
+
+.editor button:not(:disabled) {
+  cursor: pointer;
+}
+
+.editor button:not(.button):hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.editor :disabled,
+.editor .dim {
+  opacity: 0.4;
+}
+
+.editor-grid {
+  margin-top: 2em;
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.ed-presets {
+  padding-right: 24px;
+}
+
+@media (max-width: 760px) {
+  .editor {
+    padding: 20px 14px;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .ed-presets {
+    padding-right: 0;
+  }
+}
+
+.ed-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.ed-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+  margin: 0;
+  flex: none;
+}
+
+/* the 8 slots */
+
+.ed-count {
+  font: 13px var(--mono);
+  text-transform: none;
+  color: var(--muted);
+  margin-left: 12px;
+}
+
+.ed-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 -24px 16px 0; /* rows and top rule run to the edit area's border */
+  border-top: 2px solid var(--ink);
+  user-select: none;
+}
+
+.ed-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-bottom: 1px solid #ccc;
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.ed-list li:hover {
+  background: #f1f1f1;
+}
+
+.ed-list li:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+/* the selected slot runs into the preview and edit area on its right */
+.ed-list li.sel {
+  background: var(--ink);
+  color: var(--paper);
+  margin-right: -2px;
+  padding-right: 10px;
+  border-bottom-color: var(--ink);
+}
+
+.ed-list li.off .ed-pick {
+  opacity: 0.45;
+}
+
+.ed-list li.sel.off .ed-pick {
+  opacity: 0.7;
+}
+
+.ed-list.dragging,
+.ed-list.dragging li {
+  cursor: grabbing;
+}
+
+.ed-list li.lifted {
+  box-shadow: 0 4px 0 #999;
+  position: relative;
+  z-index: 1;
+}
+
+.ed-list input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+  flex: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+.ed-list li.sel input {
+  accent-color: var(--paper);
+}
+
+.ed-pick {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  align-items: center;
+}
+
+.ed-tagc {
+  image-rendering: pixelated;
+  display: block;
+}
+
+.ed-name {
+  font: 14px var(--sans);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-strip {
+  display: flex;
+  height: 8px;
+}
+
+.ed-pick .ed-strip {
+  grid-column: 1 / -1;
+}
+
+.ed-strip i {
+  flex: 1;
+}
+
+.ed-handle {
+  flex: none;
+  display: grid;
+  gap: 3px;
+  padding: 8px 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ed-handle i {
+  display: block;
+  width: 16px;
+  height: 2px;
+  background: currentColor;
+}
+
+.ed-rnd .cam-tag {
+  margin-top: 0;
+}
+
+/* the preview and edit area */
+
+.ed-work {
+  border: 2px solid var(--ink);
+  min-width: 0;
+}
+
+.ed-work-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 10px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 15px;
+}
+
+.ed-not-on {
+  font: 13px var(--mono);
+  padding: 1px 6px;
+  border: 1px solid var(--paper);
+}
+
+.ed-work-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 24px;
+  padding: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1240px) {
+  .ed-work-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .ed-list {
+    margin-right: 0;
+  }
+  .ed-list li.sel {
+    margin-right: 0;
+    padding-right: 8px;
+  }
+  .ed-work-body {
+    padding: 12px;
+  }
+}
+
+.ed-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 760px) {
+  .ed-photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ed-photo {
+  margin: 0;
+  position: relative;
+}
+
+.ed-photo canvas {
+  display: block;
+  cursor: zoom-in;
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  background: #eee;
+}
+
+/* a photo being dragged over it */
+.ed-photo.drop::after {
+  content: "Drop to use this photo";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 14px var(--pixel);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgb(255 255 255 / 0.8);
+  outline: 3px dashed var(--ink);
+  outline-offset: -3px;
+  pointer-events: none;
+}
+
+.ed-photo figcaption {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 80ms;
+}
+
+.ed-photo:hover figcaption,
+.ed-photo:focus-within figcaption {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .ed-photo figcaption {
+    opacity: 1;
+  }
+}
+
+.ed-upload {
+  position: relative;
+  display: inline-block;
+  font: 13px var(--mono);
+  padding: 3px 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+}
+
+.ed-upload:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.ed-upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.editor .ed-photo .ed-reset {
+  font-size: 13px;
+  padding: 3px 8px;
+}
+
+/* palette */
+
+.ed-palette {
+  max-width: 520px;
+}
+
+.ed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.ed-row > label:first-child,
+.ed-row > .label {
+  font: 13px var(--pixel);
+  text-transform: uppercase;
+  width: 70px;
+}
+
+.ed-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.editor #ed-tag {
+  width: 4.5em;
+  font: 600 17px var(--sans);
+  text-transform: uppercase;
+  text-align: center;
+  padding: 3px 4px;
+}
+
+.ed-tag-shown {
+  image-rendering: pixelated;
+}
+
+.ed-problem {
+  flex-basis: 100%;
+  padding-left: 82px;
+  font-size: 13px;
+  color: #b00;
+}
+
+.ed-problem:empty {
+  display: none;
+}
+
+.ed-lcd {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+/* each cell is one big target: a click anywhere toggles the nearest segment */
+.seg7 {
+  width: 33px;
+  height: 44px;
+}
+
+.seg7 .seg {
+  fill: #e4e4e4;
+}
+
+.seg7 .seg.on {
+  fill: var(--ink);
+}
+
+/* the segment a click would toggle: dark grey to switch on, light to switch off */
+.seg7 .seg.hover {
+  fill: #8c8c8c;
+}
+
+.seg7 .seg.on.hover {
+  fill: #b4b4b4;
+}
+
+.ed-colours-head {
+  margin: 18px 0 6px;
+}
+
+.ed-ncol {
+  font: 13px var(--mono);
+  color: var(--muted);
+}
+
+.ed-swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.editor .sw {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 0.25);
+  background: var(--c);
+}
+
+.editor .sw:hover:not(:disabled) {
+  background: var(--c);
+  outline: 2px solid var(--ink);
+}
+
+.editor .sw.sel {
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.ed-colour {
+  margin-top: 10px;
+  padding: 12px;
+  border: 2px solid var(--ink);
+}
+
+.ed-colour-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font: 13px var(--pixel);
+  text-transform: uppercase;
+}
+
+.ed-colour-head span:last-child {
+  display: flex;
+  gap: 6px;
+}
+
+.editor .ed-colour-head button {
+  font-size: 13px;
+  padding: 2px 8px;
+  text-transform: none;
+}
+
+.ed-sv {
+  position: relative;
+  height: 150px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.ed-sv canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ed-hue {
+  position: relative;
+  height: 18px;
+  margin-top: 10px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.ed-node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid var(--paper);
+  outline: 2px solid var(--ink);
+  pointer-events: none;
+}
+
+.ed-hue .ed-node {
+  top: 50%;
+}
+
+.ed-hexrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ed-hexrow label {
+  font: 13px var(--pixel);
+  text-transform: uppercase;
+}
+
+.editor #ed-hex {
+  width: 7em;
+  text-transform: uppercase;
+}
+
+/* sounds */
+
+.ed-sounds {
+  margin-top: 52px;
+  padding-top: 24px;
+  /*border-top: 2px solid var(--ink);*/
+}
+
+.ed-sounds-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  margin-bottom: 8px;
+}
+
+.editor .ed-sounds-head h3 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.ed-sounds > .note {
+  max-width: 680px;
+}
+
+.ed-sound {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.ed-sound .label {
+  font: 13px var(--pixel);
+  text-transform: uppercase;
+  width: 80px;
+}
+
+.ed-sound .note {
+  margin: 0;
+}
+
+/* build */
+
+/* Start over on the left, well away from the summary and download on the right */
+.ed-build {
+  display: flex;
+  flex-wrap: wrap-reverse; /* narrow: Start over goes below */
+  justify-content: space-between;
+  align-items: flex-start; /* bottoms line up (wrap-reverse flips the cross axis) */
+  gap: 24px;
+  margin-top: 36px;
+  padding-top: 24px;
+  /*border-top: 2px solid var(--ink);*/
+}
+
+.ed-summary {
+  font: 13px var(--mono);
+  margin: 0;
+}
+
+.ed-build-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.ed-errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #b00;
+  font-size: 14px;
+}
+
+.ed-errors:empty {
+  display: none;
+}
+
+.editor .button {
+  font-size: 15px;
+  padding: 10px 16px;
+  border: 2px solid var(--ink);
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.editor .button:hover:not(:disabled) {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.editor .button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }

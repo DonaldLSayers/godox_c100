@@ -1,12 +1,14 @@
 # Godox C100 firmware hacking
 
-_Last updated 2026-10-17_
+_Last updated 2026-10-18_
 
-**Working on the camera (`v020`):** pixel-art photos and videos at ~274k
+**Working on the camera (`v021`):** pixel-art photos and videos at ~274k
 pixels for every aspect ratio, three presets (EP6, 6FP, BW) plus rnd chosen
 with the center button and remembered across power-off, the preset's tag on
 photos and video and its code on the see-through display, and a silent
-camera.
+camera. The preset data has fixed slots, so the
+[site's editor](#the-sites-firmware-editor) builds custom firmware (1–8
+presets, rnd, sounds) in the browser; those work on the camera too.
 
 Goal: make the C100 produce pixel-art photos and videos in the spirit of the
 [Pixless camera](https://petapixel.com/2025/01/09/0-03-megapixel-pixless-camera-captures-charming-pixel-art-photos/):
@@ -27,12 +29,14 @@ small resolution, a limited colour palette, and dithering.
 | 12 presets: 3 palettes × 4 films, random per photo/recording | on the camera, working (`v014`) |
 | Three-letter preset code, top right on photos and video | on the camera, working (`v014`) |
 | Next preset's code on the display's shutter-speed cells | on the camera, working (`v014`) |
-| [3 presets](#presets) EP6, 6FP, BW (S-curved dithered greyscale) + rnd mode | built (`v015`), passes the emulator tests; **not yet tried on the camera** |
+| [3 presets](#presets) EP6, 6FP, BW (S-curved dithered greyscale) + rnd mode | on the camera, working (`v015`) |
 | Center button cycles the preset mode in photo/video mode, display shows it | on the camera, working (`v016`; `v015` hooked an arrow) |
 | Preset mode remembered across power-off (byte `0xf1` of the saved settings) | on the camera, working (`v017`) |
 | [Larger photos](#size-and-aspect-ratios): ~420k pixels per aspect, video unchanged | on the camera, working (`v018`; more than wanted) |
 | Photos at ~274k pixels per aspect (the old 3:2 count), video unchanged | on the camera, working (`v019`) |
 | Video at the photo sizes (hook takes any width up to `MAX_W`) | on the camera, working (`v020`) |
+| Preset data in fixed slots (8 presets × 32 colours), preset count and rnd patchable | on the camera, working (`v021`) |
+| [Site editor](#the-sites-firmware-editor) builds: own presets, S-curve, films, tags, display codes, rnd, sounds | on the camera, working (2026-10-18: photos, video, sounds, palettes) |
 | Table kept when the preset doesn't change (no ~60 ms fill before the capture) | built (`v015`), emulator |
 
 Open: [repeated frames](#timing-and-headroom) in some dithered videos.
@@ -40,7 +44,7 @@ Open: [repeated frames](#timing-and-headroom) in some dithered videos.
 Contents: [The device](#the-device) · [Image layout](#firmware-image-layout-gp_cardvr_upgradebin-v116) ·
 [Tooling](#tooling) · [Backups](#backups-in-build_backups) · [Code caves and hooks](#code-caves-and-hooks) ·
 [Photos](#photos) · [Palettes](#palettes) · [Presets](#presets) · [Video](#video) · [Sounds](#sounds) ·
-[Look knobs](#look-knobs-contrast--brightness) · [UI graphics](#ui-graphics-gpzp-logos-and-the-osd-overlay) ·
+[Site editor](#the-sites-firmware-editor) · [Look knobs](#look-knobs-contrast--brightness) · [UI graphics](#ui-graphics-gpzp-logos-and-the-osd-overlay) ·
 [History](#history-the-v1-effect) · [Ideas](#ideas-not-yet-done) · [Palette colours](#appendix-palette-colours)
 
 ## The device
@@ -126,6 +130,13 @@ In `tools/`:
   emulator and decodes what it sends to the panel (see
   [The transparent display](#the-transparent-display-a-segment-panel-ht1621)).
 - `gpzp.py` — decode/encode the GPZP UI images (see [UI graphics](#ui-graphics-gpzp-logos-and-the-osd-overlay)).
+- `editor_data.py` — builds the [editor's](#the-sites-firmware-editor) template
+  and writes `site/editor/` (patch offsets, palettes, sounds, preview photos).
+  `editor_check.sh` checks the editor's patcher against `build.sh`.
+
+  Build options for a custom config (what the editor makes): `PRESETS_JSON`
+  (presets, tags, display segments, rnd; see `palettes.py config()`),
+  `SHUTTER_WAV`, `POWERON_WAV` (11025 Hz mono 16-bit, at most the slot).
 
 Reverse engineering: Ghidra headless project under `build/ghidra/`, decompiled
 C in `decomp/c100.c`, string→function index in `decomp/strings.tsv`
@@ -170,8 +181,15 @@ which shifts every address after them).
   752×564, 640×640), video unchanged. Works on the camera.
 - `v019_photos_274k.bin` — photos at ~274k pixels (704×396, 640×428, 608×456,
   528×528), video unchanged. Works on the camera.
-- `v020_video_274k.bin` — video at the same sizes as photos. The current
-  build, works on the camera.
+- `v020_video_274k.bin` — video at the same sizes as photos. Works on the
+  camera.
+- `v021_editor_template.bin` — v020's code with the preset data in fixed
+  slots (room for 8 presets of 32 colours), silent (`SILENT=1`), the same
+  three presets and rnd. Behaves as v020 does; differs from it only in the
+  photo cave's literals, the preset data and the display table. The current
+  build, the site's default download (a copy in `site/editor/`) and the
+  template the [site's editor](#the-sites-firmware-editor) patches. Works on
+  the camera, and so do editor builds from it (2026-10-18).
 
 ## Code caves and hooks
 
@@ -694,6 +712,64 @@ repeated preset and rnd: the right preset each time, the table kept exactly
 when the preset repeats (the fill's inner loop runs zero times), and every
 block, tag included, equals the sim (0.00% differing). `emu_video.py` (rnd
 mode): two recordings, a new preset for the second, 0.00% differing.
+
+## The site's firmware editor
+
+`site/editor/` (on godox.klve.nl) lets anyone fill 8 preset slots (palette,
+S-curve, film, tag, display code) and tick 1–8 of them, turn rnd on or off, and sounds
+on or off (stock, Mario or their own), previews them on photos, and builds
+the firmware in the browser.
+
+**S-curve and films.** A preset's paint colours are its colours through the
+S-curve (a checkbox), then through its film (a dropdown); the camera only sees
+the result, so neither costs anything on the camera. The S-curve is BW's tone
+curve, luma through `BW_MATCH` -> `BW_LEVELS` (chroma kept): on BW's greys it
+gives exactly `BW_LEVELS`, so BW is "greys + S-curve". It works on the paint
+colours, after matching: the dither blends then follow the curve, and the
+palette itself gets the contrast. (Before matching, on the photo, it would
+keep the palette's colours pure and only change which get picked; that needs
+a luma table in the photo and video hooks, about as fast as today's
+contrast/brightness maths, but wasn't needed.) `films.js` repeats `film.py`'s
+trilinear HaldCLUT lookup step for step (float32 where numpy has float32,
+round half to even), and gives exactly `film_colours.py` for EP6 and 6FP.
+`editor_data.py FILMS` picks the 12 films the editor offers (copied from
+`film_luts/` to `site/editor/films/`, ~200 KB each, loaded when chosen).
+
+**Template, not assembler.** Everything the editor changes is data or an
+immediate, so it patches one template build (`site/editor/v021_editor_template.bin`,
+checked against its sha256) instead of assembling:
+
+- The preset data cave has a fixed layout (`palettes.py PD`): each table is
+  padded to room for `MAX_PRESETS` = 8 of `NMAX` = 32 colours (0xbbc00–
+  0xbc2f8), and `LCD_TAGS` to 9 entries. The caves already walk the match
+  palettes by their counts and the paint colours by pointer, so only the
+  labels had to stop moving. Since then every build uses this layout (one
+  match palette per preset, no sharing).
+- `NPAL` is an immediate in six instructions (`npal_*` labels in
+  `photo_cave.s` and `lcd_cave.s`; ARM immediates under 256 are the
+  instruction's low byte). `last_center` holds `NPAL - 1 + RND_MODE`, where
+  the center button wraps: with rnd off it skips the rnd mode. A saved mode
+  the build doesn't have (e.g. from a build with more presets) already
+  counts as the first preset.
+- Sounds: the speaker's three amp-on calls (on, or NOPs when silent, as
+  `SILENT=1`) and the CAMERA, POWERON_AUDIO and CLICK slots, written as
+  `patch_res.py` does (0xFF padding; silent = the WAV with its data zeroed).
+  The template is silent, so with sounds on the editor also puts the
+  factory's CLICK slot back, byte for byte (`sounds/stock_click.wav`).
+
+`site/editor/template.json` lists every offset, read from the assembled caves
+by `editor_data.py`. `firmware.js` is the patcher (no DOM, runs in Node),
+`sim.js` the preview (the camera's table and Bayer, as `sim_palette.py`),
+`editor.js` the UI (state in localStorage).
+
+**Verified (2026-10-18):** `editor_check.sh` (16 random configs: 1–8 presets
+of 1–32 colours, random tags and segments, rnd and sounds on/off, random and
+stock WAVs) gives byte-identical files from the editor and `build.sh`; so did
+two downloads from the page itself (7 presets and an uploaded sound; 5
+presets, one with an edited palette through Kodachrome 64). The emulator
+tests pass on the default template, on 8 presets of up to 32 colours and on
+the downloaded config. With one preset rnd can only repeat it, so the editor
+offers rnd from two presets on.
 
 ## Video
 

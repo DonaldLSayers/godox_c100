@@ -86,24 +86,24 @@
           Every photo and video is shrunk to about 274k pixels (640&times;428 for 3:2), matched against
           a small colour palette with ordered dithering, then painted with a film
           simulation applied. The chosen look is stamped in the top right corner.
-          Presssing the <strong>center button</strong> switches between the presets;
+          Pressing the <strong>center button</strong> switches between the presets;
           the camera remembers your choice when you turn it off.
         </p>
         <ul class="presets">
           <li>
-            <span class="tag">EP6</span>
-            <span>The <a href="https://lospec.com/palette-list/endesga-32">Endesga&nbsp;32</a> palette, graded like Polaroid&nbsp;690. Realistic, nice greens for outside, but a funky</span>
+            <img class="cam-tag" src="img/tags/EP6.png" width="39" height="21" alt="EP6" />
+            <span>The <a href="https://lospec.com/palette-list/endesga-32">Endesga&nbsp;32</a> palette, graded like Polaroid&nbsp;690. Realistic, nice greens for outside, but a bit funky</span>
           </li>
           <li>
-            <span class="tag">6FP</span>
+            <img class="cam-tag" src="img/tags/6FP.png" width="39" height="21" alt="6FP" />
             <span>A six-ink risograph palette through Fuji Provia&nbsp;100. Less realistic, more retro. I find it works better at night, inside</span>
           </li>
           <li>
-            <span class="tag">BW</span>
+            <img class="cam-tag" src="img/tags/BW.png" width="33" height="21" alt="BW" />
             <span>Not actually black and white but grayscale..</span>
           </li>
           <li>
-            <span class="tag">rnd</span>
+            <img class="cam-tag" src="img/tags/rnd.png" width="39" height="21" alt="rnd" />
             <span>Chooses a random look for every shot</span>
           </li>
         </ul>
@@ -120,16 +120,13 @@
           <li>
             <h3>Put the firmware to the SD</h3>
             <p class="download">
-              <a
-                class="button"
-                href="https://github.com/kelleyvanevert/godox_c100/raw/main/build_backups/v020_video_274k.bin"
+              <a class="button" href="editor/v021_editor_template.bin" download="GP_CARDVR_UPGRADE.BIN"
                 >Download firmware</a
               >
-              <span>v020 &middot; 1.8&nbsp;MB</span>
+              <span>v021 &middot; 1.8&nbsp;MB</span>
             </p>
             <p>
-              Download the firmware and put it in the root of the camera's SD card, then make sure to rename it to exactly:
-              <code>GP_CARDVR_UPGRADE.BIN</code>
+              Download the firmware and put it in the root of the camera's SD card, naming it exactly: <code>GP_CARDVR_UPGRADE.BIN</code>
             </p>
             <p class="note">
                 You can either connect the camera over USB-C while it's on,
@@ -141,11 +138,12 @@
             <h3>Flash</h3>
             <p>
               Turn the camera on and wait about 10 seconds while the light flashes. Afterwards it will restart by
-              itself, now running the new firmware.
+              itself, now running the new firmware. <strong>Don't turn the camera off or remove the card while flashing.</strong>
             </p>
             <p class="note">
-              Nothing happening after 10 seconds? Then the file probably ended up in a subfolder, or
-              isn't named quite right (watch out for a hidden <code>.bin</code> extension).
+              Nothing happening? Then the file probably ended up in a subfolder, or
+              isn't named quite right (it should be named exactly <code>GP_CARDVR_UPGRADE.BIN</code>,
+              watch out for automatically hidden extensions).
             </p>
           </li>
           <li>
@@ -157,6 +155,67 @@
             </p>
           </li>
         </ol>
+      </section>
+
+      <section class="editor" id="editor" aria-labelledby="editor-title">
+        <header class="editor-head">
+          <h2 id="editor-title">Make your own</h2>
+          <p>
+            Create up to <span id="ed-max">8</span> palettes, choose the sounds you want (or turn them off),
+            then download your custom firmware and flash it the same way as described above.
+          </p>
+        </header>
+
+        <div class="editor-grid">
+          <aside class="ed-presets" aria-label="Presets">
+            <h3>Presets <span class="ed-count" id="ed-count"></span></h3>
+            <ol class="ed-list" id="ed-list"></ol>
+            <label class="ed-check ed-rnd">
+              <input type="checkbox" id="ed-rnd" />
+              <img class="cam-tag" src="img/tags/rnd.png" width="39" height="21" alt="rnd" />
+              also a random preset per photo
+            </label>
+          </aside>
+
+          <div class="ed-work">
+            <div class="ed-work-head" id="ed-work-head"></div>
+            <div class="ed-work-body">
+              <div class="ed-preview">
+                <div class="ed-photos" id="ed-photos"></div>
+                <p class="note">
+                  Hover a photo to see the original, or click on it to inspect it at a larger size.
+                  You can also drop your own pictures in the grid to preview them.
+                  (Your pictures stay on your computer, by the way.)
+                </p>
+              </div>
+              <div class="ed-palette" id="ed-palette" aria-label="Selected preset"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ed-sounds off" id="ed-sounds">
+          <div class="ed-sounds-head">
+            <h3>Sounds</h3>
+            <label class="ed-check">
+              <input type="checkbox" id="ed-sound-on" />
+              Include sounds
+            </label>
+          </div>
+          <p class="note">
+            If you choose to not include sounds, the speaker won't turn on, to prevent the two second
+            hiss.
+          </p>
+          <div id="ed-sound-slots"></div>
+        </div>
+
+        <div class="ed-build">
+          <button type="button" class="ed-reset-all" id="ed-reset-all">Start over</button>
+          <div class="ed-build-main">
+            <p class="ed-summary" id="ed-summary"></p>
+            <ul class="ed-errors" id="ed-errors"></ul>
+            <button type="button" class="button" id="ed-download">Download GP_CARDVR_UPGRADE.BIN</button>
+          </div>
+        </div>
       </section>
 
       <section class="card">
@@ -182,5 +241,6 @@
     </dialog>
 
     <script src="main.js"></script>
+    <script type="module" src="editor/editor.js"></script>
   </body>
 </html>

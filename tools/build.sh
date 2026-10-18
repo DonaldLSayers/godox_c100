@@ -15,18 +15,22 @@ mkdir -p build/obj
 # below), so there is no amp hiss either.
 #   SILENT=1 sh tools/build.sh   -> no sounds, speaker amp stays off
 #   sh tools/build.sh            -> Super Mario kick / coin sounds
+# SHUTTER_WAV / POWERON_WAV pick other sounds (11025 Hz mono 16-bit PCM, at
+# most the slot's size; the site's editor makes these).
 SILENT=${SILENT:-0}
+SHUTTER_WAV=${SHUTTER_WAV:-build/kick_11k.wav}
+POWERON_WAV=${POWERON_WAV:-build/coin_11k.wav}
 python3 tools/gp_res.py "$ORIG" build/res >/dev/null
 if [ "$SILENT" = "1" ]; then
-    python3 -I tools/mk_silence.py build/kick_11k.wav build/silent_cam.wav
-    python3 -I tools/mk_silence.py build/coin_11k.wav build/silent_pwr.wav
+    python3 -I tools/mk_silence.py "$SHUTTER_WAV" build/silent_cam.wav
+    python3 -I tools/mk_silence.py "$POWERON_WAV" build/silent_pwr.wav
     python3 -I tools/mk_silence.py build/res/CLICK.wav build/click_silent.wav
     python3 tools/patch_res.py "$ORIG" CAMERA.wav build/silent_cam.wav "$OUT"
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/silent_pwr.wav "$OUT"
     python3 tools/patch_res.py "$OUT" CLICK.wav build/click_silent.wav "$OUT"
 else
-    python3 tools/patch_res.py "$ORIG" CAMERA.wav build/kick_11k.wav "$OUT"
-    python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/coin_11k.wav "$OUT"
+    python3 tools/patch_res.py "$ORIG" CAMERA.wav "$SHUTTER_WAV" "$OUT"
+    python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav "$POWERON_WAV" "$OUT"
 fi
 
 # BEEP.wav (the UI/focus beep) is always silenced, in both sound profiles.

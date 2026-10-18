@@ -27,7 +27,7 @@ import os, struct, subprocess, sys
 import numpy as np
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_BLOCK, UC_HOOK_CODE
 from unicorn.arm_const import UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_LR, UC_ARM_REG_PC, UC_ARM_REG_SP
-from palettes import LUT, SIZES, WY, presets
+from palettes import LUT, SIZES, WY, config_presets
 from sim_palette import add_tag, match, prepare
 
 FW = 'build/GP_CARDVR_UPGRADE.BIN'
@@ -111,7 +111,7 @@ def main():
     global W
     photo = sys.argv[1]
     sym = symbols()
-    pre = presets()
+    pre = config_presets()                            # as build.sh built them (PRESETS_JSON)
     rnd = len(pre)                                    # MODE value for random
     uc, calls = machine()
     fill, steps = [0], [0]

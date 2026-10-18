@@ -6,6 +6,7 @@
 /build/*.bin
 /build/*.elf
 /build/res
+/build/editor_check
 
 .DS_Store
 /film_luts

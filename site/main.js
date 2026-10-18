@@ -90,6 +90,7 @@
       if (!a) return;
       e.preventDefault();
       big.src = a.href;
+      big.style.setProperty("--ar", a.style.getPropertyValue("--w") / a.style.getPropertyValue("--h"));
       dialog.showModal();
     });
     dialog.addEventListener("click", (e) => {

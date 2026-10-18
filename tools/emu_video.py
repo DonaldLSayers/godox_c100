@@ -28,7 +28,7 @@ from unicorn import Uc, UC_ARCH_ARM, UC_MODE_ARM, UC_HOOK_BLOCK, UC_HOOK_CODE
 from unicorn.arm_const import *
 import emu_cave
 from emu_cave import FW, APP, CACHE_INV, CACHE_CLEAN, MALLOC, TICK, ROWS, pack, symbols, unpack, differing
-from palettes import LUT, SIZES, WY, presets
+from palettes import LUT, SIZES, WY, config_presets
 from sim_palette import add_tag, match, prepare
 
 RESUME = 0x18d18
@@ -81,7 +81,7 @@ def run_strip(uc, entry, tick, ts=0x1004):
 def main():
     photo, timing = sys.argv[1], '--timing' in sys.argv[2:]
     psym, vsym = symbols(), symbols('build/obj/video_cave.o')
-    pre = presets()
+    pre = config_presets()                            # as build.sh built them (PRESETS_JSON)
     worst = 0
     for aspect, (_, (W, H)) in SIZES.items():
         emu_cave.W = W                                    # pack/unpack/differing use it

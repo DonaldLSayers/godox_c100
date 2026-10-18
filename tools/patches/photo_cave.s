@@ -275,6 +275,7 @@ lut_fill:
     str     r0, [r4, #STRIP_N]            @ next strip is this photo's first
     ldr     r0, =CFG
     ldrb    r0, [r0, #CFG_MODE]
+npal_fill:
     cmp     r0, #NPAL
     movhi   r0, #0                        @ not a mode (e.g. never set): the first
     bne     1f                            @ a preset; == NPAL is rnd:
@@ -355,18 +356,22 @@ sl: ldrb    r1, [r2], #1
     .ltorg
 
 @ r0 = a random preset, never PAL_IDX (so never the same twice in a row):
-@ (ms tick & 0xff) mod NPAL. Clobbers r1.
+@ (ms tick & 0xff) mod NPAL. Clobbers r1. (The npal_* labels mark the
+@ instructions whose immediate is NPAL: the site's editor rewrites them.)
 pick:
     ldr     r0, =TICK
     ldr     r0, [r0]
     and     r0, r0, #0xff
+npal_pick1:
 1:  cmp     r0, #NPAL
+npal_pick2:
     subhs   r0, r0, #NPAL
     bhs     1b
     ldr     r1, =VARS - base
     ldr     r1, [r1, #PAL_IDX]
     cmp     r0, r1                        @ same as the current one: take the next
     addeq   r0, r0, #1
+npal_pick3:
     cmp     r0, #NPAL
     movhs   r0, #0
     mov     pc, lr

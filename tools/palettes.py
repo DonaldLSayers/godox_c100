@@ -13,9 +13,11 @@ The camera uses presets (below): a match palette x a film simulation.
 
   palettes.py            print every preset (match colour -> film colour)
   palettes.py asm        print palettes.inc for the caves (presets, tags,
-                         display codes)
+                         display codes); PRESETS_JSON=file.json builds the
+                         presets from that file instead (the site's editor
+                         writes the same config, see config())
 """
-import os, sys
+import json, os, sys
 
 NMIN = 10   # small palettes are topped up to this many colours
 NMAX = 32   # big palettes are thinned to at most this many
@@ -232,6 +234,22 @@ FONT = {  # rows top to bottom, 3 pixels each (W: 5)
     'R': ['110', '101', '110', '101', '101'], 'S': ['011', '100', '010', '001', '110'],
     'V': ['101', '101', '101', '101', '010'], 'W': ['10001', '10001', '10101', '10101', '01010'],  # 5 wide: a 3-wide W reads as H
     '6': ['111', '100', '111', '101', '111'],
+    # the rest of the alphabet and the digits, for the site's editor
+    'I': ['111', '010', '010', '010', '111'], 'J': ['001', '001', '001', '101', '111'],
+    'K': ['101', '101', '110', '101', '101'], 'L': ['100', '100', '100', '100', '111'],
+    'O': ['111', '101', '101', '101', '111'], 'Q': ['111', '101', '101', '111', '001'],
+    'T': ['111', '010', '010', '010', '010'], 'U': ['101', '101', '101', '101', '111'],
+    'X': ['101', '101', '010', '101', '101'], 'Y': ['101', '101', '010', '010', '010'],
+    'Z': ['111', '001', '010', '100', '111'],
+    '0': ['010', '101', '101', '101', '010'], '1': ['010', '110', '010', '010', '111'],
+    '2': ['111', '001', '111', '100', '111'], '3': ['111', '001', '111', '001', '111'],
+    '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '111', '001', '111'],
+    '7': ['111', '001', '010', '010', '010'], '8': ['111', '101', '111', '101', '111'],
+    '9': ['111', '101', '111', '001', '111'], '-': ['000', '000', '111', '000', '000'],
+    # lowercase r, n, d shaped as the display's 7-segment rnd (eg, ceg, bcdeg),
+    # for the site's rnd tag; preset tags are uppercase
+    'r': ['000', '000', '111', '100', '100'], 'n': ['000', '000', '111', '101', '101'],
+    'd': ['001', '001', '111', '101', '111'],
 }
 TAG_LETTERS = 3
 TAG_ROWS, TAG_COLS = 7, 4 * TAG_LETTERS + 1  # 3 letters, 1-pixel gaps, plus the outline (firmware)
@@ -296,37 +314,119 @@ def lcd_text(code):
     return ''.join(LCD[code])
 
 
-def lcd_nibbles(code):
-    """Nibbles for HT1621 addresses 0x0d..0x13 that show `code` (a preset tag
-    or RND) on the SS cells (COM0 = nibble bit 8, COM1 = 4, COM2 = 2)."""
+def lcd_segments(code):
+    """The lit segments per SS cell for a built-in code, e.g. ['adefg', ...]."""
+    return [SEG7[glyph] for glyph in LCD[code]]
+
+
+def lcd_nibbles(segments):
+    """Nibbles for HT1621 addresses 0x0d..0x13 that light `segments` (one
+    string of a..g per SS cell) (COM0 = nibble bit 8, COM1 = 4, COM2 = 2)."""
     nib = [0] * SS_COUNT
-    for cell, glyph in zip(SS_CELLS, LCD[code]):
-        for seg in SEG7[glyph]:
+    for cell, segs in zip(SS_CELLS, segments):
+        for seg in segs:
             addr, com = cell[seg]
             nib[addr - SS_FIRST] |= 8 >> com
     return nib
 
 
+# ---- Config: what the caves get (2026-10-18) ----
+# The presets as plain data: per preset its tag, match and paint colours
+# (Y,U,V, index for index) and the segments its code lights on the display;
+# plus whether the center button offers rnd. Built from PRESETS above, or read
+# from PRESETS_JSON (the site's editor writes the same shape). The preset data
+# has a fixed layout with room for MAX_PRESETS of NMAX colours, so the editor
+# can patch any config into one template build (tools/editor_data.py).
+MAX_PRESETS = 8
+SEGMENTS = 'abcdefg'
+
+
+def builtin_config():
+    return {'presets': [{'tag': tag, 'match': [list(c) for c in cols], 'paint': [list(c) for c in disp],
+                         'lcd': lcd_segments(tag)} for tag, cols, disp in presets()],
+            'rnd': True}
+
+
+def tag_width(text):
+    return sum(len(FONT[ch][0]) + 1 for ch in text) + 1
+
+
+def check_config(cfg):
+    pre = cfg['presets']
+    assert 1 <= len(pre) <= MAX_PRESETS, f'{len(pre)} presets: 1..{MAX_PRESETS}'
+    assert isinstance(cfg['rnd'], bool)
+    for p in pre:
+        assert 1 <= len(p['match']) <= NMAX and len(p['paint']) == len(p['match']), p['tag']
+        assert all(len(c) == 3 and all(0 <= x <= 255 for x in c) for c in p['match'] + p['paint']), p['tag']
+        assert 1 <= len(p['tag']) <= TAG_LETTERS and all(ch in FONT for ch in p['tag']), p['tag']
+        assert tag_width(p['tag']) <= TAG_COLS, f'tag {p["tag"]} is too wide'
+        assert len(p['lcd']) == len(SS_CELLS) and all(set(s) <= set(SEGMENTS) for s in p['lcd']), p['tag']
+    return cfg
+
+
+def config():
+    path = os.environ.get('PRESETS_JSON')
+    return check_config(json.load(open(path)) if path else builtin_config())
+
+
+def config_presets():
+    """config() as presets() gives it: [(tag, match colours, paint colours)]."""
+    return [(p['tag'], [tuple(c) for c in p['match']], [tuple(c) for c in p['paint']])
+            for p in config()['presets']]
+
+
+# Fixed layout of the preset data cave (preset_data.s), from 0xbbc00: every
+# table has room for MAX_PRESETS, so the addresses never move.
+NCOL_BYTES = 3 * NMAX
+TAG_BYTES = (TAG_ROWS * TAG_COLS + 3) // 4 + 2   # 2-bit cells, dark and light offset
+PD = {'MATCH': 0xbbc00}
+PD['PMATCH'] = PD['MATCH'] + MAX_PRESETS * (1 + NCOL_BYTES)
+PD['TAGS'] = PD['PMATCH'] + MAX_PRESETS
+PD['DISPLAY'] = PD['TAGS'] + MAX_PRESETS * TAG_BYTES
+PD['DPTRS'] = (PD['DISPLAY'] + MAX_PRESETS * NCOL_BYTES + 3) // 4 * 4
+PD['END'] = PD['DPTRS'] + 4 * MAX_PRESETS
+assert PD['END'] <= 0xbc400
+LCD_BYTES = (MAX_PRESETS + 1) * SS_COUNT       # LCD_TAGS in lcd_cave.s: presets, then rnd
+
+
+def tag_bytes(tag, paint):
+    flat = [v for row in tag_cells(tag, TAG_COLS) for v in row]
+    packed = [sum(v << (2 * j) for j, v in enumerate(flat[i:i + 4])) for i in range(0, len(flat), 4)]
+    dark, light = tag_colours(paint)
+    return packed + [3 * dark, 3 * light]
+
+
 def main():
     if sys.argv[1:] == ['asm']:
-        pre = presets()
+        cfg = config()
+        pre = cfg['presets']
+        n = len(pre)
+        flat = lambda cols: ', '.join('%d,%d,%d' % tuple(c) for c in cols)
         print('@ Generated by tools/palettes.py asm -- do not edit.')
-        print(f'    .equ    NPAL, {len(pre)}                      @ presets; mode NPAL = random')
-        print('    .macro  MATCH_DATA                    @ per match palette: count, then count x (Y,U,V)')
-        for p, cols in MATCH.items():
-            print(f'    .byte {len(cols)}, ' + ', '.join('%d,%d,%d' % c for c in cols) + f'   @ {p}')
+        print(f'    .equ    NPAL, {n}                      @ presets; mode NPAL = random')
+        print(f'    .equ    RND_MODE, {int(cfg["rnd"])}                  @ 1 = the center button offers rnd')
+        print(f'    .equ    MAX_PRESETS, {MAX_PRESETS}')
+        for k, v in PD.items():
+            print(f'    .equ    PD_{k}, {v:#x}')
+        print('    .macro  MATCH_DATA                    @ per preset: count, then count x (Y,U,V)')
+        for p in pre:
+            print(f'    .byte {len(p["match"])}, {flat(p["match"])}   @ {p["tag"]}')
+        print(f'    .space  {PD["PMATCH"] - PD["MATCH"] - sum(1 + 3 * len(p["match"]) for p in pre)}')
         print('    .endm')
         print('    .macro  PRESET_MATCH_DATA             @ per preset: index of its match palette')
-        print('    .byte ' + ', '.join(str(list(MATCH).index(p)) for _, p, _ in PRESETS))
+        print('    .byte ' + ', '.join(str(i) for i in range(n)))
+        print(f'    .space  {MAX_PRESETS - n}' if n < MAX_PRESETS else '')
         print('    .endm')
-        print('    .macro  DISPLAY_DATA                  @ per preset: count x (Y,U,V) film colours')
-        for i, (tag, _, disp) in enumerate(pre):
+        print('    .macro  DISPLAY_DATA                  @ per preset: count x (Y,U,V) paint colours')
+        for i, p in enumerate(pre):
             print(f'disp_{i}:')
-            print('    .byte ' + ', '.join('%d,%d,%d' % c for c in disp) + f'   @ {tag}')
+            print(f'    .byte {flat(p["paint"])}   @ {p["tag"]}')
+        print(f'    .space  {PD["DPTRS"] - PD["DISPLAY"] - sum(3 * len(p["paint"]) for p in pre)}')
         print('    .endm')
-        print('    .macro  DISPLAY_PTR_DATA              @ per preset: address of its film colours')
-        for i in range(len(pre)):
+        print('    .macro  DISPLAY_PTR_DATA              @ per preset: address of its paint colours')
+        for i in range(n):
             print(f'    .word   disp_{i} - base')
+        print(f'    .space  {4 * (MAX_PRESETS - n)}' if n < MAX_PRESETS else '')
         print('    .endm')
         for name, ((cw, ch), (ow, oh)) in SIZES.items():
             k = name.replace(':', '')
@@ -339,23 +439,20 @@ def main():
         print(f'    .equ    TAG_SCALE, {TAG_SCALE}')
         print(f'    .equ    TAG_TOP, {TAG_TOP}')
         print(f'    .equ    TAG_RIGHT, {TAG_RIGHT}')
-        nbytes = (TAG_ROWS * TAG_COLS + 3) // 4
-        print(f'    .equ    TAG_BYTES, {nbytes + 2}')
-        print(f'    .macro  TAG_DATA                      @ per preset: {nbytes} B of 2-bit cells'
+        print(f'    .equ    TAG_BYTES, {TAG_BYTES}')
+        print(f'    .macro  TAG_DATA                      @ per preset: {TAG_BYTES - 2} B of 2-bit cells'
               ' (LSB first), dark offset, light offset')
-        for tag, _, disp in pre:
-            assert len(tag) <= TAG_LETTERS
-            flat = [v for row in tag_cells(tag, TAG_COLS) for v in row]
-            packed = [sum(v << (2 * j) for j, v in enumerate(flat[i:i + 4])) for i in range(0, len(flat), 4)]
-            dark, light = tag_colours(disp)
-            print(f'    .byte ' + ', '.join(map(str, packed + [3 * dark, 3 * light])) + f'   @ {tag}')
+        for p in pre:
+            print('    .byte ' + ', '.join(map(str, tag_bytes(p['tag'], p['paint']))) + f'   @ {p["tag"]}')
+        print(f'    .space  {TAG_BYTES * (MAX_PRESETS - n)}' if n < MAX_PRESETS else '')
         print('    .endm')
         print(f'    .equ    SS_FIRST, {SS_FIRST:#x}')
         print(f'    .equ    SS_COUNT, {SS_COUNT}')
         print(f'    .macro  LCD_TAG_DATA                  @ per mode (presets, then rnd): HT1621 nibbles'
               f' for addresses {SS_FIRST:#x}..{SS_FIRST + SS_COUNT - 1:#x}')
-        for code in [t for t, _, _ in pre] + [RND]:
-            print('    .byte ' + ', '.join(map(str, lcd_nibbles(code))) + f'   @ {code} {lcd_text(code)}')
+        for p in pre + [{'tag': RND, 'lcd': lcd_segments(RND)}]:
+            print('    .byte ' + ', '.join(map(str, lcd_nibbles(p['lcd']))) + f'   @ {p["tag"]} {"/".join(p["lcd"])}')
+        print(f'    .space  {SS_COUNT * (MAX_PRESETS - n)}' if n < MAX_PRESETS else '')
         print('    .endm')
         return
     for tag, cols, disp in presets():

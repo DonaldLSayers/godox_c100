@@ -29,7 +29,10 @@
 @ (so the firmware saves them at power-off); then post the message as before.
 @ (v015 hooked the IO_ISO key's post at 0x1dd44 by mistake, going by the
 @ handler's name: that is an arrow, and the mode never moved.)
-@ The nibbles come from tools/palettes.py (LCD_TAG_DATA, one entry per mode).
+@ The nibbles come from tools/palettes.py (LCD_TAG_DATA, one entry per mode,
+@ padded to MAX_PRESETS + 1). The npal_* labels mark the instructions whose
+@ immediate is NPAL, last_center the one that is NPAL - 1 + RND_MODE: the
+@ site's editor rewrites them.
     .syntax unified
     .arm
     .include "palettes.inc"               @ NPAL, SS_*, LCD_TAG_DATA
@@ -53,6 +56,7 @@ lcd_hook:
     b       SS_ROUTINE
     ldr     r0, =CFG
     ldrb    r0, [r0, #CFG_MODE]
+npal_lcd:
     cmp     r0, #NPAL
     movhi   r0, #0                        @ not a mode: the first (as lut_fill)
     ldr     r5, =LCD_TAGS - base          @ r5 = this mode's SS_COUNT nibbles
@@ -83,10 +87,12 @@ center_hook:                            @ r0-r3 and [sp] are MSG_POST's argument
     bne     1f
     ldr     r1, =CFG
     ldrb    r0, [r1, #CFG_MODE]
+npal_center:
     cmp     r0, #NPAL
     movhi   r0, #0                        @ not a mode: the first
-    add     r0, r0, #1                    @ next preset, after the last rnd,
-    cmp     r0, #NPAL                     @  then the first again
+    add     r0, r0, #1                    @ next preset, after the last rnd
+last_center:                              @  (if RND_MODE), then the first again
+    cmp     r0, #NPAL - 1 + RND_MODE
     movhi   r0, #0
     strb    r0, [r1, #CFG_MODE]
     mov     r0, #1
