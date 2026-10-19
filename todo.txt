@@ -1,5 +1,8 @@
 
 - [ ] save as .png instead of .jpg, does that save space ?
+        - The JPG encoder is on the hardware, makes files of ±110-180kb
+        - (Indexed) PNG (level 1) would be software and take an EXTRA ±250ms for our 274K images, making files of ±60kb
+        - Probably GIF is very reasonable though, probably only taking an extra 20-40ms, and makes files ±100-150kb
 
 - [ ] save a copy of original in /ORIG as well ?
 
