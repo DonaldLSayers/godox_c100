@@ -918,9 +918,9 @@ async function download() {
     a.download = "GP_CARDVR_UPGRADE.BIN";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-    track("download_firmware", downloadProps());
+    track("download_customized_firmware", downloadProps());
   } catch (err) {
-    track("download_firmware_failed", { ...downloadProps(), error: err.message });
+    track("download_customized_firmware_failed", { ...downloadProps(), error: err.message });
     alert(`Couldn't build the firmware: ${err.message}`);
   } finally {
     button.textContent = "Download GP_CARDVR_UPGRADE.BIN";
