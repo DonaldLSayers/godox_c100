@@ -2,7 +2,7 @@
 // on or off, rnd, the Game Boy Camera mode and its colours, the corner tag and sounds
 // with their volume; previewed on nine photos, kept in localStorage,
 // and built into a firmware in the browser (firmware.js) from the template.
-import { buildFirmware, configErrors, encodeWav, hexToYuv, lumaFix, sha256, slotSamples, tagCells, tagColours, tagWidth, toneCurve, yuvToHex, yuvToRgb } from "./firmware.js";
+import { buildFirmware, configErrors, encodeWav, hexToYuv, lumaFix, sha256, sharpFix, slotSamples, tagCells, tagColours, tagWidth, toneCurve, yuvToHex, yuvToRgb } from "./firmware.js";
 import { paintColours } from "./films.js";
 import { buildLut, cameraFrame, render, renderGb } from "./sim.js";
 
@@ -79,7 +79,7 @@ function defaultState() {
     brightness: 0,
     tag: false,
     normal: true,
-    gb: { on: true, curve: false, contrast: 0, brightness: 0, sel: 0, from: "Soft grey-green (default)", colours: m.defaults.gb.palette.map((c) => [...c]) },
+    gb: { on: true, curve: false, contrast: 0, brightness: 0, sharp: 50, sel: 0, from: "Soft grey-green (default)", colours: m.defaults.gb.palette.map((c) => [...c]) },
     gbPreview: false,
     sounds: { on: false, volume: 10, shutter: { src: "stock" }, poweron: { src: "stock" } },
     photos: noPhotos(),
@@ -109,6 +109,7 @@ function load() {
       saved.gb.curve ??= false;
       saved.gb.contrast ??= 0;
       saved.gb.brightness ??= 0;
+      saved.gb.sharp ??= 50;
       saved.gb.sel ??= 0;
       saved.gbPreview = false;
       saved.sounds.volume ??= fresh.sounds.volume;
@@ -158,7 +159,7 @@ async function config() {
     contrast: state.contrast,
     brightness: state.brightness,
     normal: state.normal,
-    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, palette: state.gb.colours },
+    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, sharp: state.gb.sharp, palette: state.gb.colours },
   };
 }
 
@@ -455,6 +456,11 @@ function renderPalette() {
       <label for="ed-brightness">Brightness</label>
       <input type="range" id="ed-brightness" min="-50" max="50" step="1" value="${state.gb.brightness}" />
       <output id="ed-brightness-out">${state.gb.brightness}</output>
+    </div>
+    <div class="ed-row">
+      <label for="ed-sharp">Sharpening</label>
+      <input type="range" id="ed-sharp" min="0" max="100" step="1" value="${state.gb.sharp}" />
+      <output id="ed-sharp-out">${state.gb.sharp}</output>
     </div>` : ""}
     ${gbMode ? "" : `<div class="ed-row">
       <label for="ed-contrast">Contrast</label>
@@ -632,6 +638,11 @@ function pickerPointer(e) {
 }
 
 function paletteInput(e) {
+  if (state.gbPreview && e.target.id === "ed-sharp") {
+    state.gb.sharp = +e.target.value;
+    $("#ed-sharp-out").textContent = String(state.gb.sharp);
+    return changed({ list: false });
+  }
   if (e.target.id === "ed-contrast" || e.target.id === "ed-brightness") {
     const key = e.target.id.slice(3);
     (state.gbPreview ? state.gb : state)[key] = +e.target.value;
@@ -778,7 +789,7 @@ async function renderPreview() {
     canvas._orig = state.gbPreview ? gbFrames[i] : frame;
     canvas.width = canvas._orig.width;
     canvas.height = canvas._orig.height;
-    canvas._out = state.gbPreview ? renderGb(m, gbFrames[i], gb, gbCurve) : render(m, frame, preset, lut);
+    canvas._out = state.gbPreview ? renderGb(m, gbFrames[i], gb, gbCurve, sharpFix(state.gb.sharp)) : render(m, frame, preset, lut);
     if (!canvas.matches(":hover")) canvas.getContext("2d").putImageData(canvas._out, 0, 0);
   });
 }
@@ -1044,7 +1055,7 @@ function renderDownload() {
     rnd: state.rnd,
     sounds: state.sounds.on,
     volume: state.sounds.volume,
-    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, palette: state.gb.colours },
+    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, sharp: state.gb.sharp, palette: state.gb.colours },
   });
   const rnd = state.rnd && on.length > 1;
   $("#ed-summary").textContent =

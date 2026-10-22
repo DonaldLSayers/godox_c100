@@ -1,7 +1,7 @@
 {
  "file": "v029_editor_template.bin",
  "size": 1841152,
- "sha256": "e5eadb4a38eb06eb1f65e19a57cfb15d6dd98856e384d2a8061e092a39dc0c93",
+ "sha256": "30ea7fa13dc57bf080b030c34e6dff1bd123bebaca1805b8fdf184ea6ffb4b94",
  "appOffset": 66048,
  "maxPresets": 8,
  "maxColours": 32,
@@ -14,7 +14,7 @@
   "GB": 770808,
   "END": 770888
  },
- "showTag": 766604,
+ "showTag": 766612,
  "cycle": {
   "afterLast": 771264,
   "afterGb": 771240,
@@ -929,7 +929,7 @@
    "111"
   ]
  },
- "lcdTags": 771548,
+ "lcdTags": 771600,
  "ssFirst": 13,
  "ssCount": 7,
  "ssCells": [
@@ -1041,6 +1041,7 @@
   765024,
   768152
  ],
+ "sharpAt": 766200,
  "brightAt": [
   765040,
   768168
@@ -1699,6 +1700,7 @@
    "curve": false,
    "contrast": 0,
    "brightness": 0,
+   "sharp": 50,
    "palette": [
     [
      37,

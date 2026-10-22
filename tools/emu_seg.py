@@ -357,5 +357,14 @@ if __name__ == '__main__':
         for table, base in (('photo', 0xf3d0), ('video', 0xf0a0)):
             check(f'{table} size table: the normal mode\'s slots are the factory handlers of aspects 0-4',
                   [entry(fw, base, i) for i in NIDX] == [entry(orig, base, i) for i in range(5)], True)
+        BRACKET = 0x4a7f4                               # FUN_0004a7f4(state, aspect): the aspect bracket
+        shown_b = lambda l: (l.ram[6] & 8, l.ram[0x15])
+        for a in range(5):
+            call(stock_uc, BRACKET, 0, a)
+            call(uc, BRACKET, 0, NIDX[a])
+            check(f'bracket for the normal mode slot {NIDX[a]} = the stock one for aspect {a}', shown_b(lcd), shown_b(stock_lcd))
+        call(stock_uc, BRACKET, 0, 9)
+        call(uc, BRACKET, 0, 9)
+        check('bracket for an unknown slot: as stock', shown_b(lcd), shown_b(stock_lcd))
         print('mode test', 'PASSED' if ok else 'FAILED')
         sys.exit(0 if ok else 1)

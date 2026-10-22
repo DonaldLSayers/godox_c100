@@ -116,7 +116,7 @@ def tag_png(Image, tag, paint):
 
 def build_template():
     env = {k: v for k, v in os.environ.items()
-           if k not in ('PRESETS_JSON', 'SHUTTER_WAV', 'POWERON_WAV', 'TAG', 'GB_ON', 'GB_PALETTE', 'GB_CONTRAST', 'GB_BRIGHTNESS', 'CONTRAST', 'BRIGHT', 'VOLUME')}
+           if k not in ('PRESETS_JSON', 'SHUTTER_WAV', 'POWERON_WAV', 'TAG', 'GB_ON', 'GB_PALETTE', 'GB_CONTRAST', 'GB_BRIGHTNESS', 'GB_SHARP', 'CONTRAST', 'BRIGHT', 'VOLUME')}
     env['SILENT'] = '1'
     subprocess.run(['sh', 'tools/build.sh'], cwd=ROOT, env=env, check=True, stdout=subprocess.DEVNULL)
     shutil.copy(os.path.join(ROOT, 'build', 'GP_CARDVR_UPGRADE.BIN'), os.path.join(SITE, TEMPLATE))
@@ -127,6 +127,8 @@ def manifest(fw):
     photo, lcd, data = symbols('photo_cave.o'), symbols('lcd_cave.o'), symbols('preset_data.o')
     video = symbols('video_cave.o')
     contrast_at = [photo['contrast_imm'], video['contrast_imm']]    # mov r1, #CONTRAST_FIX: the low byte, 128 (100 %)
+    sharp_at = photo['sharp_imm']                                   # mov r0, #GB_SHARP: the low byte, 64 (50 %)
+    assert fw[APP + sharp_at] == 64 and fw[APP + sharp_at + 1] & 0x0f == 0
     bright_at = [photo['bright_imm'], video['bright_imm']]          # add r0, r0, #BRIGHT_FIX: the low byte, 128 (+0)
     for a in contrast_at + bright_at:
         assert fw[APP + a] == 128 and fw[APP + a + 1] & 0x0f == 0, f'{a:#x} is not an immediate 128'
@@ -171,6 +173,7 @@ def manifest(fw):
         'rndLcd': P.lcd_segments(P.RND),
         'npal': npal,
         'contrastAt': contrast_at,
+        'sharpAt': sharp_at,
         'brightAt': bright_at,
         'lastCenter': lcd['last_center'],
         'speaker': [[addr, on, NOP] for addr, on in SPEAKER],
@@ -181,7 +184,7 @@ def manifest(fw):
         'crops': {k: v[0] for k, v in P.SIZES.items()},
         'wy': P.WY,
         'defaults': {**P.builtin_config(), 'contrast': 0, 'brightness': 0, 'tag': False, 'normal': True, 'volume': 100,
-                     'gb': {'on': True, 'curve': False, 'contrast': 0, 'brightness': 0, 'palette': [list(P.hex_to_yuv(''.join(f'{x:02x}' for x in c))) for c in gb.PALETTE]}},
+                     'gb': {'on': True, 'curve': False, 'contrast': 0, 'brightness': 0, 'sharp': 50, 'palette': [list(P.hex_to_yuv(''.join(f'{x:02x}' for x in c))) for c in gb.PALETTE]}},
     }
 
 

@@ -12,6 +12,8 @@ import os
 PATTERN = [[0x00, 0x0C, 0x03, 0x0F], [0x08, 0x04, 0x0B, 0x07],
            [0x02, 0x0E, 0x01, 0x0D], [0x0A, 0x06, 0x09, 0x05]]
 RANGE = (0x89, 0x92, 0xA2, 0xD2)        # contrast 7, "high light" (gb-photo, as in gbcam_dither.c)
+SHARP_PCT = int(os.environ.get('GB_SHARP', 50))   # edge sharpening, 0-100: 50 = the sensor's 50 % (build.sh)
+SHARP = (SHARP_PCT * 64 + 25) // 50     # in 1/64: the weight of the edge term (64 = 50 %), as the editor's sharpFix
 GAIN_Q8 = 1024                          # fixed exposure, 4.0x (256 = 1.0): the best fixed gain on the
                                         # sample photos; gbcam.c's auto-exposure settles at 2.2-4.3x, start 3.5x
 PALETTE = [(0x25, 0x25, 0x25), (0x4b, 0x56, 0x4d), (0x9a, 0xa5, 0x7c), (0xe0, 0xe9, 0xc4)]   # dark to light
@@ -69,6 +71,7 @@ def palette():
 
 def asm():
     print(f'    .equ    GB_GAIN_Q8, {GAIN_Q8}')
+    print(f'    .equ    GB_SHARP, {SHARP}')
     (cw, ch), (w, h) = SIZE
     print(f'    .equ    GB_W, {w}\n    .equ    GB_H, {h}\n    .equ    GB_CW, {cw}\n    .equ    GB_CH, {ch}\n    .equ    GB_ASPECT, {ASPECT}')
     print(f'    .equ    GB_CURVE_ADDR, {CURVE_ADDR:#x}')

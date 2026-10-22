@@ -36,7 +36,7 @@ function randomConfig(i) {
     return { tag: randomTag(taken), match, paint, lcd };
   });
   const rgb = Array.from({ length: 4 }, colour);
-  const gb = { on: rand() < 0.5, curve: rand() < 0.5, contrast: int(101) - 50, brightness: int(101) - 50, palette: rgb.map(rgbToYuv), rgb };
+  const gb = { on: rand() < 0.5, curve: rand() < 0.5, contrast: int(101) - 50, brightness: int(101) - 50, sharp: int(101), palette: rgb.map(rgbToYuv), rgb };
   return { contrast: int(101) - 50, brightness: int(101) - 50, presets, rnd: rand() < 0.5, sounds: rand() < 0.5, tag: rand() < 0.5, normal: rand() < 0.5, gb, volume: 1 + int(100) };
 }
 
@@ -63,7 +63,7 @@ for (let i = 0; i < count; i++) {
   const hex = (c) => c.map((x) => x.toString(16).padStart(2, "0")).join("");
   writeFileSync(
     `${dir}/env`,
-    `TAG=${cfg.tag ? 1 : 0} GB_ON=${cfg.gb.on ? 1 : 0} NORMAL_ON=${cfg.normal ? 1 : 0} GB_CURVE=${cfg.gb.curve ? 1 : 0} CONTRAST=${100 + (cfg.contrast ?? 0)} BRIGHT=${cfg.brightness ?? 0} GB_CONTRAST=${cfg.gb.contrast} GB_BRIGHTNESS=${cfg.gb.brightness} GB_PALETTE=${(cfg.gb.rgb ?? m.defaults.gb.palette.map(yuvToRgb)).map(hex).join(",")} VOLUME=${cfg.volume}`,
+    `TAG=${cfg.tag ? 1 : 0} GB_ON=${cfg.gb.on ? 1 : 0} NORMAL_ON=${cfg.normal ? 1 : 0} GB_CURVE=${cfg.gb.curve ? 1 : 0} CONTRAST=${100 + (cfg.contrast ?? 0)} BRIGHT=${cfg.brightness ?? 0} GB_CONTRAST=${cfg.gb.contrast} GB_BRIGHTNESS=${cfg.gb.brightness} GB_SHARP=${cfg.gb.sharp ?? 50} GB_PALETTE=${(cfg.gb.rgb ?? m.defaults.gb.palette.map(yuvToRgb)).map(hex).join(",")} VOLUME=${cfg.volume}`,
   );
   const fw = buildFirmware(template, m, cfg, s);
   writeFileSync(`${dir}/editor.bin`, fw);

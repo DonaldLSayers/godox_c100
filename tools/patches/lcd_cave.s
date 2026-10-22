@@ -47,6 +47,7 @@ base:
     .set    SEG_WRITE,   base + 0x49e34   @ seg_write(addr, nibble), updates SHADOW
     .set    MSG_POST,    base + 0x42c     @ post to a message queue (5 args, 1 on the stack)
     .set    RESUME_ASPECT, base + 0x213e4 @ FUN_000213e0 after its first instruction
+    .set    RESUME_BRACKET, base + 0x4a81c @ the bracket routine FUN_0004a7f4 after its `sub r1, r1, #1`
     .equ    CFG,         0x132160         @ the camera's settings (see above)
     .equ    CFG_MODE,    0xf1             @ our mode byte in them
     .equ    CFG_DIRTY,   0xa0             @ 1 = save at power-off (FUN_00024094)
@@ -186,6 +187,24 @@ aspect_hook:
 NIDX:                                   @ the normal mode's slot for each aspect 0-4: the photo and video size tables'
     .byte   6, 7, 8, 10, 13             @  entries there are the factory handlers (build.sh); not slots we patch
     .align  2
+
+@ The aspect bracket on the display, FUN_0004a7f4(state, aspect) (bracket_jump.s): it lights one for aspects 1-4
+@ and nothing else, so in the normal mode (slots NIDX) it got nothing. Map a slot back to its aspect (an
+@ unknown one to 5: nothing, as stock) and go on with the instruction we replaced, sub r1, r1, #1.
+bracket_hook:
+    cmp     r1, #5
+    blo     2f
+    adr     r0, NIDX
+    mov     r12, #0
+1:  ldrb    r2, [r0, r12]
+    cmp     r2, r1
+    addne   r12, r12, #1
+    cmpne   r12, #5
+    bne     1b
+    mov     r1, r12
+    mov     r2, #0                        @ as the stock routine had it
+2:  sub     r1, r1, #1
+    b       RESUME_BRACKET
     .ltorg
 
 LCD_TAGS:

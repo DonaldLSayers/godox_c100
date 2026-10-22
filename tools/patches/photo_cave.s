@@ -412,7 +412,7 @@ npal_pick3:
 @ a GB pixel is a 4x4 block of it, 128x112 of them.
 @ Per GB pixel: mean luma Y of its block -> tone curve (identity or S-curve) -> exposure at a fixed gain of 4.0 and
 @ the MAC-GBD code, p = trunc((4Y - 128) / 8) -> horizontal edge enhancement at
-@ 50 %, trunc((4p - left - right) / 2) -> compared (+ 128) with 3 thresholds
+@ 50 % (GB_SHARP = 1), trunc((128p + GB_SHARP * (2p - left - right)) / 128) -> compared (+ 128) with 3 thresholds
 @ picked by (row & 3) * 4 + (col & 3) -> shade 0..3 -> painted as that shade's
 @ colour (gb.py PALETTE). The maths of PIXELBOY's gbcam.c, HARDWARE style. No lookup table,
 @ no presets: tools/sim_gb.py is the exact replica, tools/emu_gb.py checks this
@@ -452,9 +452,12 @@ gbcol:
     sub     r3, r2, r0                    @ r3 = p - right
     add     r3, r3, r2
     sub     r3, r3, r1                    @ 2p - left - right
-    add     r3, r3, r2, lsl #1            @ + 2p
-    add     r3, r3, r3, lsr #31           @ halved toward zero, as the C division
-    mov     r3, r3, asr #1
+sharp_imm:                              @ the editor patches the low byte (editor_data.py, firmware.js)
+    mov     r0, #GB_SHARP                 @ the sharpening, in 1/64: 64 = 50 %
+    mul     r0, r3, r0
+    add     r3, r0, r2, lsl #7            @ + 128p, all over 128 = p + (2p - left - right) * GB_SHARP / 128
+    add     r3, r3, r3, lsr #25           @ divided by 128 toward zero, as the C division
+    mov     r3, r3, asr #7
     add     r0, r3, #128                  @ r0 = the pixel's code after edge enhancement
     and     r4, r12, #3
     and     r5, r9, #3

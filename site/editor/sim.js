@@ -108,7 +108,7 @@ export function render(m, frame, preset, lut) {
 // block the mean luma, tone curve (identity or the S-curve), exposure, the 50 % horizontal edge, three thresholds
 // picked by the block's place in the 4x4 pattern; painted with one of the
 // four colours ([r, g, b], dark to light). frame: ImageData at the mode's 512x448 (4x4 blocks: 128x112).
-export function renderGb(m, frame, colours, curve = m.gb.identity) {
+export function renderGb(m, frame, colours, curve = m.gb.identity, sharp = 64) {
   const { width: w, height: h, data } = frame;
   const gw = w >> 2;
   const gh = h >> 2;
@@ -130,7 +130,7 @@ export function renderGb(m, frame, colours, curve = m.gb.identity) {
       const at = by * gw + bx;
       const l = p[by * gw + Math.max(bx - 1, 0)];
       const r = p[by * gw + Math.min(bx + 1, gw - 1)];
-      const code = 128 + Math.trunc((4 * p[at] - l - r) / 2);
+      const code = 128 + Math.trunc((128 * p[at] + sharp * (2 * p[at] - l - r)) / 128);
       const pos = (by & 3) * 4 + (bx & 3);
       const shade = m.gb.thresholds.reduce((n, t) => n + (code >= t[pos]), 0);
       const [cr, cg, cb] = colours[shade];

@@ -113,7 +113,9 @@ GB_CURVE=${GB_CURVE:-0}
 # GB_CONTRAST and GB_BRIGHTNESS (-50..50, default 0) fold into the same table (gb.py).
 GB_CONTRAST=${GB_CONTRAST:-0}
 GB_BRIGHTNESS=${GB_BRIGHTNESS:-0}
-export GB_CURVE GB_CONTRAST GB_BRIGHTNESS
+# GB_SHARP: the Game Boy mode's horizontal edge sharpening, 0-100 (50 = the sensor's 50 %).
+GB_SHARP=${GB_SHARP:-50}
+export GB_CURVE GB_CONTRAST GB_BRIGHTNESS GB_SHARP
 python3 -I tools/palettes.py asm > build/obj/palettes.inc
 python3 -I tools/gb.py asm > build/obj/gb.inc      # the Game Boy mode's tables (tools/gb.py)
 nmsym() {  # nmsym OBJ LABEL: address of a label in an assembled cave
@@ -158,7 +160,8 @@ if [ "$LCDTAG" = "1" ]; then
     LJUMP=$(asm lcd_jump 0x21218 0x2121c --defsym=HOOK=$(nmsym lcd_cave lcd_hook))
     KJUMP=$(asm key_jump 0x1ddf8 0x1ddfc --defsym=HOOK=$(nmsym lcd_cave center_hook))
     AJUMP=$(asm aspect_jump 0x213e0 0x213e4 --defsym=HOOK=$(nmsym lcd_cave aspect_hook))
-    LCD_PATCHES="$LCAVE $LJUMP $KJUMP $AJUMP"
+    BJUMP=$(asm bracket_jump 0x4a818 0x4a81c --defsym=HOOK=$(nmsym lcd_cave bracket_hook))
+    LCD_PATCHES="$LCAVE $LJUMP $KJUMP $AJUMP $BJUMP"
 fi
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its

@@ -24,7 +24,7 @@ def shades(luma):
     avg = np.array(gb.curve_table())[avg]          # the tone curve (GB_CURVE=1: BW's S-curve)
     p = np.trunc(((avg * gb.GAIN_Q8 >> 8) - 128) / 8).astype(int)
     pad = np.pad(p, ((0, 0), (1, 1)), mode='edge')
-    code = 128 + np.trunc((4 * p - pad[:, :-2] - pad[:, 2:]) / 2).astype(int)
+    code = 128 + np.trunc((128 * p + gb.SHARP * (2 * p - pad[:, :-2] - pad[:, 2:])) / 128).astype(int)
     pos = (np.arange(gh)[:, None] & 3) * 4 + (np.arange(gw)[None, :] & 3)
     return sum((code >= np.array(t)[pos]).astype(int) for t in gb.thresholds())
 

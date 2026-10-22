@@ -120,6 +120,9 @@ export const lumaFix = (contrast = 0, brightness = 0) => ({
   brightFix: brightness + 128,
 });
 
+// The Game Boy mode's edge sharpening, 0-100 (50 = the sensor's 50 %), as the weight in 1/64 (gb.py SHARP).
+export const sharpFix = (pct = 50) => Math.floor((pct * 64 + 25) / 50);
+
 export function configErrors(m, cfg) {
   const errors = [];
   const n = cfg.presets.length;
@@ -277,6 +280,7 @@ export function buildFirmware(template, m, cfg, sounds) {
     dv.setUint32(at(g.y) + 4 * i, y * 0x01010101, true);
     dv.setUint32(at(g.c) + 4 * i, (u | (v << 8) | (u << 16) | (v << 24)) >>> 0, true);
   });
+  fw[at(m.sharpAt)] = sharpFix(cfg.gb?.sharp); // the edge sharpening
   fw.set(toneCurve(g, cfg.gb?.curve, cfg.gb?.contrast, cfg.gb?.brightness), at(g.curveAddr)); // the tone curve table
   // the center button's cycle: ... rnd, GB, normal, then the first preset; what follows the last
   // preset and what follows GB are two immediates

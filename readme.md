@@ -33,7 +33,7 @@ I'm not that much of a hardware tinkerer, but AI is getting so good, that it had
 
 ### Step 1
 
-Copy the file [`build_backups/v033_normal_stock_sizes.bin`](./build_backups/v033_normal_stock_sizes.bin) (or any other older or newer version; or make your own on the site: palettes, the Game Boy Camera mode and its colours, the corner tag, sounds and their volume) to the root of the SD card of your Godox, and rename it to `GP_CARDVR_UPGRADE.BIN`.
+Copy the file [`build_backups/v034_sharpen_brackets.bin`](./build_backups/v034_sharpen_brackets.bin) (or any other older or newer version; or make your own on the site: palettes, the Game Boy Camera mode and its colours, the corner tag, sounds and their volume) to the root of the SD card of your Godox, and rename it to `GP_CARDVR_UPGRADE.BIN`.
 
 _Either you connect via USB-C while the Godox is on, copy and rename the file, eject, and turn of the Godox; or you insert the SD card using a connector to your computer and then place it back in the turned-off Godox._
 
