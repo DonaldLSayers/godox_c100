@@ -1,7 +1,8 @@
 // The camera's effect in the browser (tools/sim_palette.py with the camera's
 // lookup table): per 2x2 block the average luma plus a 4x4 Bayer offset, the
 // block's Y, U, V looked up in a 33x33x33 table of nearest match colours,
-// painted with the paint colour at that index; then the tag, top right.
+// painted with the paint colour at that index; then the tag, top right (if
+// it's on). renderGb is the Game Boy Camera mode (tools/sim_gb.py).
 import { tagCells, tagColours, yuvToRgb } from "./firmware.js";
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -34,10 +35,12 @@ export function cameraSize(m, w, h) {
   return { crop: m.crops[name], size: m.sizes[name] };
 }
 
-export function cameraFrame(m, img) {
+// `gb`: the Game Boy mode's own size and crop (8:7), which it selects on the camera, instead of the
+// nearest aspect's.
+export function cameraFrame(m, img, gb = false) {
   const w = img.naturalWidth || img.width;
   const h = img.naturalHeight || img.height;
-  const { crop, size } = cameraSize(m, w, h);
+  const { crop, size } = gb ? { crop: m.gb.crop, size: m.gb.size } : cameraSize(m, w, h);
   let sx = 0, sy = 0, sw = w, sh = h;
   if (w * crop[1] > h * crop[0]) (sw = Math.round((h * crop[0]) / crop[1])), (sx = (w - sw) / 2);
   else (sh = Math.round((w * crop[1]) / crop[0])), (sy = (h - sh) / 2);
@@ -67,6 +70,7 @@ export function render(m, frame, preset, lut) {
         vs += 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
       }
       let y = Math.round(ys) >> 2;
+      y = (((y - 128) * (preset.contrastFix ?? 128)) >> 7) + (preset.brightFix ?? 128);   // the firmware's pre-map
       y = Math.max(0, Math.min(255, y + (BAYER[(by & 3) * 4 + (bx & 3)] - 8) * 4));
       const u = Math.max(0, Math.min(255, Math.round(us / 4)));
       const v = Math.max(0, Math.min(255, Math.round(vs / 4)));
@@ -96,6 +100,48 @@ export function render(m, frame, preset, lut) {
       out.data[i + 1] = g;
       out.data[i + 2] = b;
       out.data[i + 3] = 255;
+    }
+  return out;
+}
+
+// The Game Boy Camera mode (tools/sim_gb.py, gb_strip in photo_cave.s): per 4x4
+// block the mean luma, tone curve (identity or the S-curve), exposure, the 50 % horizontal edge, three thresholds
+// picked by the block's place in the 4x4 pattern; painted with one of the
+// four colours ([r, g, b], dark to light). frame: ImageData at the mode's 512x448 (4x4 blocks: 128x112).
+export function renderGb(m, frame, colours, curve = m.gb.identity, sharp = 64) {
+  const { width: w, height: h, data } = frame;
+  const gw = w >> 2;
+  const gh = h >> 2;
+  const p = new Int32Array(gw * gh);
+  for (let by = 0; by < gh; by++)
+    for (let bx = 0; bx < gw; bx++) {
+      let sum = 0;
+      for (let dy = 0; dy < 4; dy++)
+        for (let dx = 0; dx < 4; dx++) {
+          const i = ((4 * by + dy) * w + 4 * bx + dx) * 4;
+          sum += Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+        }
+      const exposed = (curve[sum >> 4] * m.gb.gain) >> 8; // the tone curve, then the exposure
+      p[by * gw + bx] = Math.trunc((exposed - 128) / 8);
+    }
+  const out = new ImageData(w, h);
+  for (let by = 0; by < gh; by++)
+    for (let bx = 0; bx < gw; bx++) {
+      const at = by * gw + bx;
+      const l = p[by * gw + Math.max(bx - 1, 0)];
+      const r = p[by * gw + Math.min(bx + 1, gw - 1)];
+      const code = 128 + Math.trunc((128 * p[at] + sharp * (2 * p[at] - l - r)) / 128);
+      const pos = (by & 3) * 4 + (bx & 3);
+      const shade = m.gb.thresholds.reduce((n, t) => n + (code >= t[pos]), 0);
+      const [cr, cg, cb] = colours[shade];
+      for (let dy = 0; dy < 4; dy++)
+        for (let dx = 0; dx < 4; dx++) {
+          const i = ((4 * by + dy) * w + 4 * bx + dx) * 4;
+          out.data[i] = cr;
+          out.data[i + 1] = cg;
+          out.data[i + 2] = cb;
+          out.data[i + 3] = 255;
+        }
     }
   return out;
 }

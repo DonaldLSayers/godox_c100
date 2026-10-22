@@ -7,13 +7,15 @@
 @   MATCH_PALETTES  per preset: count, count x (Y,U,V); lut_fill matches
 @                   against these
 @   PRESET_MATCH    per preset: index of its match palette (= the preset's)
+@   TAGS            per preset: the 3-letter tag (draw_tag)
+@   GB_DATA         the Game Boy mode's thresholds and shade colours (gb.py)
 @   DISPLAY_PTRS    per preset: address of its paint colours (count x (Y,U,V),
 @                   index for index with the match palette); CUR_PAL, so the
 @                   photo and video hooks paint with these
-@   TAGS            per preset: the 3-letter tag (draw_tag)
     .syntax unified
     .arm
     .include "palettes.inc"
+    .include "gb.inc"
 base:
     .org    PD_MATCH
 MATCH_PALETTES:
@@ -26,4 +28,5 @@ DISPLAY:
     DISPLAY_DATA
 DISPLAY_PTRS:
     DISPLAY_PTR_DATA
+    GB_DATA
 PRESET_DATA_END:

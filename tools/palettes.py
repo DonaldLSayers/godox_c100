@@ -43,6 +43,15 @@ SIZES = {
 }
 
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # build.sh runs python -I
+import gb
+# The Game Boy mode has its own size (gb.py SIZE: 8:7, 512x448) in a sixth aspect setting (gb.ASPECT = 5)
+# that the arrow keys don't reach: stepping into the mode sets it and the firmware rebuilds the capture
+# size (a full camera restart, a second or so, as with the arrow keys), stepping out restores the aspect.
+# The size can't just follow the mode byte: the firmware only builds it at startup and after an
+# aspect change.
+
+
 def camera_size(w, h):
     """(crop aspect, output size) of the aspect setting nearest w x h."""
     name = min(SIZES, key=lambda k: abs(SIZES[k][1][0] / SIZES[k][1][1] - w / h))
@@ -186,6 +195,7 @@ EG_GREENS = ['2B5322', '4F7945', '77A36E']  # OKLCH L 0.40/0.53/0.67, C 0.09, hu
 EG_UNUSED = {'FF0044', 'FEE761', '2CE8F5'}
 BW_LEVELS = [0, 64, 128, 191, 255]
 BW_MATCH = [0, 80, 128, 176, 255]
+assert gb.S_CURVE == list(zip(BW_MATCH, BW_LEVELS))   # the Game Boy mode's S-curve is BW's
 MATCH = {
     'E': [hex_to_yuv(h) for h in BASE['endesga32'] if h not in EG_UNUSED]
          + [hex_to_yuv(h) for h in EG_GREENS],
@@ -246,9 +256,9 @@ FONT = {  # rows top to bottom, 3 pixels each (W: 5)
     '4': ['101', '101', '111', '001', '001'], '5': ['111', '100', '111', '001', '111'],
     '7': ['111', '001', '010', '010', '010'], '8': ['111', '101', '111', '101', '111'],
     '9': ['111', '101', '111', '001', '111'], '-': ['000', '000', '111', '000', '000'],
-    # lowercase r, n, d shaped as the display's 7-segment rnd (eg, ceg, bcdeg),
-    # for the site's rnd tag; preset tags are uppercase
-    'r': ['000', '000', '111', '100', '100'], 'n': ['000', '000', '111', '101', '101'],
+    # lowercase r, n, d, o shaped as the display's 7-segment rnd (eg, ceg, bcdeg) and nor,
+    # for the site's rnd and nor tags; preset tags are uppercase
+    'r': ['000', '000', '111', '100', '100'], 'n': ['000', '000', '111', '101', '101'], 'o': ['000', '000', '111', '101', '111'],
     'd': ['001', '001', '111', '101', '111'],
 }
 TAG_LETTERS = 3
@@ -295,9 +305,10 @@ def tag_colours(cols):
 # mirrored cells: full left side + bottom + lower right, then lower left +
 # bottom + full right side.
 SEG7 = {'E': 'adefg', 'F': 'aefg', 'P': 'abefg', '6': 'acdefg', '8': 'abcdefg',
-        'W<': 'cdef', 'W>': 'bcde', 'r': 'eg', 'n': 'ceg', 'd': 'bcdeg'}
+        'W<': 'cdef', 'W>': 'bcde', 'r': 'eg', 'n': 'ceg', 'd': 'bcdeg',
+        'G': 'acdef', 'b': 'cdefg', ' ': '', 'o': 'cdeg'}
 LCD = {'EP6': ['E', 'P', '6'], '6FP': ['6', 'F', 'P'], 'BW': ['8', 'W<', 'W>'],
-       RND: ['r', 'n', 'd']}
+       RND: ['r', 'n', 'd'], 'GB': [' ', 'G', 'b'], 'NORMAL': ['n', 'o', 'r']}
 # Segment -> (HT1621 address, COM) for each SS cell, left to right, found by
 # running the firmware's SS digit routines (FUN_0004a374, FUN_0004a1f0,
 # FUN_0004a074) for 0..9 in tools/emu_seg.py. Each cell is wired differently.
@@ -384,9 +395,10 @@ PD['PMATCH'] = PD['MATCH'] + MAX_PRESETS * (1 + NCOL_BYTES)
 PD['TAGS'] = PD['PMATCH'] + MAX_PRESETS
 PD['DISPLAY'] = PD['TAGS'] + MAX_PRESETS * TAG_BYTES
 PD['DPTRS'] = (PD['DISPLAY'] + MAX_PRESETS * NCOL_BYTES + 3) // 4 * 4
-PD['END'] = PD['DPTRS'] + 4 * MAX_PRESETS
+PD['GB'] = PD['DPTRS'] + 4 * MAX_PRESETS         # the Game Boy mode's tables (gb.py GB_DATA)
+PD['END'] = PD['GB'] + gb.DATA_BYTES
 assert PD['END'] <= 0xbc400
-LCD_BYTES = (MAX_PRESETS + 1) * SS_COUNT       # LCD_TAGS in lcd_cave.s: presets, then rnd
+LCD_BYTES = (MAX_PRESETS + 3) * SS_COUNT       # LCD_TAGS in lcd_cave.s: presets, then rnd, padded, then GB, then normal
 
 
 def tag_bytes(tag, paint):
@@ -448,12 +460,16 @@ def main():
         print('    .endm')
         print(f'    .equ    SS_FIRST, {SS_FIRST:#x}')
         print(f'    .equ    SS_COUNT, {SS_COUNT}')
-        print(f'    .macro  LCD_TAG_DATA                  @ per mode (presets, then rnd): HT1621 nibbles'
+        print(f'    .macro  LCD_TAG_DATA                  @ per mode (presets, rnd, padding, GB, normal): HT1621 nibbles'
               f' for addresses {SS_FIRST:#x}..{SS_FIRST + SS_COUNT - 1:#x}')
         for p in pre + [{'tag': RND, 'lcd': lcd_segments(RND)}]:
             print('    .byte ' + ', '.join(map(str, lcd_nibbles(p['lcd']))) + f'   @ {p["tag"]} {"/".join(p["lcd"])}')
         print(f'    .space  {SS_COUNT * (MAX_PRESETS - n)}' if n < MAX_PRESETS else '')
+        print('    .byte ' + ', '.join(map(str, lcd_nibbles(lcd_segments('GB')))) + '   @ GB (mode MAX_PRESETS + 1)')
+        print('    .byte ' + ', '.join(map(str, lcd_nibbles(lcd_segments('NORMAL')))) + '   @ normal (mode MAX_PRESETS + 2)')
         print('    .endm')
+        print(f'    .equ    GB_MODE, {MAX_PRESETS + 1}            @ the mode byte of the Game Boy Camera mode')
+        print(f'    .equ    NORMAL_MODE, {MAX_PRESETS + 2}        @ the mode byte of the normal mode: the camera as it is, no effect')
         return
     for tag, cols, disp in presets():
         print(f'{tag} ({len(cols)})')

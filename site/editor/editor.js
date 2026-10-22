@@ -1,9 +1,10 @@
 // The firmware editor: 8 preset slots (palette, S-curve, film, tag, display code), each
-// on or off, rnd and sounds; previewed on four photos, kept in localStorage,
+// on or off, rnd, the Game Boy Camera mode and its colours, the corner tag and sounds
+// with their volume; previewed on nine photos, kept in localStorage,
 // and built into a firmware in the browser (firmware.js) from the template.
-import { buildFirmware, configErrors, encodeWav, hexToYuv, sha256, slotSamples, tagCells, tagColours, tagWidth, yuvToHex, yuvToRgb } from "./firmware.js";
+import { buildFirmware, configErrors, encodeWav, hexToYuv, lumaFix, sha256, sharpFix, slotSamples, tagCells, tagColours, tagWidth, toneCurve, yuvToHex, yuvToRgb } from "./firmware.js";
 import { paintColours } from "./films.js";
-import { buildLut, cameraFrame, render } from "./sim.js";
+import { buildLut, cameraFrame, render, renderGb } from "./sim.js";
 
 const STORE = "c100-editor-v2";
 // a 3 x 3 grid: streets, natural, close-ups
@@ -44,6 +45,7 @@ let m; // template.json
 let library; // library.json: { palettes, films }
 let state;
 const frames = noPhotos(); // camera-size ImageData per photo
+const gbFrames = noPhotos(); // the same at the Game Boy mode's own 8:7 size
 const soundCache = {}; // "stock/shutter" -> Uint8Array
 const paints = new Map(); // film + colours -> paint colours
 
@@ -54,6 +56,7 @@ function slotFrom(item, on) {
     id: uid(),
     on,
     name: item.name,
+    from: item.name,
     tag: item.tag,
     lcd: item.lcd ?? autoLcd(item.tag),
     lcdAuto: !item.lcd || item.lcd.join() === autoLcd(item.tag).join(),
@@ -72,7 +75,13 @@ function defaultState() {
     slots,
     selected: slots[0].id,
     rnd: true,
-    sounds: { on: false, shutter: { src: "stock" }, poweron: { src: "stock" } },
+    contrast: 0,
+    brightness: 0,
+    tag: false,
+    normal: true,
+    gb: { on: true, curve: false, contrast: 0, brightness: 0, sharp: 50, sel: 0, from: "Soft grey-green (default)", colours: m.defaults.gb.palette.map((c) => [...c]) },
+    gbPreview: false,
+    sounds: { on: false, volume: 10, shutter: { src: "stock" }, poweron: { src: "stock" } },
     photos: noPhotos(),
   };
 }
@@ -88,6 +97,22 @@ function load() {
       }
       // the preview photos changed: own photos don't carry over
       if (saved.photos?.length !== PHOTOS.length) saved.photos = noPhotos();
+      // saved before the Game Boy mode, the corner tag option and the volume
+      const fresh = defaultState();
+      saved.tag ??= fresh.tag;
+      saved.normal ??= fresh.normal;
+      saved.contrast ??= 0;
+      saved.brightness ??= 0;
+      saved.gb ??= fresh.gb;
+      // saved with hex colours, before the palette presets and the curve
+      if (typeof saved.gb.colours[0] === "string") Object.assign(saved.gb, { colours: saved.gb.colours.map(hexToYuv), from: null });
+      saved.gb.curve ??= false;
+      saved.gb.contrast ??= 0;
+      saved.gb.brightness ??= 0;
+      saved.gb.sharp ??= 50;
+      saved.gb.sel ??= 0;
+      saved.gbPreview = false;
+      saved.sounds.volume ??= fresh.sounds.volume;
       return saved;
     }
   } catch {}
@@ -110,6 +135,8 @@ function save() {
 }
 
 const current = () => state.slots.find((p) => p.id === state.selected) ?? state.slots[0];
+// what the right-hand panel edits: the selected palette, or the Game Boy mode (4 colours, a curve)
+const target = () => (state.gbPreview ? state.gb : current());
 const enabled = () => state.slots.filter((p) => p.on);
 const film = (p) => library.films.find((f) => f.id === p.film) ?? null;
 
@@ -127,6 +154,12 @@ async function config() {
     ),
     rnd: state.rnd && on.length > 1,
     sounds: state.sounds.on,
+    volume: state.sounds.volume,
+    tag: state.tag,
+    contrast: state.contrast,
+    brightness: state.brightness,
+    normal: state.normal,
+    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, sharp: state.gb.sharp, palette: state.gb.colours },
   };
 }
 
@@ -198,7 +231,7 @@ function renderList() {
   $("#ed-list").innerHTML = state.slots
     .map(
       (p) => `
-      <li class="${p.id === state.selected ? "sel" : ""} ${p.on ? "" : "off"} ${drag?.id === p.id && drag.moved ? "lifted" : ""}"
+      <li class="${p.id === state.selected && !state.gbPreview ? "sel" : ""} ${p.on ? "" : "off"} ${drag?.id === p.id && drag.moved ? "lifted" : ""}"
           data-id="${p.id}" tabindex="0" aria-current="${p.id === state.selected}">
         <input type="checkbox" class="ed-on" ${p.on ? "checked" : ""} aria-label="Put ${esc(p.tag)} on the camera" />
         <span class="ed-pick">
@@ -210,6 +243,7 @@ function renderList() {
       </li>`,
     )
     .join("");
+  renderGbList();
   const rnd = $("#ed-rnd");
   rnd.checked = state.rnd && on > 1;
   rnd.disabled = on < 2;
@@ -217,7 +251,8 @@ function renderList() {
 }
 
 function select(id) {
-  if (state.selected === id) return;
+  if (state.selected === id && !state.gbPreview) return;
+  state.gbPreview = false;
   state.selected = id;
   changed({ palette: true });
   track("select_palette", { tag: current().tag, name: current().name });
@@ -307,6 +342,7 @@ function listKey(e) {
 // lightest, a one-cell outline in their darkest; `field` pads it on the left
 // to the camera's 3-letter field, so a column of tags lines up on the right.
 function drawTag(canvas, tag, paint, scale, field) {
+  if (!canvas.getContext) return; // the tag option is off: a plain text badge
   const drawable = tag && [...tag].every((ch) => m.font[ch]) && tagWidth(m, tag) <= m.tag.cols;
   const cells = drawable ? tagCells(m, tag, field ? m.tag.cols : undefined) : [];
   canvas.width = cells[0]?.length ?? (field ? m.tag.cols : 1);
@@ -329,6 +365,7 @@ function drawTag(canvas, tag, paint, scale, field) {
 // colours are known, which can take a moment (a film to download), and an
 // unsized canvas is 300x150 until then.
 function tagCanvas(cls, tag, scale, field) {
+  if (!state.tag) return `<span class="${cls} ed-tagt" role="img" aria-label="${esc(tag)}">${esc(tag)}</span>`;
   const drawable = tag && [...tag].every((ch) => m.font[ch]) && tagWidth(m, tag) <= m.tag.cols;
   const w = field ? m.tag.cols : drawable ? tagWidth(m, tag) : 1;
   const h = m.tag.rows;
@@ -344,11 +381,16 @@ async function renderTagShown() {
 }
 
 async function renderHead() {
+  if (state.gbPreview) {
+    $("#ed-work-head").innerHTML = `<span class="ed-tagt">GB</span>
+      <span><strong>Preview and edit this mode</strong> &middot; Game Boy Camera${headCredit(library.gbPalettes, state.gb.from)}</span>`;
+    return;
+  }
   const p = current();
   const f = film(p);
   $("#ed-work-head").innerHTML = `
     ${tagCanvas("ed-tagc", p.tag, 3, false)}
-    <span><strong>Preview and edit this palette</strong> &middot; ${esc(p.name)}${p.curve ? " &middot; S-curve" : ""}${f ? ` &middot; ${esc(f.name)}` : ""}</span>`;
+    <span><strong>Preview and edit this palette</strong> &middot; ${esc(p.name)}${p.curve ? " &middot; S-curve" : ""}${f ? ` &middot; ${esc(f.name)}` : ""}${headCredit(library.palettes, p.from)}</span>`;
   const paint = await paintOf(p);
   const canvas = $("#ed-work-head .ed-tagc");
   if (canvas && current() === p) drawTag(canvas, p.tag, paint, 3, false);
@@ -363,20 +405,74 @@ function tagProblem(p) {
   return "";
 }
 
+// "Palette: Name by Author · Lospec" for a preset in `list`, or "Custom colours." once its colours were edited.
+function creditLine(list, from) {
+  const item = list?.find((l) => l.name === from);
+  if (!item) return "Custom colours.";
+  if (!item.author && !item.url) return ""; // the project's own presets
+  const by = item.author ? ` by ${esc(item.author)}` : "";
+  const link = item.url ? ` &middot; <a href="${item.url}" target="_blank" rel="noopener">Lospec</a>` : "";
+  return `Palette: <strong>${esc(item.name)}</strong>${by}${link}`;
+}
+const gbCredit = () => creditLine(library.gbPalettes, state.gb.from);
+const paletteCredit = (p) => creditLine(library.palettes, p.from);
+
+// " · by Author · Lospec" for the work header, for a preset in `list` (nothing for the project's own or edited ones).
+function headCredit(list, from) {
+  const item = list?.find((l) => l.name === from);
+  if (!item || (!item.author && !item.url)) return "";
+  const by = item.author ? ` &middot; by ${esc(item.author)}` : "";
+  const link = item.url ? ` &middot; <a href="${item.url}" target="_blank" rel="noopener">Lospec</a>` : "";
+  return by + link;
+}
+
 function renderPalette() {
-  const p = current();
+  const gbMode = state.gbPreview;
+  const p = gbMode ? null : current();
   $("#ed-palette").innerHTML = `
+    ${gbMode ? `<p class="note">128&times;112 pixels (photos and video are 512&times;448, 8:7), four shades, the Game Boy Camera's own
+      dithering, sharpening and exposure. It comes after rnd in the center button's cycle; the display shows
+      <code>Gb</code>. Four colours, dark to light. The look follows <a href="https://github.com/untoxa/gb-photo" target="_blank" rel="noopener">gb-photo</a>
+      by Toxa and the Pan Docs reference, through the maths in <a href="https://donaldsayers.com" target="_blank" rel="noopener">Donald Sayers'</a>
+      <a href="https://github.com/DonaldLSayers/PixelBoy-ESP32-P4X-EYE" target="_blank" rel="noopener">PixelBoy</a>.</p>` : ""}
     <div class="ed-row">
       <label for="ed-from">Preset</label>
       <select id="ed-from">
         <option value="">Start from&hellip;</option>
-        ${library.palettes.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join("")}
+        ${(gbMode ? library.gbPalettes ?? [] : library.palettes).map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join("")}
       </select>
     </div>
+    <div class="ed-row ed-credit" id="ed-credit">${gbMode ? gbCredit() : paletteCredit(p)}</div>
     <div class="ed-row">
       <span class="label">Curve</span>
-      <label class="ed-check"><input type="checkbox" id="ed-curve" ${p.curve ? "checked" : ""} /> S-curve: more contrast (as BW)</label>
+      <label class="ed-check"><input type="checkbox" id="ed-curve" ${(gbMode ? state.gb.curve : p.curve) ? "checked" : ""} /> S-curve: more contrast (as BW)</label>
     </div>
+    ${gbMode ? `<div class="ed-row">
+      <label for="ed-contrast">Contrast</label>
+      <input type="range" id="ed-contrast" min="-50" max="50" step="1" value="${state.gb.contrast}" />
+      <output id="ed-contrast-out">${state.gb.contrast}</output>
+    </div>
+    <div class="ed-row">
+      <label for="ed-brightness">Brightness</label>
+      <input type="range" id="ed-brightness" min="-50" max="50" step="1" value="${state.gb.brightness}" />
+      <output id="ed-brightness-out">${state.gb.brightness}</output>
+    </div>
+    <div class="ed-row">
+      <label for="ed-sharp">Sharpening</label>
+      <input type="range" id="ed-sharp" min="0" max="100" step="1" value="${state.gb.sharp}" />
+      <output id="ed-sharp-out">${state.gb.sharp}</output>
+    </div>` : ""}
+    ${gbMode ? "" : `<div class="ed-row">
+      <label for="ed-contrast">Contrast</label>
+      <input type="range" id="ed-contrast" min="-50" max="50" step="1" value="${state.contrast}" />
+      <output id="ed-contrast-out">${state.contrast}</output>
+    </div>
+    <div class="ed-row">
+      <label for="ed-brightness">Brightness</label>
+      <input type="range" id="ed-brightness" min="-50" max="50" step="1" value="${state.brightness}" />
+      <output id="ed-brightness-out">${state.brightness}</output>
+    </div>
+    <p class="note">Contrast and brightness are the same for every palette.</p>
     <div class="ed-row">
       <label for="ed-film">Film</label>
       <select id="ed-film">
@@ -394,7 +490,7 @@ function renderPalette() {
       <span class="label">Display</span>
       <span class="ed-lcd" id="ed-lcd">${p.lcd.map((s, i) => segSvg(s, i)).join("")}</span>
       <label class="ed-check"><input type="checkbox" id="ed-lcd-auto" ${p.lcdAuto ? "checked" : ""} /> follow the tag</label>
-    </div>
+    </div>`}
     <div class="ed-row ed-colours-head">
       <span class="label">Colours</span>
       <span class="ed-ncol" id="ed-ncol"></span>
@@ -418,14 +514,15 @@ function renderPalette() {
 }
 
 function renderSwatches() {
-  const p = current();
-  $("#ed-ncol").textContent = `${p.colours.length} of ${m.maxColours}`;
+  const p = target();
+  $("#ed-ncol").textContent = state.gbPreview ? "4 shades" : `${p.colours.length} of ${m.maxColours}`;
   $("#ed-swatches").innerHTML = p.colours
     .map(
       (c, i) => `<button type="button" class="sw${i === p.sel ? " sel" : ""}" data-i="${i}"
         style="--c:${yuvToHex(c)}" aria-label="Colour ${i + 1}" aria-pressed="${i === p.sel}"></button>`,
     )
     .join("");
+  $("#ed-dupcol").hidden = $("#ed-delcol").hidden = state.gbPreview; // the Game Boy mode has exactly 4 colours
   $("#ed-dupcol").disabled = p.colours.length >= m.maxColours;
   $("#ed-dupcol").title = p.colours.length >= m.maxColours ? `${m.maxColours} colours is the most` : "";
   $("#ed-delcol").disabled = p.colours.length < 2;
@@ -482,7 +579,7 @@ function placeNodes(hex) {
 }
 
 function pickerFromColour() {
-  const p = current();
+  const p = target();
   const hex = yuvToHex(p.colours[p.sel]);
   hsv = rgbToHsv(yuvToRgb(p.colours[p.sel]));
   drawSv();
@@ -491,10 +588,18 @@ function pickerFromColour() {
 }
 
 function setColour(yuv) {
-  const p = current();
+  const p = target();
   p.colours[p.sel] = yuv;
   const sw = $(`#ed-swatches .sw[data-i="${p.sel}"]`);
   if (sw) sw.style.setProperty("--c", yuvToHex(yuv));
+  if (state.gbPreview) {
+    p.from = null;
+    $("#ed-credit").innerHTML = gbCredit();
+    renderGbList();
+    return changed({ list: false, preview: true });
+  }
+  p.from = null;
+  $("#ed-credit").innerHTML = paletteCredit(p);
   renderTagShown();
   changed({ list: false, preview: true });
   renderStrips();
@@ -533,6 +638,17 @@ function pickerPointer(e) {
 }
 
 function paletteInput(e) {
+  if (state.gbPreview && e.target.id === "ed-sharp") {
+    state.gb.sharp = +e.target.value;
+    $("#ed-sharp-out").textContent = String(state.gb.sharp);
+    return changed({ list: false });
+  }
+  if (e.target.id === "ed-contrast" || e.target.id === "ed-brightness") {
+    const key = e.target.id.slice(3);
+    (state.gbPreview ? state.gb : state)[key] = +e.target.value;
+    $(`#${e.target.id}-out`).textContent = e.target.value;
+    return changed({ list: false });
+  }
   const p = current();
   if (e.target.id === "ed-tag") {
     const caret = e.target.selectionStart;
@@ -560,10 +676,21 @@ function paletteInput(e) {
 
 function paletteChange(e) {
   const p = current();
+  if (state.gbPreview && e.target.id === "ed-from" && e.target.value !== "") {
+    const item = library.gbPalettes[+e.target.value];
+    Object.assign(state.gb, { colours: item.colours.map((h) => hexToYuv("#" + h)), sel: 0, from: item.name });
+    track("choose_gb_palette", { palette: item.name });
+    return changed({ palette: true });
+  }
+  if (state.gbPreview && e.target.id === "ed-curve") {
+    state.gb.curve = e.target.checked;
+    track("toggle_gb_curve", { on: state.gb.curve });
+    return changed({ list: false });
+  }
   if (e.target.id === "ed-from" && e.target.value !== "") {
     const item = library.palettes[+e.target.value];
     const fresh = slotFrom(item, p.on);
-    Object.assign(p, { name: item.name, colours: fresh.colours, curve: fresh.curve, film: item.film, sel: 0 });
+    Object.assign(p, { name: item.name, from: item.name, colours: fresh.colours, curve: fresh.curve, film: item.film, sel: 0 });
     if (!enabled().some((q) => q !== p && q.tag === item.tag)) Object.assign(p, { tag: item.tag, lcd: fresh.lcd, lcdAuto: fresh.lcdAuto });
     track("choose_preset", { preset: item.name });
     return changed({ palette: true });
@@ -589,7 +716,8 @@ function paletteChange(e) {
   // typing is tracked once it's done (the input loses focus)
   if (e.target.id === "ed-tag") track("change_tag", { tag: p.tag, problem: tagProblem(p) || null });
   if (e.target.id === "ed-hex") {
-    track("pick_colour", { via: "hex", hex: yuvToHex(p.colours[p.sel]).toUpperCase() });
+    const t = target();
+    track("pick_colour", { via: "hex", hex: yuvToHex(t.colours[t.sel]).toUpperCase() });
     pickerFromColour();
   }
 }
@@ -609,8 +737,9 @@ function paletteClick(e) {
   }
   const sw = e.target.closest(".sw[data-i]");
   if (sw) {
-    p.sel = +sw.dataset.i;
-    track("select_colour", { colour: p.sel + 1 });
+    const t = target();
+    t.sel = +sw.dataset.i;
+    track("select_colour", { colour: t.sel + 1 });
     renderSwatches();
     pickerFromColour();
     return save();
@@ -648,14 +777,19 @@ async function renderPreview() {
   const paint = await paintOf(p);
   if (current() !== p) return;
   const drawable = [...p.tag].every((ch) => m.font[ch]) && tagWidth(m, p.tag) <= m.tag.cols;
-  const preset = { tag: drawable ? p.tag : "", match: p.colours, paint };
+  const preset = { tag: state.tag && drawable ? p.tag : "", match: p.colours, paint, ...lumaFix(state.contrast, state.brightness) };
   const lut = buildLut(preset.match, m.wy);
+  const gb = state.gb.colours.map(yuvToRgb);
+  const gbCurve = toneCurve(m.gb, state.gb.curve, state.gb.contrast, state.gb.brightness);
   document.querySelectorAll(".ed-photo canvas").forEach((canvas, i) => {
     const frame = frames[i];
     if (!frame) return;
     canvas.width = frame.width;
     canvas.height = frame.height;
-    canvas._out = render(m, frame, preset, lut);
+    canvas._orig = state.gbPreview ? gbFrames[i] : frame;
+    canvas.width = canvas._orig.width;
+    canvas.height = canvas._orig.height;
+    canvas._out = state.gbPreview ? renderGb(m, gbFrames[i], gb, gbCurve, sharpFix(state.gb.sharp)) : render(m, frame, preset, lut);
     if (!canvas.matches(":hover")) canvas.getContext("2d").putImageData(canvas._out, 0, 0);
   });
 }
@@ -665,6 +799,7 @@ function loadPhoto(i) {
     const img = new Image();
     img.onload = () => {
       frames[i] = cameraFrame(m, img);
+      gbFrames[i] = cameraFrame(m, img, true);
       resolve();
     };
     img.onerror = () => resolve();
@@ -748,8 +883,45 @@ function hoverPhoto(e) {
   const canvas = e.target.closest?.(".ed-photo canvas");
   if (!canvas) return;
   const i = +canvas.closest(".ed-photo").dataset.i;
-  const show = e.type === "mouseover" ? frames[i] : canvas._out;
+  const show = e.type === "mouseover" ? canvas._orig : canvas._out;
   if (show) canvas.getContext("2d").putImageData(show, 0, 0);
+}
+
+// ---- the Game Boy Camera mode, the corner tag ----
+
+// The Game Boy mode's row in the palette list (not draggable: it always comes last in the cycle).
+function renderGbList() {
+  const strip = state.gb.colours.map((c) => `<i style="background:${yuvToHex(c)}"></i>`).join("");
+  $("#ed-gb-list").innerHTML = `
+    <li class="${state.gbPreview ? "sel" : ""} ${state.gb.on ? "" : "off"}" tabindex="0" aria-current="${state.gbPreview}">
+      <input type="checkbox" class="ed-gb-on" ${state.gb.on ? "checked" : ""} aria-label="Put the Game Boy Camera mode on the camera" />
+      <span class="ed-pick">
+        <img class="cam-tag" src="img/tags/GB.png" width="39" height="21" alt="GB" />
+        <span class="ed-name">Game Boy Camera</span>
+        <span class="ed-strip">${strip}</span>
+      </span>
+    </li>`;
+}
+
+function selectGb() {
+  if (state.gbPreview) return;
+  state.gbPreview = true;
+  track("select_gb_mode");
+  changed({ palette: true });
+}
+
+function gbListEvents(e) {
+  if (e.target.matches(".ed-gb-on")) {
+    if (e.type !== "change") return;
+    state.gb.on = e.target.checked;
+    track("toggle_gb_mode", { on: state.gb.on });
+    return changed({ list: true, preview: false });
+  }
+  if (e.type === "click" && !e.target.closest("input") && e.target.closest("li")) selectGb();
+  else if (e.type === "keydown" && (e.key === "Enter" || e.key === " ") && !e.target.closest("input")) {
+    e.preventDefault();
+    selectGb();
+  }
 }
 
 // ---- sounds ----
@@ -800,6 +972,9 @@ function renderSounds() {
   const s = state.sounds;
   $("#ed-sound-on").checked = s.on;
   $("#ed-sounds").classList.toggle("off", !s.on);
+  $("#ed-volume").value = s.volume;
+  $("#ed-volume").disabled = !s.on;
+  $("#ed-volume-out").textContent = `${s.volume} %`;
   $("#ed-sound-slots").innerHTML = Object.entries(SOUND_LABELS)
     .map(([slot, label]) => {
       const cur = s[slot];
@@ -825,6 +1000,12 @@ async function soundEvents(e) {
     state.sounds.on = e.target.checked;
     track("toggle_sounds", { on: state.sounds.on });
     renderSounds();
+    return changed({ list: false, preview: false });
+  }
+  if (e.target.id === "ed-volume") {
+    state.sounds.volume = +e.target.value;
+    $("#ed-volume-out").textContent = `${state.sounds.volume} %`;
+    if (e.type === "change") track("set_volume", { volume: state.sounds.volume });
     return changed({ list: false, preview: false });
   }
   const row = e.target.closest(".ed-sound");
@@ -856,6 +1037,7 @@ async function soundEvents(e) {
     }
   } else if (e.type === "click" && e.target.closest(".ed-play")) {
     const audio = new Audio(URL.createObjectURL(new Blob([await soundBytes(slot)], { type: "audio/wav" })));
+    audio.volume = state.sounds.volume / 100;
     audio.play();
     track("play_sound", { slot, src: s.src });
     return;
@@ -872,11 +1054,14 @@ function renderDownload() {
     presets: on.map((p) => ({ tag: p.tag, match: p.colours, paint: p.colours, lcd: p.lcd })),
     rnd: state.rnd,
     sounds: state.sounds.on,
+    volume: state.sounds.volume,
+    gb: { on: state.gb.on, curve: state.gb.curve, contrast: state.gb.contrast, brightness: state.gb.brightness, sharp: state.gb.sharp, palette: state.gb.colours },
   });
   const rnd = state.rnd && on.length > 1;
   $("#ed-summary").textContent =
     `${on.length} palette${on.length === 1 ? "" : "s"} (${on.map((p) => p.tag || "?").join(", ")})` +
-    `${rnd ? " + rnd" : ""} · ${state.sounds.on ? "sounds on" : "silent"}`;
+    `${rnd ? " + rnd" : ""}${state.gb.on ? ` + Game Boy${state.gb.curve ? " (S-curve)" : ""}` : ""}${state.normal ? " + normal" : ""}${state.tag ? " · corner tag" : ""} · ` +
+    `${state.sounds.on ? `sounds on at ${state.sounds.volume} %` : "silent"}`;
   $("#ed-errors").innerHTML = errors.map((e) => `<li>${esc(e)}</li>`).join("");
   $("#ed-download").disabled = errors.length > 0;
 }
@@ -889,7 +1074,11 @@ function downloadProps() {
     tags: on.map((p) => p.tag),
     films: on.map((p) => film(p)?.name ?? "none"),
     rnd: state.rnd && on.length > 1,
+    gb: state.gb.on,
+    normal: state.normal,
+    corner_tag: state.tag,
     sounds: state.sounds.on,
+    volume: state.sounds.on ? state.sounds.volume : null,
     shutter: state.sounds.on ? state.sounds.shutter.src : null,
     poweron: state.sounds.on ? state.sounds.poweron.src : null,
   };
@@ -932,7 +1121,7 @@ async function download() {
 
 async function main() {
   [m, library] = await Promise.all(
-    ["editor/template.json", "editor/library.json"].map((u) => fetch(u).then((r) => r.json())),
+    ["editor/template.json", "editor/library.json"].map((u) => fetch(u, { cache: "no-cache" }).then((r) => r.json())),
   );
   state = load();
   $("#ed-max").textContent = m.maxPresets;
@@ -975,6 +1164,21 @@ async function main() {
   const sounds = $("#ed-sounds");
   sounds.addEventListener("change", soundEvents);
   sounds.addEventListener("click", soundEvents);
+  sounds.addEventListener("input", (e) => e.target.id === "ed-volume" && soundEvents(e));
+  const gbList = $("#ed-gb-list");
+  for (const type of ["change", "click", "keydown"]) gbList.addEventListener(type, gbListEvents);
+  $("#ed-normal-on").checked = state.normal;
+  $("#ed-normal-on").addEventListener("change", (e) => {
+    state.normal = e.target.checked;
+    track("toggle_normal_mode", { on: state.normal });
+    changed({ list: false, preview: false });
+  });
+  $("#ed-tag-on").checked = state.tag;
+  $("#ed-tag-on").addEventListener("change", (e) => {
+    state.tag = e.target.checked;
+    track("toggle_corner_tag", { on: state.tag });
+    changed({ palette: true });
+  });
   $("#ed-download").addEventListener("click", download);
   $("#ed-reset-all").addEventListener("click", async () => {
     const sure = confirm("Start over? This forgets your palettes, sounds and photos.");
@@ -983,6 +1187,8 @@ async function main() {
     state = defaultState();
     renderPhotos();
     renderSounds();
+    $("#ed-tag-on").checked = state.tag;
+    $("#ed-normal-on").checked = state.normal;
     changed({ palette: true, preview: false });
     await Promise.all(PHOTOS.map((_, i) => loadPhoto(i)));
     renderPreview();

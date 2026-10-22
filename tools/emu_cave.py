@@ -14,7 +14,8 @@ Loads build/GP_CARDVR_UPGRADE.BIN, stubs the firmware calls the cave makes
   3. unpacks each strip and checks that every 2x2 block is exactly the colour
      the sim expects: sim_palette.py's pick in the preset's match palette (same
      WY and table), painted with the preset's film colour; including the
-     preset tag on the photo's first strip and not on the second.
+     preset tag on the photo's first strip if the build has it (TAG=1) and
+     never on the second.
 
 It does this at every photo output width (palettes.py SIZES; all modes
 at the first, one pass over the presets at the others), and reports the
@@ -41,7 +42,7 @@ W, ROWS = 640, 64
 
 
 def symbols(obj='build/obj/photo_cave.o'):
-    nm = next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
+    nm = os.environ.get('LLVM_NM') or next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
               if os.path.exists(p))
     out = subprocess.run([nm, obj], capture_output=True, text=True,
                          check=True).stdout
@@ -118,6 +119,8 @@ def main():
     uc.hook_add(UC_HOOK_CODE, lambda *_: fill.__setitem__(0, fill[0] + 1), begin=sym['sl'], end=sym['sl'])
     uc.hook_add(UC_HOOK_BLOCK, lambda uc_, addr, size, _: steps.__setitem__(0, steps[0] + size // 4))
     kinds = {CACHE_INV: 'inv', CACHE_CLEAN: 'clean', MALLOC: 'malloc'}
+    showtag = struct.unpack('<I', uc.mem_read(sym['VARS'] + 16, 4))[0]      # SHOW_TAG: the build's TAG
+    print('tag on the first strip:', 'yes' if showtag else 'no (TAG=0)')
     worst, last, ok, n = 0, None, True, 0
     widths = sorted({o[0] for _, o in SIZES.values()}, reverse=True)
     all_modes = list(range(rnd)) + [0, 0, 2, 2] + [rnd] * 4 + [1, 0x37]   # 0x37: not a mode = the first
@@ -150,7 +153,7 @@ def main():
             Y, UV = unpack(bytes(uc.mem_read(STRIP_A, W * 3 // 2 * ROWS)))
             # every 2x2 block must be exactly one palette colour, the one the sim picks
             ref = match(crop, P, wy=WY, lut=LUT)
-            if strip == 0:
+            if strip == 0 and showtag:
                 add_tag(ref, tag, D)
             diffs.append(differing(Y, UV, np.array(D)[ref]).mean() * 100)
         worst = max(worst, *diffs)

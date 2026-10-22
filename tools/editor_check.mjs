@@ -1,9 +1,10 @@
-// Writes test cases for tools/editor_check.sh: random configs patched into the
+// Writes test cases for tools/editor_check.sh: random configs (presets, rnd, sounds and
+// their volume, the corner tag, the Game Boy mode and its colours) patched into the
 // template by the site's editor (site/editor/firmware.js), plus what build.sh
 // needs to build the same config itself.
 //   node tools/editor_check.mjs OUTDIR COUNT
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { buildFirmware, encodeWav, slotSamples } from "../site/editor/firmware.js";
+import { buildFirmware, encodeWav, rgbToYuv, slotSamples, yuvToRgb } from "../site/editor/firmware.js";
 
 const [out, count] = [process.argv[2], +process.argv[3] || 12];
 const m = JSON.parse(readFileSync("site/editor/template.json"));
@@ -34,7 +35,9 @@ function randomConfig(i) {
     const lcd = Array.from({ length: 3 }, () => [..."abcdefg"].filter(() => rand() < 0.5).join(""));
     return { tag: randomTag(taken), match, paint, lcd };
   });
-  return { presets, rnd: rand() < 0.5, sounds: rand() < 0.5 };
+  const rgb = Array.from({ length: 4 }, colour);
+  const gb = { on: rand() < 0.5, curve: rand() < 0.5, contrast: int(101) - 50, brightness: int(101) - 50, sharp: int(101), palette: rgb.map(rgbToYuv), rgb };
+  return { contrast: int(101) - 50, brightness: int(101) - 50, presets, rnd: rand() < 0.5, sounds: rand() < 0.5, tag: rand() < 0.5, normal: rand() < 0.5, gb, volume: 1 + int(100) };
 }
 
 function randomWav(slot) {
@@ -56,8 +59,14 @@ for (let i = 0; i < count; i++) {
   writeFileSync(`${dir}/shutter.wav`, s.shutter);
   writeFileSync(`${dir}/poweron.wav`, s.poweron);
   writeFileSync(`${dir}/silent`, cfg.sounds ? "0" : "1");
+  // what build.sh takes for the same config
+  const hex = (c) => c.map((x) => x.toString(16).padStart(2, "0")).join("");
+  writeFileSync(
+    `${dir}/env`,
+    `TAG=${cfg.tag ? 1 : 0} GB_ON=${cfg.gb.on ? 1 : 0} NORMAL_ON=${cfg.normal ? 1 : 0} GB_CURVE=${cfg.gb.curve ? 1 : 0} CONTRAST=${100 + (cfg.contrast ?? 0)} BRIGHT=${cfg.brightness ?? 0} GB_CONTRAST=${cfg.gb.contrast} GB_BRIGHTNESS=${cfg.gb.brightness} GB_SHARP=${cfg.gb.sharp ?? 50} GB_PALETTE=${(cfg.gb.rgb ?? m.defaults.gb.palette.map(yuvToRgb)).map(hex).join(",")} VOLUME=${cfg.volume}`,
+  );
   const fw = buildFirmware(template, m, cfg, s);
   writeFileSync(`${dir}/editor.bin`, fw);
   if (i === 0 && !fw.every((b, k) => b === template[k])) throw new Error("case 0 should equal the template");
-  console.log(`case${i}: ${cfg.presets.length} presets (${cfg.presets.map((p) => `${p.tag}:${p.match.length}`).join(" ")}), rnd ${cfg.rnd}, sounds ${cfg.sounds}`);
+  console.log(`case${i}: ${cfg.presets.length} presets (${cfg.presets.map((p) => `${p.tag}:${p.match.length}`).join(" ")}), rnd ${cfg.rnd}, sounds ${cfg.sounds} at ${cfg.volume} %, tag ${cfg.tag}, normal ${cfg.normal}, GB ${cfg.gb.on}${cfg.gb.curve ? " + S-curve" : ""}`);
 }

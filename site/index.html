@@ -128,11 +128,11 @@
           <li>
             <h3>Put the firmware to the SD</h3>
             <p class="download">
-              <a class="button" href="editor/v021_editor_template.bin" download="GP_CARDVR_UPGRADE.BIN"
+              <a class="button" href="editor/v029_editor_template.bin" download="GP_CARDVR_UPGRADE.BIN"
                   onclick="posthog.capture('download_firmware')"
                 >Download firmware</a
               >
-              <span>v021 &middot; 1.8&nbsp;MB</span>
+              <span>v029 &middot; 1.8&nbsp;MB</span>
             </p>
             <p>
               Download the firmware and put it in the root of the camera's SD card, naming it exactly: <code>GP_CARDVR_UPGRADE.BIN</code>
@@ -170,13 +170,13 @@
         <header class="editor-head">
           <h2 id="editor-title">Make your own</h2>
           <p class="ed-small-note">
-            You can also make your own version of the firmware here, with your own palettes, film looks
-            and sounds. The editor only works well on a bigger screen though, so open this page on a
+            You can also make your own version of the firmware here, with your own palettes, film looks,
+            a Game Boy Camera mode, and sounds. The editor only works well on a bigger screen though, so open this page on a
             desktop or laptop to try it.
           </p>
           <p class="ed-intro">
-            Create up to <span id="ed-max">8</span> palettes, choose the sounds you want (or turn them off),
-            then download your custom firmware and flash it the same way as described above.
+            Create up to <span id="ed-max">8</span> palettes, set up the Game Boy Camera mode, choose the
+            sounds you want and how loud (or turn them off), then download your custom firmware and flash it the same way as described above.
           </p>
         </header>
 
@@ -184,10 +184,20 @@
           <aside class="ed-presets" aria-label="Palettes">
             <h3>Palettes <span class="ed-count" id="ed-count"></span></h3>
             <ol class="ed-list" id="ed-list"></ol>
+            <ol class="ed-list ed-gblist" id="ed-gb-list" aria-label="Game Boy Camera mode"></ol>
             <label class="ed-check ed-rnd">
               <input type="checkbox" id="ed-rnd" />
               <img class="cam-tag" src="img/tags/rnd.png" width="39" height="21" alt="rnd" />
-              also a random palette per photo
+              <span>also a random palette per photo</span>
+            </label>
+            <label class="ed-check ed-rnd">
+              <input type="checkbox" id="ed-normal-on" />
+              <img class="cam-tag" src="img/tags/nor.png" width="39" height="21" alt="nor" />
+              <span>also a normal mode: no effect, photos and video at the factory's full sizes</span>
+            </label>
+            <label class="ed-check ed-tagopt">
+              <input type="checkbox" id="ed-tag-on" />
+              <span>draw the palette's tag in the top corner of photos and video</span>
             </label>
           </aside>
 
@@ -213,6 +223,11 @@
             <label class="ed-check">
               <input type="checkbox" id="ed-sound-on" />
               Include sounds
+            </label>
+            <label class="ed-volume">
+              Volume
+              <input type="range" id="ed-volume" min="1" max="100" step="1" />
+              <output id="ed-volume-out"></output>
             </label>
           </div>
           <p class="note">
@@ -245,7 +260,11 @@
       </section>
 
       <footer>
-        <p>Made by <a href="https://klve.nl">Kelley van Evert</a></p>
+        <p class="made">Made by <a href="https://klve.nl">Kelley van Evert</a></p>
+        <p class="note ed-credits">
+          The Game Boy Camera look follows <a href="https://github.com/untoxa/gb-photo">gb-photo</a> by Toxa and
+          the Pan Docs reference, through the maths in <a href="https://donaldsayers.com">Donald Sayers</a>' <a href="https://github.com/DonaldLSayers/PixelBoy-ESP32-P4X-EYE">PixelBoy</a>.
+        </p>
       </footer>
     </main>
 

@@ -1026,3 +1026,108 @@ dialog button {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Game Boy mode, corner tag option, volume */
+.ed-gb-colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 12px 0;
+}
+
+.ed-gb-colours label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 13px var(--pixel);
+}
+
+.ed-gb-colours input[type="color"] {
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: none;
+  cursor: pointer;
+}
+
+.ed-gb-colours input[type="text"] {
+  width: 84px;
+  font: 13px monospace;
+}
+
+.ed-tagopt {
+  margin-top: 10px;
+}
+
+.ed-tagt {
+  display: inline-block;
+  min-width: 39px;
+  font: 12px var(--pixel);
+  text-align: center;
+  padding: 2px 4px;
+  border: 2px solid var(--ink);
+}
+
+.ed-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 13px var(--pixel);
+  text-transform: uppercase;
+}
+
+.ed-volume output {
+  min-width: 4ch;
+}
+
+.ed-gblist {
+  margin-top: 8px;
+}
+
+.ed-gblist li {
+  cursor: pointer;
+}
+
+.ed-palette > .note {
+  max-width: 340px;
+}
+
+.ed-credit {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* the option checkboxes under the palette list: the text is one block beside the checkbox, however long */
+.ed-presets .ed-check {
+  align-items: flex-start;
+  line-height: 1.35;
+}
+
+.ed-presets .ed-check input {
+  margin-top: 3px;
+  flex: none;
+}
+
+.ed-presets .ed-check .cam-tag {
+  flex: none;
+}
+
+.ed-presets .ed-check code {
+  font-size: 0.9em;
+}
+
+.ed-work-head a {
+  color: inherit;
+}
+
+footer .made {
+  display: block;
+  font-size: 20px;
+  margin-bottom: 6px;
+}
+
+footer .ed-credits {
+  text-transform: none;
+  font: 14px/1.45 var(--sans);
+}

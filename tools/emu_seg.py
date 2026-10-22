@@ -218,7 +218,7 @@ if __name__ == '__main__':
     if word >> 24 == 0xea and 0xbc400 <= (0x21218 + 8 + (word & 0xffffff) * 4) & 0xffffffff < 0xbc744:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import palettes
-        nm = next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
+        nm = os.environ.get('LLVM_NM') or next(p for p in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/opt/homebrew/opt/llvm@18/bin/llvm-nm')
                   if os.path.exists(p))
         syms = {f[2]: int(f[0], 16) for f in map(str.split, subprocess.run(
             [nm, 'build/obj/photo_cave.o'], capture_output=True, text=True, check=True).stdout.splitlines())
@@ -232,7 +232,8 @@ if __name__ == '__main__':
         # ISO/F/SS on: `*0x372bc + 1` in FUN_000362b8 (the arrows are -1/+1 there).
         CYCLE_MSG = struct.unpack('<I', open(FW, 'rb').read()[APP + 0x372bc:APP + 0x372c0])[0] + 1
         STOCK_POSTS = ['0x7018', hex(CYCLE_MSG)]
-        codes = [t for t, _, _ in palettes.presets()] + [palettes.RND]
+        codes = [t for t, _, _ in palettes.presets()] + [palettes.RND, 'GB', 'NORMAL']
+        modes = list(range(len(codes) - 2)) + [palettes.MAX_PRESETS + 1, palettes.MAX_PRESETS + 2]   # the mode byte of each
         SS = set(range(palettes.SS_FIRST, palettes.SS_FIRST + palettes.SS_COUNT))
         glyph = {frozenset(segs): name for name, segs in palettes.SEG7.items()}
 
@@ -290,12 +291,26 @@ if __name__ == '__main__':
         check('fresh settings: mode 0', uc.mem_read(MODE, 1)[0], 0)
         check('photo mode shows it', shown(segs), palettes.lcd_text(codes[0]))
         check('photo mode, everything outside the SS cells as stock', outside, set())
+        ASPECT, ASPECT_SAVE, GB_ASPECT = 0x1217bd, CFG + 0xf2, 5   # the UI's aspect, and the one from before a special mode
+        NIDX = [6, 7, 8, 10, 13]                        # the normal mode's slot for each aspect 0-4
+        GBM, NORMAL = palettes.MAX_PRESETS + 1, palettes.MAX_PRESETS + 2
+        cls = lambda mode: 1 if mode == GBM else 2 if mode == NORMAL else 0
+        uc.mem_write(ASPECT, bytes([2]))                # 3:2 selected
         for n in range(1, len(codes) + 1):             # cycle through every mode and back
             state = n % 2                              # alternate photo and video mode
-            check(f'press {n} ({"video" if state else "photo"} mode) posts the cycle message', press(state),
-                  STOCK_POSTS)
+            old, new = modes[(n - 1) % len(codes)], modes[n % len(codes)]
+            change = cls(old) != cls(new)
+            # only into or out of a special mode (GB, normal) does the center button also post the stock aspect change
+            check(f'press {n} ({"video" if state else "photo"} mode) posts the cycle message'
+                  f'{" and the resize" if change else ""}', press(state),
+                  STOCK_POSTS[:1] + (['0x7000'] if change else []) + STOCK_POSTS[1:])
+            want = {0: 2, 1: GB_ASPECT, 2: NIDX[2]}[cls(new)]
+            check(f'press {n}: the aspect is {want} ({["regular", "the GB size", "the factory sizes"][cls(new)]})',
+                  uc.mem_read(ASPECT, 1)[0], want)
+            if cls(new):
+                check(f'press {n}: the user\'s aspect is remembered', uc.mem_read(ASPECT_SAVE, 1)[0], 2)
             m = n % len(codes)
-            check(f'press {n} steps the mode', uc.mem_read(MODE, 1)[0], m)
+            check(f'press {n} steps the mode', uc.mem_read(MODE, 1)[0], modes[m])
             check(f'press {n} marks the settings to be saved', uc.mem_read(DIRTY, 1)[0], 1)
             uc.mem_write(DIRTY, b'\0')
             segs, outside = tick_refresh(state)
@@ -318,5 +333,38 @@ if __name__ == '__main__':
         segs = run(uc, lcd, 2)
         check('readout state exactly as stock (ISO 400, F5.6, SS 1/25): differing',
               fmt(segs ^ run(stock_uc, stock_lcd, 2)), '-')
+        # ---- the arrow keys' aspect change (FUN_000213e0) is locked in the GB mode ----
+        ARROW_ASPECT = 0x213e0
+
+        def arrow(delta):
+            call(uc, ARROW_ASPECT, delta & 0xffffffff)
+            return uc.mem_read(ASPECT, 1)[0]
+        uc.mem_write(MODE, bytes([GBM]))
+        uc.mem_write(ASPECT, bytes([GB_ASPECT]))
+        check('arrow keys in the GB mode: locked (right, left)', (arrow(1), arrow(-1)), (GB_ASPECT, GB_ASPECT))
+        uc.mem_write(MODE, bytes([0]))
+        uc.mem_write(ASPECT, bytes([2]))
+        check('arrow keys in a preset: stock (right, left)', (arrow(1), arrow(-1)), (3, 2))
+        uc.mem_write(MODE, bytes([NORMAL]))
+        uc.mem_write(ASPECT_SAVE, bytes([2]))
+        uc.mem_write(ASPECT, bytes([NIDX[2]]))
+        seen = [arrow(1), arrow(1), arrow(1), arrow(-1)]          # aspects 3, 4, wrap to 0, back to 4
+        check('arrow keys in the normal mode: the factory-size slots (right x3, left)', seen, [NIDX[3], NIDX[4], NIDX[0], NIDX[4]])
+        check('... and the remembered aspect follows', uc.mem_read(ASPECT_SAVE, 1)[0], 4)
+        orig = open('c100_v1.1.6_20260929/GP_CARDVR_UPGRADE.BIN', 'rb').read()
+        fw = open(FW, 'rb').read()
+        entry = lambda d, base, i: d[APP + base + 4 * i:APP + base + 4 * i + 4]
+        for table, base in (('photo', 0xf3d0), ('video', 0xf0a0)):
+            check(f'{table} size table: the normal mode\'s slots are the factory handlers of aspects 0-4',
+                  [entry(fw, base, i) for i in NIDX] == [entry(orig, base, i) for i in range(5)], True)
+        BRACKET = 0x4a7f4                               # FUN_0004a7f4(state, aspect): the aspect bracket
+        shown_b = lambda l: (l.ram[6] & 8, l.ram[0x15])
+        for a in range(5):
+            call(stock_uc, BRACKET, 0, a)
+            call(uc, BRACKET, 0, NIDX[a])
+            check(f'bracket for the normal mode slot {NIDX[a]} = the stock one for aspect {a}', shown_b(lcd), shown_b(stock_lcd))
+        call(stock_uc, BRACKET, 0, 9)
+        call(uc, BRACKET, 0, 9)
+        check('bracket for an unknown slot: as stock', shown_b(lcd), shown_b(stock_lcd))
         print('mode test', 'PASSED' if ok else 'FAILED')
         sys.exit(0 if ok else 1)
