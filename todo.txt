@@ -4,13 +4,20 @@
         - (Indexed) PNG (level 1) would be software and take an EXTRA ±250ms for our 274K images, making files of ±60kb
         - Probably GIF is very reasonable though, probably only taking an extra 20-40ms, and makes files ±100-150kb
 
-- [ ] save a copy of original in /ORIG as well ?
+- [x] save a copy of original in /ORIG as well ? Dropped: too much to do in the camera's save path; the normal mode (full-size, no effect) covers it
 
-- [ ] save in gameboy dimensions 128x112 (and palettes) ?
+- [ ] try the newest additions on a camera: stock-size normal mode (aspect slots 6, 7, 8, 10, 13), its aspect brackets (bracket_hook), GB edge sharpening, contrast and brightness
+- [ ] Game Boy mode shows no aspect bracket on the display (no 8:7 bracket exists)
+- [ ] contrast/brightness/sharpening are global: no per-palette or per-mode setting on the camera itself (they're set in the flasher or at build time)
+- [ ] film looks (3D LUTs) in normal mode: would need a per-pixel colour transform of full frames; the cave has ~4-20 bytes free in the photo cave, so a tint approximation at best
+- [ ] riso6, refreshing, mid_century, harbour, nes: find out whether they are Lospec/Coolors palettes and credit them (db16, endesga32 and sweetie16 are Lospec and credited)
+- [ ] Lospec licence terms for the 29 bundled palettes, before publishing the site
+
+- [x] save in gameboy dimensions 128x112 (and palettes) ? Done: Game Boy mode, saved at 512x448 (4x4 blocks)
         = redditor request: https://www.reddit.com/r/toycameras/comments/1x964o9/comment/phkgrx5/
         = gameboy tech details in next comment: https://www.reddit.com/r/toycameras/comments/1x964o9/comment/phmdiju/
 
-- [ ] save in original dimensions (but still apply filters) ?
+- [x] save in original dimensions (but still apply filters) ? Partly: the normal mode saves factory sizes with no filter; the palettes still use ~274k pixels
         = redditor request: https://www.reddit.com/r/toycameras/comments/1x964o9/comment/pho27b2/
 
 - [ ] apply different dithering algorithms ?
