@@ -25,19 +25,23 @@
 @ tens of ms). The timestamp
 @ argument (r1) is the same for every strip of a frame and strips come top
 @ to bottom, so a new timestamp means the frame's top strip: draw_tag (also
-@ from photo_cave.s) then puts the palette's tag in the top right corner.
+@ from photo_cave.s) then puts the palette's tag in the top right corner, if
+@ the photo cave's SHOW_TAG is set. In the Game Boy mode (GB_MODE) the strip
+@ goes to gb_strip (photo_cave.s) instead, with no table and no tag.
 @
 @ VIDTIMING=1 also draws this strip's hook time in its top 4 rows: a black
 @ 16 ms scale (256 px), white for each elapsed ms (16 px per ms, xTickCount).
     .syntax unified
     .arm
-    .include "palettes.inc"                      @ MAX_W
+    .include "palettes.inc"                      @ MAX_W, GB_MODE, NORMAL_MODE
+    .include "gb.inc"                            @ GB_CURVE_DATA, GB_CURVE_ADDR
 base:
     .set    RESUME,      base + 0x18d18
     .set    CACHE_INV,   base + 0x401ac
     .set    CACHE_CLEAN, base + 0x401b8
     .set    LUT_FILL,    base + LUT_FILL_ADDR    @ photo_cave.s (from build.sh)
     .set    DRAW_TAG,    base + DRAW_TAG_ADDR    @ photo_cave.s (from build.sh)
+    .set    GB_STRIP,    base + GB_STRIP_ADDR    @ photo_cave.s (from build.sh)
     .equ    PVARS,       PVARS_ADDR              @ photo cave VARS (from build.sh)
     .equ    LUT_PTR,     0                       @ offsets into PVARS
     .equ    CUR_PAL,     4
@@ -46,6 +50,9 @@ base:
     .equ    V_LAST,      0                       @ offsets into VVARS
     .equ    V_T0,        4
     .equ    V_TS,        8
+    .equ    SHOW_TAG,    16                      @ offset into PVARS
+    .equ    CFG,         0x132160                @ the camera's settings, see lcd_cave.s
+    .equ    CFG_MODE,    0xf1
 
     .org    0xbb774
 vhook:
@@ -81,16 +88,30 @@ vhook:
     blo     1f
     mov     lr, pc                        @  new palette, rebuild the table
     b       LUT_FILL
-1:  ldr     r0, =PVARS
+1:  ldr     r0, =CFG
+    ldrb    r0, [r0, #CFG_MODE]
+    cmp     r0, #NORMAL_MODE              @ the normal mode: no effect
+    beq     vdone
+    cmp     r0, #GB_MODE                  @ the Game Boy mode needs no table
+    ldr     r0, =PVARS
     ldr     r12, [r0, #LUT_PTR]
     ldr     r5, [r0, #CUR_PAL]
+    beq     2f
     cmp     r12, #0
     cmpne   r5, #0
     beq     vdone                         @ no table (allocation failed)
-    mov     r0, r11
+2:  mov     r0, r11
     mov     r1, r7, lsl #6                @ the 64-row strip
     mov     lr, pc
     b       CACHE_INV
+    ldr     r0, =CFG
+    ldrb    r0, [r0, #CFG_MODE]
+    cmp     r0, #GB_MODE
+    bne     vpreset
+    mov     lr, pc
+    b       GB_STRIP
+    b       vclean
+vpreset:
     ldr     r0, =PVARS                    @ reload: the call may clobber r12
     ldr     r12, [r0, #LUT_PTR]           @ r12 = table
     ldr     r5, [r0, #CUR_PAL]            @ r5 = palette colours (Y,U,V each)
@@ -113,10 +134,12 @@ pixloop:
     mov     r0, r0, lsr #2                @ repY
     @ ---- contrast / brightness pre-map (assemble-time constants) ----
     sub     r0, r0, #128
+contrast_imm:                           @ the editor patches the low byte (editor_data.py, firmware.js)
     mov     r1, #CONTRAST_FIX
     mul     r0, r1, r0
     mov     r0, r0, asr #7
     add     r0, r0, #128
+bright_imm:
     add     r0, r0, #BRIGHT_FIX
     sub     r0, r0, #128
     @ ---- Bayer dither: repY += (BAYER[b&3][c&3] - 8) * 4, clamped 0..255 ----
@@ -181,9 +204,13 @@ pixloop:
     ldr     r2, [r4, #V_TS]
     str     r1, [r4, #V_TS]
     cmp     r1, r2
+    beq     1f
+    ldr     r0, =PVARS
+    ldr     r0, [r0, #SHOW_TAG]
+    cmp     r0, #0
     movne   lr, pc
     bne     DRAW_TAG                      @ wants r11, r7, r8, r5; keeps all
-
+1:
     .ifdef  VIDTIMING
     @ ---- timing bar: rows 0-3, x < 256 = 16 ms scale, white per elapsed ms ----
     ldr     r4, =VVARS - base
@@ -214,6 +241,7 @@ pixloop:
     blo     2b
     .endif
 
+vclean:
     mov     r0, r11
     mov     r1, r7, lsl #6
     mov     lr, pc
@@ -233,3 +261,9 @@ VVARS:
     .word   0                             @ V_LAST: tick of the last strip
     .word   0                             @ V_T0: tick at this strip's start
     .word   0                             @ V_TS: timestamp of the last strip's frame
+
+@ The Game Boy mode's tone curve (gb.py; lumap in photo_cave.s reads it), at the end of the
+@ cave. The site's editor patches it.
+    .org    GB_CURVE_ADDR
+GB_CURVE:
+    GB_CURVE_DATA

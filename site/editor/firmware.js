@@ -2,13 +2,19 @@
 // writing a config into it, byte for byte what tools/build.sh would make from
 // the same config (tools/editor_check.sh checks that). No DOM: runs in Node too.
 //
-// A config is { presets: [{ tag, match, paint, lcd }], rnd, sounds }:
+// A config is { presets: [{ tag, match, paint, lcd }], rnd, sounds, tag, gb, volume }:
 //   match, paint  [[Y, U, V], ...], index for index: blocks snap to a match
 //                 colour and get painted with the paint colour at its index
 //   lcd           the lit segments ("abcdefg") of each of the display's 3 cells
 //   rnd           the center button also offers a random preset per photo
 //   sounds        play the shutter and power-on sounds (the speaker is never
 //                 switched on otherwise)
+//   volume        percent (1-100) of the sounds' samples, also the click's
+//   normal        the normal mode (no effect) at the end of the center button's cycle
+//   tag           draw the preset's tag in the top right corner of photos and video
+//   gb            { on, curve, palette }: the Game Boy Camera mode after rnd in the center
+//                 button's cycle, its 4 colours as [Y, U, V], dark to light, and BW's
+//                 S-curve (more contrast) on its luma if curve
 // and two WAVs (11025 Hz mono 16-bit) for the shutter and power-on sounds,
 // plus the factory's CLICK slot (sounds.click), which the template has
 // silenced and sounds on puts back.
@@ -101,6 +107,19 @@ export function lcdNibbles(m, segments) {
 
 // ---- checks ----
 
+// The Game Boy mode's tone curve: the identity or the S-curve, then contrast (percent, around mid-grey) and
+// brightness (levels), in whole numbers exactly as tools/gb.py curve_table does.
+export function toneCurve(g, curve, contrast = 0, brightness = 0) {
+  return (curve ? g.sCurve : g.identity).map((t) =>
+    Math.min(255, Math.max(0, Math.floor(((t - 128) * (100 + contrast) + 12800 + 100 * brightness + 50) / 100))));
+}
+
+// The immediates of the palettes' luma pre-map Y' = (Y-128)*contrastFix/128 + 128 + (brightFix-128).
+export const lumaFix = (contrast = 0, brightness = 0) => ({
+  contrastFix: Math.floor(((100 + contrast) * 128) / 100),
+  brightFix: brightness + 128,
+});
+
 export function configErrors(m, cfg) {
   const errors = [];
   const n = cfg.presets.length;
@@ -117,6 +136,8 @@ export function configErrors(m, cfg) {
     if (p.match.length < 1 || p.match.length > m.maxColours) errors.push(`${name}: 1 to ${m.maxColours} colours.`);
     if (p.paint.length !== p.match.length) errors.push(`${name}: paint and match colours differ in number.`);
   }
+  if (cfg.gb?.on && cfg.gb.palette?.length !== 4) errors.push("The Game Boy mode needs 4 colours.");
+  if (cfg.sounds && !(cfg.volume >= 1 && cfg.volume <= 100)) errors.push("The volume is 1 to 100 %.");
   return errors;
 }
 
@@ -169,12 +190,29 @@ export function wavFormat(wav) {
   return { format: dv.getUint16(off, true), channels: dv.getUint16(off + 2, true), rate: dv.getUint32(off + 4, true), bits: dv.getUint16(off + 14, true) };
 }
 
+// Same bytes, every sample of the data chunk at pct percent, toward zero (scale_wav.py).
+export function scaleWav(wav, pct) {
+  const out = wav.slice();
+  const [off, size] = chunks(out).data;
+  const dv = new DataView(out.buffer, out.byteOffset, out.byteLength);
+  for (let o = off; o + 2 <= Math.min(off + size, out.length); o += 2) {
+    const s = dv.getInt16(o, true);
+    dv.setInt16(o, Math.sign(s) * Math.floor((Math.abs(s) * pct) / 100), true);
+  }
+  return out;
+}
+
 // Same bytes, the data chunk zeroed (mk_silence.py).
 export function silence(wav) {
   const out = wav.slice();
   const [off, size] = chunks(out).data;
   out.fill(0, off, Math.min(off + size, out.length));
   return out;
+}
+
+// The RIFF file at the start of a resource slot, without the 0xFF padding.
+function wavOf(slot) {
+  return slot.subarray(0, 8 + new DataView(slot.buffer, slot.byteOffset).getUint32(4, true));
 }
 
 function writeSlot(fw, m, slot, wav) {
@@ -203,7 +241,7 @@ export function buildFirmware(template, m, cfg, sounds) {
   const { pd } = m;
   const n = cfg.presets.length;
 
-  fw.fill(0, at(pd.MATCH), at(pd.END));
+  fw.fill(0, at(pd.MATCH), at(pd.GB));
   let o = at(pd.MATCH);
   for (const p of cfg.presets) {
     fw[o++] = p.match.length;
@@ -225,16 +263,39 @@ export function buildFirmware(template, m, cfg, sounds) {
     fw.set(lcdNibbles(m, segs), at(m.lcdTags) + i * m.ssCount),
   );
   for (const a of m.npal) fw[at(a)] = n;
+  // the palettes' contrast (percent change, as CONTRAST=100+x in build.sh) and brightness (luma offset)
+  const { contrastFix, brightFix } = lumaFix(cfg.contrast, cfg.brightness);
+  for (const a of m.contrastAt) fw[at(a)] = contrastFix;
+  for (const a of m.brightAt) fw[at(a)] = brightFix;
   fw[at(m.lastCenter)] = n - 1 + (cfg.rnd ? 1 : 0);
+
+  dv.setUint32(at(m.showTag), cfg.tag ? 1 : 0, true);
+
+  const g = m.gb;
+  const gbPalette = cfg.gb?.palette ?? m.defaults.gb.palette;
+  gbPalette.forEach(([y, u, v], i) => {
+    dv.setUint32(at(g.y) + 4 * i, y * 0x01010101, true);
+    dv.setUint32(at(g.c) + 4 * i, (u | (v << 8) | (u << 16) | (v << 24)) >>> 0, true);
+  });
+  fw.set(toneCurve(g, cfg.gb?.curve, cfg.gb?.contrast, cfg.gb?.brightness), at(g.curveAddr)); // the tone curve table
+  // the center button's cycle: ... rnd, GB, normal, then the first preset; what follows the last
+  // preset and what follows GB are two immediates
+  const gbOn = cfg.gb?.on !== false;
+  const normalOn = cfg.normal !== false;
+  fw[at(m.cycle.afterLast)] = gbOn ? m.cycle.gb : normalOn ? m.cycle.normal : 0;
+  fw[at(m.cycle.afterGb)] = normalOn ? m.cycle.normal : 0;
 
   for (const [addr, on, off] of m.speaker)
     fw.set(Uint8Array.from((cfg.sounds ? on : off).match(/../g), (h) => parseInt(h, 16)), at(addr));
-  writeSlot(fw, m, "shutter", cfg.sounds ? sounds.shutter : silence(sounds.shutter));
-  writeSlot(fw, m, "poweron", cfg.sounds ? sounds.poweron : silence(sounds.poweron));
+  const volume = cfg.volume ?? 100;
+  const level = (wav) => (volume === 100 ? wav : scaleWav(wav, volume));
+  writeSlot(fw, m, "shutter", cfg.sounds ? level(sounds.shutter) : silence(sounds.shutter));
+  writeSlot(fw, m, "poweron", cfg.sounds ? level(sounds.poweron) : silence(sounds.poweron));
   const [start, end] = m.slots.click;
   if (cfg.sounds) {
     if (sounds.click?.length !== end - start) throw new Error("the stock click sound is missing");
-    fw.set(sounds.click, start);
+    if (volume === 100) fw.set(sounds.click, start);
+    else writeSlot(fw, m, "click", scaleWav(wavOf(sounds.click), volume));
   }
   return fw;
 }

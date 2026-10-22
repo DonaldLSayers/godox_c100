@@ -13,3 +13,4 @@
 /previews/films
 /previews/films_v2
 __pycache__
+/build/*_vol.wav

@@ -1,14 +1,17 @@
 # Godox C100 firmware hacking
 
-_Last updated 2026-10-18_
+_Last updated 2026-10-21_
 
-**Working on the camera (`v021`):** pixel-art photos and videos at ~274k
-pixels for every aspect ratio, three presets (EP6, 6FP, BW) plus rnd chosen
-with the center button and remembered across power-off, the preset's tag on
-photos and video and its code on the see-through display, and a silent
-camera. The preset data has fixed slots, so the
-[site's editor](#the-sites-firmware-editor) builds custom firmware (1–8
-presets, rnd, sounds) in the browser; those work on the camera too.
+**Working on the camera (`v029`):** pixel-art photos and videos (~274k pixels
+per aspect, the Game Boy mode 512×448, 8:7), three presets (EP6, 6FP, BW), rnd and a
+[Game Boy Camera mode](#game-boy-camera-mode) chosen with the center button
+and remembered across power-off, the mode's code on the see-through display,
+an optional preset tag in the top right corner (`TAG=1`, off by default), and
+sounds at a chosen volume (or a silent camera). The preset data has fixed
+slots, so the [site's editor](#the-sites-firmware-editor) builds custom
+firmware (1–8 presets, rnd, the Game Boy mode and its four colours, the
+corner tag, sounds and their volume) in the browser; those work on the camera
+too.
 
 Goal: make the C100 produce pixel-art photos and videos in the spirit of the
 [Pixless camera](https://petapixel.com/2025/01/09/0-03-megapixel-pixless-camera-captures-charming-pixel-art-photos/):
@@ -37,6 +40,8 @@ small resolution, a limited colour palette, and dithering.
 | Video at the photo sizes (hook takes any width up to `MAX_W`) | on the camera, working (`v020`) |
 | Preset data in fixed slots (8 presets × 32 colours), preset count and rnd patchable | on the camera, working (`v021`) |
 | [Site editor](#the-sites-firmware-editor) builds: own presets, S-curve, films, tags, display codes, rnd, sounds | on the camera, working (2026-10-18: photos, video, sounds, palettes) |
+| [Game Boy Camera mode](#game-boy-camera-mode): 128×112 pixels, 4 shades, as PIXELBOY's `gbcam.c` HARDWARE style, in the center button's cycle after rnd | on the camera, working (`v028`) |
+| Corner tag optional (`TAG=1`; the editor's checkbox), sounds at a volume (`VOLUME`) | built (`v029`), emulator and the editor check |
 | Table kept when the preset doesn't change (no ~60 ms fill before the capture) | built (`v015`), emulator |
 
 Open: [repeated frames](#timing-and-headroom) in some dithered videos.
@@ -91,6 +96,11 @@ In `tools/`:
   | `SMALLVID` | 1 | 640-wide video at every aspect; 0 = stock full-size video |
   | `VIDFX` | 1 | preset dithering + tag on video; 0 = plain small video |
   | `VIDTIMING` | 0 | 1 = draw each video strip's hook time (test builds only) |
+  | `TAG` | 0 | 1 = draw the preset's tag in the top right corner of photos and video (the `SHOW_TAG` word in the photo cave's `VARS`; the editor patches it) |
+  | `GB_ON`, `NORMAL_ON` | 1, 1 | 0 = leave the [Game Boy mode](#game-boy-camera-mode), or the normal mode (no effect), out of the center button's cycle |
+  | `GB_PALETTE` | `gb.py` | the Game Boy mode's four colours, dark to light, e.g. `252525,4b564d,9aa57c,e0e9c4` |
+  | `GB_CURVE` | 0 | 1 = BW's S-curve (more contrast) on the Game Boy mode's luma; the 256-byte tone curve table is in the video cave (`gb.py CURVE_ADDR`), so the mode needs `VIDFX=1` |
+  | `VOLUME` | 100 | percent of the shutter, power-on and click sounds' samples (`scale_wav.py`; with sounds on) |
   | `LCDTAG` | 1 | 1 = the center button [cycles the preset mode](#preset-mode-center-button-and-display) and the display shows it; 0 = stock blank display, no button, always the first preset |
   | `CONTRAST`, `BRIGHT` | 100, 0 | look knobs, see [below](#look-knobs-contrast--brightness) |
 
@@ -117,7 +127,12 @@ In `tools/`:
   (`images/plain/`, taken with `v003_smaller_image.bin`) next to EG and db16.
 - `sort_images.py` — reads the palette tag off each photo/video in `images/`
   and moves it to `images/<tag>/` (rerun after adding new ones).
-  `sim_dither.py` is the early grayscale-ramp version.
+- `gb.py` — the [Game Boy mode](#game-boy-camera-mode)'s numbers (thresholds, exposure, colours, tone curve, size),
+  shared by the simulator and the assembly; `sim_gb.py` — its exact replica; `check_gb_ref.py` — checks the replica
+  against a numpy port of PIXELBOY's `gbcam.c`; `emu_gb.py` — runs the built firmware's mode (photo and video, every
+  size) and the normal mode against it; `scale_wav.py` — the volume (`VOLUME`).
+- `fetch_lospec.py` — fetches the editor's Lospec palettes (colours, authors) into `lospec_palettes.json`;
+  `serve.py` — serves `site/` locally with caching off.
 - `emu_cave.py` — runs the built photo cave in an ARM emulator (Unicorn) and
   checks it pixel-for-pixel against `sim_palette.py`. `emu_video.py` — the
   same for the video hook. Both run against `build/GP_CARDVR_UPGRADE.BIN`:
@@ -393,6 +408,10 @@ a count byte, then the Y, U, V triplets), which `build.sh` creates and
 
 ### Palette tag
 
+*Optional since `v029`: `TAG=1` (the `SHOW_TAG` word in the photo cave's
+`VARS`, checked by the photo hook and the video hook; the site's editor has a
+checkbox); the default build draws no tag, and the Game Boy mode never does.*
+
 Every photo gets its palette's tag in the top right corner. Since `v014` that
 is the [preset](#presets)'s code (e.g. `EP6`, in a 13×7 font-pixel field =
 52×28 image pixels, 25 B per preset; shorter codes like `BW` are
@@ -659,6 +678,96 @@ Most stocks are subtle at 32 colours (the Fuji/Kodak negatives look alike);
 the ones that clearly differ: `kodak_elite_100_xpro`, `polaroid_669`,
 `polaroid_690`, `lomography_redscale_100`, the Kodachromes, `fuji_velvia_50`.
 
+## Game Boy Camera mode
+
+The center button's cycle is EP6, 6FP, BW, rnd, then GB (mode byte 9,
+`GB_MODE`), then the first preset again; the display shows `Gb`. In this
+mode both hooks hand each 64-row strip to `gb_strip` (`photo_cave.s`) instead
+of the lookup table. A GB pixel is a 4×4 block of the 512×448 output, 128×112
+of them, and the mode follows PIXELBOY's `gbcam.c` (HARDWARE style, the
+M64282FP and MAC-GBD model, from the Pan Docs reference and gb-photo):
+
+1. mean luma Y of the block, through a 256-byte tone curve (the identity, or
+   BW's S-curve with `GB_CURVE=1`; the editor patches the table);
+2. exposure at a fixed 4.0× gain, `Y * 4`, then the MAC-GBD code,
+   `p = (Y*4 - 128) / 8` toward zero (the gain is the best fixed one on the
+   sample photos; `gbcam.c`'s auto-exposure settles at 2.2–4.3×, starting at
+   3.5×);
+3. the 50 % horizontal edge, `(4p - left - right) / 2` toward zero, on the
+   original neighbours (the pixels are painted in place, so the left one is
+   kept);
+4. three thresholds picked by `(row & 3) * 4 + (col & 3)`: gb-photo's
+   contrast 7, high-light table `0x89 0x92 0xA2 0xD2`, each interval stepped
+   in sixteenths and indexed by the stock 4×4 pattern;
+5. four shades, painted as `PALETTE` (`gb.py`; the colours are patched by the
+   editor or `GB_PALETTE`).
+
+No auto-exposure, no 2-D edge mode and no tiers, so the tones are a little
+flatter than PIXELBOY's on dark or bright scenes. `tools/sim_gb.py` is the
+exact replica, `tools/check_gb_ref.py` checks it against a numpy port of
+`gbcam.c` (0 differing pixels on the sample photos) and `tools/emu_gb.py`
+checks the built firmware against it in the emulator (photo and video).
+About 270k instructions per strip, ~0.9 ms.
+
+**Palettes and credits.** The editor's palette presets (the "Start from…" lists)
+come from Lospec too: `tools/fetch_lospec.py` fetches names, colours and
+authors (`lospec.com/palette-list/<slug>.json`) into `tools/lospec_palettes.json`
+(committed, so building needs no network), and `editor_data.py` writes them
+into `library.json`: 29 palettes of up to 32 colours beside the built-in ones
+(PICO-8, DawnBringer, Arne, Endesga 16, Vinik24, Steam Lords, …), each with a
+tag, an author and a Lospec link. Where Lospec lists no author for a famous
+palette, `CREATORS` in the fetch tool names the maker (PICO-8: Lexaloffle,
+DawnBringer 16 and 32: DawnBringer, Arne 16 and 32: Arne, Sweetie 16:
+GrafxKid); the editor shows the credit under the preset list, and the page
+footer lists everyone. The Game Boy mode has 19 four-colour presets: the
+default grey-green and an olive, the
+classic DMG greens, and Lospec's Game Boy palettes, sorted dark to light, with
+the credit shown under the preset list and on the page. Colours and authors
+are from Lospec's own data (`lospec.com/palette-list/<slug>.json`):
+Kirokaze Gameboy (Kirokaze), 2bit demichrome (Space Sandwich), Ice Cream GB,
+Mist GB, Wish GB, Coldfire GB and Rustic GB (Kerrie Lake), Lava-GB (Aero),
+BLK AQU4 (BurakoIRL), SpaceHaze (WildLeoKnight), Moonlight GB (Tofu) and AYY4
+(Polyducks); Links Awakening (SGB), Pokemon (SGB), Nintendo Gameboy (bgb) and
+GB Chocolate are listed without an author. The thresholds and edge maths are
+gb-photo's (Toxa, MIT) via Donald Sayers' [PIXELBOY](https://github.com/DonaldLSayers/PixelBoy-ESP32-P4X-EYE) `gbcam.c`, from the Pan Docs reference.
+
+**Size.** The Game Boy mode has its own size, 8:7 at 512×448 (crop 1232×1080), in a
+sixth aspect setting (`gb.ASPECT` = 5; the arrow keys only reach 0–4, so the fifth
+slot is the old 1:1 again, 528×528). Stepping into the mode with the center
+button remembers the current aspect (settings byte `0xf2`), sets the UI's aspect
+(`0x1217bd`) to 5 and posts the stock resize message `0x7000`, as the arrow keys
+do, so the firmware rebuilds the capture size; stepping out restores the aspect.
+Changing between the other modes touches nothing. The rebuild is a full camera
+restart (both sensors stopped, the size built, the sensor started, an 80-tick
+wait), so entering and leaving the mode takes about as long as an arrow-key
+aspect change. The size can't simply follow the mode byte: the firmware builds it
+only at startup and after an aspect change, and a size chosen by the mode came out
+wrong for the first photos after a mode change or a boot in the mode. **The crop
+matters:** the first 8:7 crop, 1232×1078, made every switch to and from it take
+seconds, while 1232×1080, the sensor's full height like the 16:9, 3:2 and 4:3
+crops, switches like the other aspects; the 1:1 crop is 1024×1024. **The arrow keys are locked** while the mode is on: every aspect change,
+photo and video, goes through `FUN_000213e0(delta)`, which `aspect_jump.s`
+redirects to `aspect_hook` (`lcd_cave.s`); in the GB mode it returns at once, so
+the mode stays on its 8:7 size (the center button's own change writes the aspect
+variable directly). The mode itself works at any size, with the same 4×4 blocks
+(176×99 GB pixels at 16:9, 160×107 at 3:2, 152×114 at 4:3, 132×132 at 1:1), for
+a camera that boots in it with another aspect.
+
+**Normal mode.** `NORMAL_MODE` (10, after GB in the cycle, shown as `nor`; `NORMAL_ON=0` leaves it out)
+is the camera as it is: both hooks return at once, and photos and video are the factory's, at the factory's sizes:
+1920×1080, 1616×1080, 1440×1080 and 1024×1024 for the four aspects, the hardware JPEG and H.264 as they come. The
+sizes follow the aspect, which the firmware builds only at startup and after an aspect change, so the mode gets
+its own aspect slots, as the Game Boy mode does: slots 6, 7, 8, 10 and 13 (`NIDX` in `lcd_cave.s`) of the two
+size tables (photo `0xf3d0`, video `0xf0a0`), which `build.sh` points at the factory handlers of aspects 0–4
+(copied from the original; nothing else uses those slots, and the slots we patch for our small sizes, 0–5, 9, 11
+and 12, are avoided). Stepping into the mode from a regular one remembers the user's aspect (settings byte
+`0xf2`) and selects the slot for it, posting the stock resize message `0x7000`; stepping on to the GB mode
+selects the GB slot, and back to a regular mode restores the aspect. In the normal mode the arrow keys (the
+`aspect_hook`) step the remembered aspect as the stock function does and select its slot, so the aspect keys
+work there as usual (their bracket on the display shows nothing in the special modes). Every change into or
+out of the GB or the normal mode is a camera restart, a second or so, like an arrow-key aspect change. The cycle's
+two ends are immediates (`after_last`, `after_gb` in `lcd_cave.s`) that the editor patches.
+
 ## Presets
 
 A preset is a **match palette** (each block gets its nearest colour, as
@@ -735,8 +844,17 @@ round half to even), and gives exactly `film_colours.py` for EP6 and 6FP.
 `editor_data.py FILMS` picks the 12 films the editor offers (copied from
 `film_luts/` to `site/editor/films/`, ~200 KB each, loaded when chosen).
 
+**Game Boy mode, tag, volume.** The Game Boy mode's colours are the 8 words
+`GB_Y` and `GB_C` (in the preset data cave, `PD['GB']`), its place in the
+center button's cycle is the immediate of the `movhi` after `last_center`
+(`GB_MODE`, or 0 to wrap to the first preset), the corner tag is the
+`SHOW_TAG` word, and the volume scales the samples of the shutter, power-on
+and click WAVs (`firmware.js scaleWav`, as `scale_wav.py`). The preview of the
+Game Boy mode is `sim.js renderGb`, the same maths as `sim_gb.py` (0 differing
+pixels).
+
 **Template, not assembler.** Everything the editor changes is data or an
-immediate, so it patches one template build (`site/editor/v021_editor_template.bin`,
+immediate, so it patches one template build (`site/editor/v029_editor_template.bin`,
 checked against its sha256) instead of assembling:
 
 - The preset data cave has a fixed layout (`palettes.py PD`): each table is
@@ -762,9 +880,10 @@ by `editor_data.py`. `firmware.js` is the patcher (no DOM, runs in Node),
 `sim.js` the preview (the camera's table and Bayer, as `sim_palette.py`),
 `editor.js` the UI (state in localStorage).
 
-**Verified (2026-10-18):** `editor_check.sh` (16 random configs: 1–8 presets
-of 1–32 colours, random tags and segments, rnd and sounds on/off, random and
-stock WAVs) gives byte-identical files from the editor and `build.sh`; so did
+**Verified (2026-10-21):** `editor_check.sh` (random configs: 1–8 presets
+of 1–32 colours, random tags and segments, rnd on/off, the corner tag on/off,
+the Game Boy mode on/off with random colours, sounds on/off at a random
+volume, random and stock WAVs) gives byte-identical files from the editor and `build.sh`; so did
 two downloads from the page itself (7 presets and an uploaded sound; 5
 presets, one with an edited palette through Kodachrome 64). The emulator
 tests pass on the default template, on 8 presets of up to 32 colours and on

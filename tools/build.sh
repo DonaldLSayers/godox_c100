@@ -3,7 +3,7 @@
 # custom sounds + code patches. Edit the lists below to change what goes in.
 set -e
 cd "$(dirname "$0")/.."
-LLVM=/opt/homebrew/opt/llvm/bin
+LLVM=${LLVM:-/opt/homebrew/opt/llvm/bin}
 [ -d "$LLVM" ] || LLVM=/opt/homebrew/opt/llvm@18/bin
 ORIG=c100_v1.1.6_20260929/GP_CARDVR_UPGRADE.BIN
 OUT=build/GP_CARDVR_UPGRADE.BIN
@@ -17,7 +17,10 @@ mkdir -p build/obj
 #   sh tools/build.sh            -> Super Mario kick / coin sounds
 # SHUTTER_WAV / POWERON_WAV pick other sounds (11025 Hz mono 16-bit PCM, at
 # most the slot's size; the site's editor makes these).
+# VOLUME (percent, default 100) scales the shutter, power-on and click sounds'
+# samples (tools/scale_wav.py); the factory click is left alone at 100.
 SILENT=${SILENT:-0}
+VOLUME=${VOLUME:-100}
 SHUTTER_WAV=${SHUTTER_WAV:-build/kick_11k.wav}
 POWERON_WAV=${POWERON_WAV:-build/coin_11k.wav}
 python3 tools/gp_res.py "$ORIG" build/res >/dev/null
@@ -29,8 +32,15 @@ if [ "$SILENT" = "1" ]; then
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav build/silent_pwr.wav "$OUT"
     python3 tools/patch_res.py "$OUT" CLICK.wav build/click_silent.wav "$OUT"
 else
+    if [ "$VOLUME" != "100" ]; then
+        python3 -I tools/scale_wav.py "$SHUTTER_WAV" build/shutter_vol.wav "$VOLUME"
+        python3 -I tools/scale_wav.py "$POWERON_WAV" build/poweron_vol.wav "$VOLUME"
+        python3 -I tools/scale_wav.py build/res/CLICK.wav build/click_vol.wav "$VOLUME"
+        SHUTTER_WAV=build/shutter_vol.wav POWERON_WAV=build/poweron_vol.wav
+    fi
     python3 tools/patch_res.py "$ORIG" CAMERA.wav "$SHUTTER_WAV" "$OUT"
     python3 tools/patch_res.py "$OUT" POWERON_AUDIO.wav "$POWERON_WAV" "$OUT"
+    [ "$VOLUME" = "100" ] || python3 tools/patch_res.py "$OUT" CLICK.wav build/click_vol.wav "$OUT"
 fi
 
 # BEEP.wav (the UI/focus beep) is always silenced, in both sound profiles.
@@ -90,14 +100,29 @@ print(f'{start:#x}:{old.hex()}:{new.hex()}')
 # tools/palettes.py, included by the caves. The preset data is too big for the
 # photo cave: it goes in the unused end of the video cave's dead range,
 # 0xbbc00-0xbc400 (see tools/patches/preset_data.s).
+# TAG=1 draws the preset's tag in the top right corner of photos and video (the default: no tag).
+# GB_ON=0 leaves the Game Boy Camera mode out of the center button's cycle; GB_PALETTE
+# (4 hex colours, dark to light, e.g. 252525,4b564d,9aa57c,e0e9c4) sets its colours (tools/gb.py).
+TAG=${TAG:-0}
+GB_ON=${GB_ON:-1}
+# NORMAL_ON=0 leaves the normal mode (no effect) out of the center button's cycle.
+NORMAL_ON=${NORMAL_ON:-1}
+# GB_CURVE=1 applies BW's S-curve (more contrast) to the Game Boy mode's luma. The tone curve table
+# sits in the video cave, so the Game Boy mode needs VIDFX=1.
+GB_CURVE=${GB_CURVE:-0}
+# GB_CONTRAST and GB_BRIGHTNESS (-50..50, default 0) fold into the same table (gb.py).
+GB_CONTRAST=${GB_CONTRAST:-0}
+GB_BRIGHTNESS=${GB_BRIGHTNESS:-0}
+export GB_CURVE GB_CONTRAST GB_BRIGHTNESS
 python3 -I tools/palettes.py asm > build/obj/palettes.inc
+python3 -I tools/gb.py asm > build/obj/gb.inc      # the Game Boy mode's tables (tools/gb.py)
 nmsym() {  # nmsym OBJ LABEL: address of a label in an assembled cave
     $LLVM/llvm-nm "build/obj/$1.o" | awk -v s="$2" '$3 == s { print "0x" $1 }'
 }
 PDATA=$(asm preset_data 0xbbc00 0xbc400)
 CAVE=$(asm photo_cave 0xbab6c 0xbb340 \
     --defsym=MATCH_ADDR=$(nmsym preset_data MATCH_PALETTES) --defsym=PMATCH_ADDR=$(nmsym preset_data PRESET_MATCH) \
-    --defsym=DPTRS_ADDR=$(nmsym preset_data DISPLAY_PTRS) --defsym=TAGS_ADDR=$(nmsym preset_data TAGS))  # dead FUN_000bab6c
+    --defsym=DPTRS_ADDR=$(nmsym preset_data DISPLAY_PTRS) --defsym=TAGS_ADDR=$(nmsym preset_data TAGS)     --defsym=GB_TH_ADDR=$(nmsym preset_data TH0) --defsym=TAG_ON=$TAG)  # dead FUN_000bab6c
 sym() {  # address of a label in the assembled photo cave
     nmsym photo_cave "$1"
 }
@@ -109,11 +134,12 @@ CYC_JUMP=$(asm cyc_jump 0x187c4 0x187c8 --defsym=STUB=$(sym idx_stub))  # per-ph
 # tools/patches/video_cave.s). It shares the photo cave's presets and table.
 # VIDTIMING=1 adds a per-strip timing bar (test builds only).
 VIDFX=${VIDFX:-1}
+[ "$VIDFX" = "1" ] || [ "$GB_ON" = "0" ] || { echo "GB_ON=1 needs VIDFX=1 (the tone curve lives in the video cave)" >&2; exit 1; }
 VIDTIMING=${VIDTIMING:-0}
 VFX_PATCHES=""
 if [ "$VIDFX" = "1" ]; then
     VT=""; [ "$VIDTIMING" = "1" ] && VT="--defsym=VIDTIMING=1"
-    VCAVE=$(asm video_cave 0xbb774 0xbbc00 --defsym=LUT_FILL_ADDR=$(sym lut_fill) --defsym=PVARS_ADDR=$(sym VARS) --defsym=DRAW_TAG_ADDR=$(sym draw_tag) $VT)
+    VCAVE=$(asm video_cave 0xbb774 0xbbc00 --defsym=LUT_FILL_ADDR=$(sym lut_fill) --defsym=PVARS_ADDR=$(sym VARS) --defsym=DRAW_TAG_ADDR=$(sym draw_tag) --defsym=GB_STRIP_ADDR=$(sym gb_strip) $VT)
     VHOOK=$(asm vhook_jump 0x18d14 0x18d18 --defsym=HOOK=$($LLVM/llvm-nm build/obj/video_cave.o | awk '$3 == "vhook" { print "0x" $1 }'))
     VFX_PATCHES="$VCAVE $VHOOK"
 fi
@@ -128,14 +154,16 @@ fi
 LCDTAG=${LCDTAG:-1}
 LCD_PATCHES=""
 if [ "$LCDTAG" = "1" ]; then
-    LCAVE=$(asm lcd_cave 0xbc400 0xbc744)
+    LCAVE=$(asm lcd_cave 0xbc400 0xbc744 --defsym=GB_CYCLE=$GB_ON --defsym=NORMAL_CYCLE=$NORMAL_ON)
     LJUMP=$(asm lcd_jump 0x21218 0x2121c --defsym=HOOK=$(nmsym lcd_cave lcd_hook))
     KJUMP=$(asm key_jump 0x1ddf8 0x1ddfc --defsym=HOOK=$(nmsym lcd_cave center_hook))
-    LCD_PATCHES="$LCAVE $LJUMP $KJUMP"
+    AJUMP=$(asm aspect_jump 0x213e0 0x213e4 --defsym=HOOK=$(nmsym lcd_cave aspect_hook))
+    LCD_PATCHES="$LCAVE $LJUMP $KJUMP $AJUMP"
 fi
 # Resolution jump table @0xf3d0 (ldrls pc,[pc,idx,lsl#2] @0xf3c8): entries hold
 # absolute handler addresses, so point each photo aspect ratio straight at its
-# cave stub. 0/1=16:9 1920, 2=3:2 1616, 3=4:3 1440, 4=1:1 1024; b/c = hi-res.
+# cave stub. 0/1=16:9 1920, 2=3:2 1616, 3=4:3 1440, 4=1:1 1024, 5 = 8:7, the Game Boy
+# mode's (the center button sets it; the arrow keys only reach 0-4); b/c = hi-res.
 jt() {  # jt ENTRY OLDHEX LABEL -> ENTRY:OLDHEX:<label address, little-endian>
     printf '%s:%s:%s\n' "$1" "$2" "$(python3 -I -c "import sys; print(int(sys.argv[1], 0).to_bytes(4, 'little').hex())" "$(sym "$3")")"
 }
@@ -145,10 +173,14 @@ jt() {  # jt ENTRY OLDHEX LABEL -> ENTRY:OLDHEX:<label address, little-endian>
 # photo's size (palettes.py SIZES, ~274k pixels; 640 wide until v019).
 # SMALLVID=0 keeps the stock full-size video.
 SMALLVID=${SMALLVID:-1}
+# The normal mode (the factory's sizes): its aspects are slots 6, 7, 8, 10 and 13 (lcd_cave.s NIDX), whose entries in
+# both tables become the factory handlers of aspects 0-4, copied from the original (nothing else uses those slots).
+NORMAL_PATCHES="0xf3e8:10f70000:9cf70000 0xf3ec:24f70000:9cf70000 0xf3f0:38f70000:b0f70000 0xf3f8:4cf70000:c4f70000 0xf404:88f70000:d4f60000"
 VID_PATCHES=""
 if [ "$SMALLVID" = "1" ]; then
+    NORMAL_PATCHES="$NORMAL_PATCHES 0xf0b8:58f60000:f8f50000 0xf0bc:68f60000:f8f50000 0xf0c0:d8f70000:a8f60000 0xf0c8:d8f70000:88f60000 0xf0d4:d8f70000:98f60000"
     VID_PATCHES="$(jt 0xf0a0 f8f50000 vid169) $(jt 0xf0a4 f8f50000 vid169) $(jt 0xf0c4 f8f50000 vid169)
-        $(jt 0xf0a8 a8f60000 vid32) $(jt 0xf0ac 88f60000 vid43) $(jt 0xf0b0 98f60000 vid11)"
+        $(jt 0xf0a8 a8f60000 vid32) $(jt 0xf0ac 88f60000 vid43) $(jt 0xf0b0 98f60000 vid11) $(jt 0xf0b4 48f60000 vidgb)"
 fi
 python3 tools/patch_code.py "$OUT" "$OUT" \
     "$HOOK_JUMP" "$CYC_JUMP" "$PDATA" "$CAVE" $VFX_PATCHES $LCD_PATCHES \
@@ -157,6 +189,8 @@ python3 tools/patch_code.py "$OUT" "$OUT" \
     "$(jt 0xf3d8 b0f70000 stub32)" \
     "$(jt 0xf3dc c4f70000 photo43)" \
     "$(jt 0xf3e0 d4f60000 stub11)" \
+    "$(jt 0xf3e4 fcf60000 stubgb)" \
+    $NORMAL_PATCHES \
     "$(jt 0xf3fc 60f70000 photo43)" \
     "$(jt 0xf400 74f70000 photo43)" \
     $VID_PATCHES \

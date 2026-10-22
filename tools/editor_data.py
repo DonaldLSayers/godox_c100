@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Make everything the site's firmware editor (site/editor/) needs.
 
-  uv run --with pillow tools/editor_data.py
+  uv run --with pillow tools/editor_data.py [template]
+  (`template`: only the template and template.json; the rest needs images/
+  and film_luts/, which aren't committed)
 
 - the template firmware: build.sh with the built-in presets, silent
-  (SILENT=1), copied to site/editor/TEMPLATE. It is also the site's default
+  (SILENT=1, TAG=0), copied to site/editor/TEMPLATE. It is also the site's default
   download (what v020 does, in the editor's layout). The editor patches a
-  visitor's presets, rnd and sounds into it.
+  visitor's presets, rnd, the Game Boy mode (on/off and its colours), the
+  corner tag (on/off), sounds and their volume into it.
 - site/editor/template.json: where to patch, read from the assembled caves
   (llvm-nm), the resource table and palettes.py, plus the template's sha256.
 - site/editor/library.json: palettes to start from (palettes.py BASE, plain
@@ -29,15 +32,16 @@ tools/editor_check.sh then checks the editor's patcher against build.sh.
 """
 import glob, hashlib, json, os, shutil, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gb
 import palettes as P
 from gp_res import parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE = 'v021_editor_template.bin'
+TEMPLATE = 'v029_editor_template.bin'
 SITE = os.path.join(ROOT, 'site', 'editor')
 ORIG = os.path.join(ROOT, 'c100_v1.1.6_20260929', 'GP_CARDVR_UPGRADE.BIN')
 APP = 0x10200                     # file offset of RAM address 0
-LLVM = next(d for d in ('/opt/homebrew/opt/llvm/bin', '/opt/homebrew/opt/llvm@18/bin') if os.path.isdir(d))
+LLVM = os.environ.get('LLVM') or next(d for d in ('/opt/homebrew/opt/llvm/bin', '/opt/homebrew/opt/llvm@18/bin') if os.path.isdir(d))
 SPEAKER = [(0x22b38, '2d8200eb'), (0x350f0, 'bf3800eb'), (0x2ed50, 'a75100eb')]  # build.sh SPK_PATCHES
 NOP = '0000a0e1'
 # The films the editor offers: (id, name); id is the LUT's name in film_luts/.
@@ -57,10 +61,35 @@ PHOTOS = ['images/editor/street_sign.jpg', 'images/editor/street_duck.jpg', 'ima
           'images/editor/hydrangeas.jpg', 'images/editor/mimosa.jpg', 'images/editor/turtle.jpg',
           'images/editor/cup.jpg', 'images/plain/IMG_0577.jpg', 'images/editor/dessert.jpg']
 PHOTO_ASPECT = 4 / 3
+# Lospec palettes (tools/lospec_palettes.json, from tools/fetch_lospec.py): `gb` are the Game
+# Boy mode's 4-colour presets, `palettes` the other presets (1-32 colours, each with its tag).
+LOSPEC = json.load(open(os.path.join(ROOT, 'tools', 'lospec_palettes.json'), encoding='utf-8'))
+# Already in the library as BASE palettes (palettes.py): credited there, not added twice.
+LOSPEC_BASE = {'db16': 'dawnbringer-16', 'endesga32': 'endesga-32', 'sweetie16': 'sweetie-16'}
+GB_OURS = [  # (name, colours): the default and ones from the project, and the classic DMG greens
+    ('Soft grey-green (default)', ['252525', '4b564d', '9aa57c', 'e0e9c4'], ''),
+    ('Olive', ['384828', '607028', 'a0a830', 'd0e040'], ''),
+    ('Classic Game Boy greens', ['0f380f', '306230', '8bac0f', '9bbc0f'], 'Nintendo (the DMG screen, as in gb-photo)'),
+]
+
+
+def credit(p):
+    """(author shown, Lospec URL) of a lospec_palettes.json entry."""
+    return p['creator'] or p['author'], f'https://lospec.com/palette-list/{p["slug"]}'
+
+
+def gb_palettes():
+    """The Game Boy mode's presets for library.json, each dark to light by luma (Lospec's order isn't)."""
+    luma = lambda h: P.hex_to_yuv(h)[0]
+    out = [{'name': name, 'author': author, 'url': None, 'colours': sorted(cols, key=luma)} for name, cols, author in GB_OURS]
+    for p in LOSPEC['gb']:
+        author, url = credit(p)
+        out.append({'name': p['name'], 'author': author, 'url': url, 'colours': sorted(p['colours'], key=luma)})
+    return out
 
 
 def symbols(obj):
-    out = subprocess.run([f'{LLVM}/llvm-nm', os.path.join(ROOT, 'build', 'obj', obj)],
+    out = subprocess.run([f'{os.environ.get("LLVM_NM_DIR") or LLVM}/llvm-nm', os.path.join(ROOT, 'build', 'obj', obj)],
                          check=True, capture_output=True, text=True).stdout
     return {name: int(addr, 16) for addr, _, name in (l.split() for l in out.splitlines() if len(l.split()) == 3)}
 
@@ -86,7 +115,8 @@ def tag_png(Image, tag, paint):
 
 
 def build_template():
-    env = {k: v for k, v in os.environ.items() if k not in ('PRESETS_JSON', 'SHUTTER_WAV', 'POWERON_WAV')}
+    env = {k: v for k, v in os.environ.items()
+           if k not in ('PRESETS_JSON', 'SHUTTER_WAV', 'POWERON_WAV', 'TAG', 'GB_ON', 'GB_PALETTE', 'GB_CONTRAST', 'GB_BRIGHTNESS', 'CONTRAST', 'BRIGHT', 'VOLUME')}
     env['SILENT'] = '1'
     subprocess.run(['sh', 'tools/build.sh'], cwd=ROOT, env=env, check=True, stdout=subprocess.DEVNULL)
     shutil.copy(os.path.join(ROOT, 'build', 'GP_CARDVR_UPGRADE.BIN'), os.path.join(SITE, TEMPLATE))
@@ -95,8 +125,13 @@ def build_template():
 
 def manifest(fw):
     photo, lcd, data = symbols('photo_cave.o'), symbols('lcd_cave.o'), symbols('preset_data.o')
+    video = symbols('video_cave.o')
+    contrast_at = [photo['contrast_imm'], video['contrast_imm']]    # mov r1, #CONTRAST_FIX: the low byte, 128 (100 %)
+    bright_at = [photo['bright_imm'], video['bright_imm']]          # add r0, r0, #BRIGHT_FIX: the low byte, 128 (+0)
+    for a in contrast_at + bright_at:
+        assert fw[APP + a] == 128 and fw[APP + a + 1] & 0x0f == 0, f'{a:#x} is not an immediate 128'
     for label, key in (('MATCH_PALETTES', 'MATCH'), ('PRESET_MATCH', 'PMATCH'), ('TAGS', 'TAGS'),
-                       ('DISPLAY', 'DISPLAY'), ('DISPLAY_PTRS', 'DPTRS'), ('PRESET_DATA_END', 'END')):
+                       ('DISPLAY', 'DISPLAY'), ('DISPLAY_PTRS', 'DPTRS'), ('TH0', 'GB'), ('PRESET_DATA_END', 'END')):
         assert data[label] == P.PD[key], f'{label} at {data[label]:#x}, palettes.py PD says {P.PD[key]:#x}'
     npal = [photo[k] for k in ('npal_fill', 'npal_pick1', 'npal_pick2', 'npal_pick3')] + \
            [lcd[k] for k in ('npal_lcd', 'npal_center')]
@@ -104,6 +139,10 @@ def manifest(fw):
     for a in npal:                       # data-processing immediate, rotation 0: the low byte is NPAL
         assert fw[APP + a] == n and fw[APP + a + 1] & 0x0f == 0, f'{a:#x} is not an immediate {n}'
     assert fw[APP + lcd['last_center']] == n                       # NPAL - 1 + RND_MODE, rnd on
+    for label, mode in (('after_last', P.MAX_PRESETS + 1), ('after_gb', P.MAX_PRESETS + 2)):   # movhi / moveq r0, #mode
+        assert fw[APP + lcd[label]] == mode and fw[APP + lcd[label] + 1] & 0x0f == 0, label
+    assert fw[APP + photo['VARS'] + 16] == 0                       # SHOW_TAG: the template has no tag
+    assert list(fw[APP + gb.CURVE_ADDR:APP + gb.CURVE_ADDR + 256]) == gb.curve_table(False)   # the identity curve
     for addr, _ in SPEAKER:
         assert fw[APP + addr:APP + addr + 4].hex() == NOP          # silent: speaker never on
     slots = {f'{name}.{ext}'.upper(): (s, e) for name, ext, s, e in parse(fw)}
@@ -115,6 +154,13 @@ def manifest(fw):
         'maxPresets': P.MAX_PRESETS,
         'maxColours': P.NMAX,
         'pd': P.PD,
+        'showTag': photo['VARS'] + 16,
+        'cycle': {'afterLast': lcd['after_last'], 'afterGb': lcd['after_gb'], 'gb': P.MAX_PRESETS + 1,
+                  'normal': P.MAX_PRESETS + 2},
+        'gb': {'mode': P.MAX_PRESETS + 1, 'y': P.PD['GB'] + 48, 'c': P.PD['GB'] + 64,
+               'thresholds': gb.thresholds(), 'gain': gb.GAIN_Q8, 'size': gb.SIZE[1], 'crop': gb.SIZE[0], 'aspect': gb.ASPECT,
+               'palette': [list(c) for c in gb.PALETTE], 'curveAddr': gb.CURVE_ADDR,
+               'identity': gb.curve_table(False), 'sCurve': gb.curve_table(True)},
         'tag': {'letters': P.TAG_LETTERS, 'rows': P.TAG_ROWS, 'cols': P.TAG_COLS, 'bytes': P.TAG_BYTES,
                 'scale': P.TAG_SCALE, 'top': P.TAG_TOP, 'right': P.TAG_RIGHT},
         'font': P.FONT,
@@ -124,6 +170,8 @@ def manifest(fw):
         'ssCells': P.SS_CELLS,
         'rndLcd': P.lcd_segments(P.RND),
         'npal': npal,
+        'contrastAt': contrast_at,
+        'brightAt': bright_at,
         'lastCenter': lcd['last_center'],
         'speaker': [[addr, on, NOP] for addr, on in SPEAKER],
         'slots': {'shutter': slots['CAMERA.WAV'], 'poweron': slots['POWERON_AUDIO.WAV'],
@@ -132,7 +180,8 @@ def manifest(fw):
         'sizes': {k: v[1] for k, v in P.SIZES.items()},
         'crops': {k: v[0] for k, v in P.SIZES.items()},
         'wy': P.WY,
-        'defaults': P.builtin_config(),
+        'defaults': {**P.builtin_config(), 'contrast': 0, 'brightness': 0, 'tag': False, 'normal': True, 'volume': 100,
+                     'gb': {'on': True, 'curve': False, 'contrast': 0, 'brightness': 0, 'palette': [list(P.hex_to_yuv(''.join(f'{x:02x}' for x in c))) for c in gb.PALETTE]}},
     }
 
 
@@ -141,27 +190,41 @@ def library():
     palettes = [{'name': f'{p["tag"]}', 'tag': p['tag'], 'colours': p['match'],
                  'film': PRESET_FILMS[p['tag']], 'curve': p['tag'] in PRESET_CURVE, 'lcd': p['lcd']}
                 for p in P.builtin_config()['presets']]
+    base_credit = {k: credit(next(p for p in LOSPEC['palettes'] if p['slug'] == v)) for k, v in LOSPEC_BASE.items()}
     expanded = P.expanded()
     for name, hexes in P.BASE.items():
         base = [list(P.hex_to_yuv(h)) for h in dict.fromkeys(hexes)]
-        palettes.append({'name': f'{name} ({len(base)})', 'tag': P.TAG[name], 'colours': base, 'film': None, 'curve': False})
+        who = dict(zip(('author', 'url'), base_credit.get(name, ('', None))))
+        palettes.append({'name': f'{name} ({len(base)})', 'tag': P.TAG[name], 'colours': base, 'film': None, 'curve': False, **who})
         ex = [list(c) for c, _ in expanded[name]]
         if len(ex) > len(base):
             palettes.append({'name': f'{name} + mixes ({len(ex)})', 'tag': P.TAG[name], 'colours': ex, 'film': None,
-                             'curve': False})
+                             'curve': False, **who})
+    in_base = set(LOSPEC_BASE.values())
+    for p in LOSPEC['palettes']:                  # the other Lospec presets, as they are (no mixes)
+        if p['slug'] in in_base:
+            continue
+        author, url = credit(p)
+        palettes.append({'name': p['name'], 'tag': p['tag'], 'colours': [list(P.hex_to_yuv(h)) for h in p['colours']],
+                         'film': None, 'curve': False, 'author': author, 'url': url})
     films = [{'id': f, 'name': name, 'file': f'films/{f}.png'} for f, name in FILMS]
     curve = [[0, 0]] + [list(p) for p in zip(P.BW_MATCH, P.BW_LEVELS)][1:-1] + [[255, 255]]
-    return {'palettes': palettes, 'films': films, 'curve': curve}
+    return {'palettes': palettes, 'films': films, 'curve': curve, 'gbPalettes': gb_palettes()}
 
 
 def main():
+    template_only = sys.argv[1:] == ['template']
     for d in ('sounds', 'photos', 'films'):
         os.makedirs(os.path.join(SITE, d), exist_ok=True)
     fw = build_template()
+    json.dump(manifest(fw), open(os.path.join(SITE, 'template.json'), 'w'), indent=1)
+    if template_only:
+        json.dump(library(), open(os.path.join(SITE, 'library.json'), 'w'), separators=(',', ':'))
+        print(f'template {TEMPLATE}: {len(fw)} B, sha256 {hashlib.sha256(fw).hexdigest()[:16]}...')
+        return
     luts = {os.path.splitext(os.path.basename(f))[0]: f for f in glob.glob(os.path.join(ROOT, 'film_luts', '*', '*.png'))}
     for f, _ in FILMS:
         shutil.copy(luts[f], os.path.join(SITE, 'films', f'{f}.png'))
-    json.dump(manifest(fw), open(os.path.join(SITE, 'template.json'), 'w'), indent=1)
     json.dump(library(), open(os.path.join(SITE, 'library.json'), 'w'), separators=(',', ':'))
 
     orig = open(ORIG, 'rb').read()
@@ -181,6 +244,8 @@ def main():
         tag_png(Image, p['tag'], p['paint']).save(os.path.join(tags, f'{p["tag"]}.png'))
     # rnd has no palette of its own: black and white
     tag_png(Image, P.RND, [(0, 128, 128), (255, 128, 128)]).save(os.path.join(tags, 'rnd.png'))
+    tag_png(Image, 'nor', [(0, 128, 128), (255, 128, 128)]).save(os.path.join(tags, 'nor.png'))
+    tag_png(Image, 'GB', [(0, 128, 128), (255, 128, 128)]).save(os.path.join(tags, 'GB.png'))   # and the Game Boy mode   # the normal mode, likewise
     for old in glob.glob(os.path.join(SITE, 'photos', '*')):
         os.remove(old)
     for src in PHOTOS:
